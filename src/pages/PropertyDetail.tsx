@@ -18,6 +18,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AmenitiesSection,
+  WhereIsSection,
+  LocalRecommendationsSection,
+  RulesSection,
+  defaultAmenities,
+  defaultWhereIsItems,
+  defaultRecommendations,
+  defaultRules,
+  AmenityItem,
+  WhereIsItem,
+  RecommendationCategory,
+  RuleItem,
+} from "@/components/KnowledgeEditor";
 
 type TabType = "overview" | "knowledge" | "exact-answers" | "guests";
 
@@ -48,13 +62,14 @@ const PropertyDetail = () => {
   const [checkInMessage, setCheckInMessage] = useState(property?.checkInMessage || "");
   const [checkOutMessage, setCheckOutMessage] = useState(property?.checkOutMessage || "");
   
-  // Knowledge states
-  const [knowledge, setKnowledge] = useState(property?.knowledge || {
-    amenities: "",
-    whereIs: "",
-    localRecommendations: "",
-    rulesAndPolicies: "",
-  });
+  // Knowledge states - new granular structure
+  const [amenities, setAmenities] = useState<AmenityItem[]>(defaultAmenities);
+  const [otherAmenities, setOtherAmenities] = useState("");
+  const [whereIsItems, setWhereIsItems] = useState<WhereIsItem[]>(defaultWhereIsItems);
+  const [otherWhereIs, setOtherWhereIs] = useState("");
+  const [recommendations, setRecommendations] = useState<RecommendationCategory[]>(defaultRecommendations);
+  const [rules, setRules] = useState<RuleItem[]>(defaultRules);
+  const [otherRules, setOtherRules] = useState("");
   
   // Exact answers states
   const [exactAnswers, setExactAnswers] = useState(property?.exactAnswers || []);
@@ -193,7 +208,22 @@ const PropertyDetail = () => {
           )}
 
           {activeTab === "knowledge" && (
-            <KnowledgeTab knowledge={knowledge} setKnowledge={setKnowledge} />
+            <KnowledgeTab
+              amenities={amenities}
+              setAmenities={setAmenities}
+              otherAmenities={otherAmenities}
+              setOtherAmenities={setOtherAmenities}
+              whereIsItems={whereIsItems}
+              setWhereIsItems={setWhereIsItems}
+              otherWhereIs={otherWhereIs}
+              setOtherWhereIs={setOtherWhereIs}
+              recommendations={recommendations}
+              setRecommendations={setRecommendations}
+              rules={rules}
+              setRules={setRules}
+              otherRules={otherRules}
+              setOtherRules={setOtherRules}
+            />
           )}
 
           {activeTab === "exact-answers" && (
@@ -384,45 +414,127 @@ const OverviewTab = ({
 };
 
 // Knowledge Tab Component
-type KnowledgeData = {
-  amenities: string;
-  whereIs: string;
-  localRecommendations: string;
-  rulesAndPolicies: string;
-};
-
 interface KnowledgeTabProps {
-  knowledge: KnowledgeData;
-  setKnowledge: (k: KnowledgeData) => void;
+  amenities: AmenityItem[];
+  setAmenities: (a: AmenityItem[]) => void;
+  otherAmenities: string;
+  setOtherAmenities: (s: string) => void;
+  whereIsItems: WhereIsItem[];
+  setWhereIsItems: (items: WhereIsItem[]) => void;
+  otherWhereIs: string;
+  setOtherWhereIs: (s: string) => void;
+  recommendations: RecommendationCategory[];
+  setRecommendations: (r: RecommendationCategory[]) => void;
+  rules: RuleItem[];
+  setRules: (r: RuleItem[]) => void;
+  otherRules: string;
+  setOtherRules: (s: string) => void;
 }
 
-const knowledgeCategories = [
-  { key: "amenities" as const, title: "Amenities", description: "Wi-Fi, pool, gym, TV, kitchen, laundry, parking, etc." },
-  { key: "whereIs" as const, title: "Where is?", description: "Towels, pots/pans, outdoor pillows, cleaning supplies, remote controls, etc." },
-  { key: "localRecommendations" as const, title: "Local Recommendations", description: "Restaurants, grocery stores, hospitals, transport, nightlife" },
-  { key: "rulesAndPolicies" as const, title: "Rules & Policies", description: "Quiet hours, pets, smoking, parties" },
-];
+const KnowledgeTab = ({
+  amenities,
+  setAmenities,
+  otherAmenities,
+  setOtherAmenities,
+  whereIsItems,
+  setWhereIsItems,
+  otherWhereIs,
+  setOtherWhereIs,
+  recommendations,
+  setRecommendations,
+  rules,
+  setRules,
+  otherRules,
+  setOtherRules,
+}: KnowledgeTabProps) => {
+  const [activeSection, setActiveSection] = useState<string>("amenities");
 
-const KnowledgeTab = ({ knowledge, setKnowledge }: KnowledgeTabProps) => {
+  const sections = [
+    { id: "amenities", label: "Amenities" },
+    { id: "whereis", label: "Where is?" },
+    { id: "recommendations", label: "Local Recs" },
+    { id: "rules", label: "Rules" },
+  ];
+
   return (
     <div className="space-y-6">
-      {knowledgeCategories.map((category) => (
-        <div
-          key={category.key}
-          className="bg-card rounded-2xl border border-border p-6 shadow-soft"
-        >
-          <h3 className="text-lg font-semibold mb-1">{category.title}</h3>
-          <p className="text-sm text-muted-foreground mb-4">{category.description}</p>
-          <Textarea
-            value={knowledge[category.key]}
-            onChange={(e) =>
-              setKnowledge({ ...knowledge, [category.key]: e.target.value })
-            }
-            placeholder={`Add information about ${category.title.toLowerCase()}...`}
-            className="min-h-[120px] bg-secondary border-0 resize-none"
-          />
-        </div>
-      ))}
+      {/* Section tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {sections.map((section) => (
+          <button
+            key={section.id}
+            onClick={() => setActiveSection(section.id)}
+            className={cn(
+              "px-4 py-2 rounded-full text-sm font-medium transition-all",
+              activeSection === section.id
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+            )}
+          >
+            {section.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-card rounded-2xl border border-border p-6 shadow-soft">
+        {activeSection === "amenities" && (
+          <div>
+            <h3 className="text-lg font-semibold mb-1">Amenities</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Select the amenities available at your property and add details.
+            </p>
+            <AmenitiesSection
+              amenities={amenities}
+              setAmenities={setAmenities}
+              otherAmenities={otherAmenities}
+              setOtherAmenities={setOtherAmenities}
+            />
+          </div>
+        )}
+
+        {activeSection === "whereis" && (
+          <div>
+            <h3 className="text-lg font-semibold mb-1">Where is?</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Help guests find common items around your property.
+            </p>
+            <WhereIsSection
+              items={whereIsItems}
+              setItems={setWhereIsItems}
+              otherItems={otherWhereIs}
+              setOtherItems={setOtherWhereIs}
+            />
+          </div>
+        )}
+
+        {activeSection === "recommendations" && (
+          <div>
+            <h3 className="text-lg font-semibold mb-1">Local Recommendations</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Share your favorite local spots with guests.
+            </p>
+            <LocalRecommendationsSection
+              recommendations={recommendations}
+              setRecommendations={setRecommendations}
+            />
+          </div>
+        )}
+
+        {activeSection === "rules" && (
+          <div>
+            <h3 className="text-lg font-semibold mb-1">Rules & Policies</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Set clear expectations for your guests.
+            </p>
+            <RulesSection
+              rules={rules}
+              setRules={setRules}
+              otherRules={otherRules}
+              setOtherRules={setOtherRules}
+            />
+          </div>
+        )}
+      </div>
 
       <div className="flex justify-end">
         <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
