@@ -1,13 +1,41 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Plus } from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
+import PropertyCard from "@/components/PropertyCard";
+import { mockProperties } from "@/data/mockData";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto animate-fade-in">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-semibold text-foreground">Properties</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your property listings and check their activity.
+            </p>
+          </div>
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
+            <Plus className="w-4 h-4" />
+            Add Property
+          </Button>
+        </div>
+
+        {/* Property Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
+          {mockProperties.map((property, index) => (
+            <div
+              key={property.id}
+              className="animate-fade-in"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <PropertyCard property={property} />
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
