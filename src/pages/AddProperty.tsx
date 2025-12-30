@@ -31,7 +31,7 @@ interface ExactAnswer {
 interface GuestInfo {
   id: string;
   fullName: string;
-  email: string;
+  phone: string;
   startDate: string;
   endDate: string;
 }
@@ -73,7 +73,7 @@ const AddProperty = () => {
   ]);
 
   const [guests, setGuests] = useState<GuestInfo[]>([
-    { id: "1", fullName: "", email: "", startDate: "", endDate: "" },
+    { id: "1", fullName: "", phone: "", startDate: "", endDate: "" },
   ]);
 
   const handleNext = () => {
@@ -138,7 +138,7 @@ const AddProperty = () => {
     if (guests.length < 3) {
       setGuests([
         ...guests,
-        { id: Date.now().toString(), fullName: "", email: "", startDate: "", endDate: "" },
+        { id: Date.now().toString(), fullName: "", phone: "", startDate: "", endDate: "" },
       ]);
     }
   };
@@ -550,10 +550,10 @@ const AddProperty = () => {
                       onChange={(e) => updateGuest(guest.id, "fullName", e.target.value)}
                     />
                     <Input
-                      placeholder="Email"
-                      type="email"
-                      value={guest.email}
-                      onChange={(e) => updateGuest(guest.id, "email", e.target.value)}
+                      placeholder="Phone Number *"
+                      type="tel"
+                      value={guest.phone}
+                      onChange={(e) => updateGuest(guest.id, "phone", e.target.value)}
                     />
                     <Input
                       placeholder="Start Date"
