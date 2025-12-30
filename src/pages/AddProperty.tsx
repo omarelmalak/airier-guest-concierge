@@ -6,6 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  AmenitiesSection,
+  WhereIsSection,
+  LocalRecommendationsSection,
+  RulesSection,
+  defaultAmenities,
+  defaultWhereIsItems,
+  defaultRecommendations,
+  defaultRules,
+  AmenityItem,
+  WhereIsItem,
+  RecommendationCategory,
+  RuleItem,
+} from "@/components/KnowledgeEditor";
 
 interface PropertyInfo {
   name: string;
@@ -13,13 +27,6 @@ interface PropertyInfo {
   type: string;
   bedrooms: string;
   bathrooms: string;
-}
-
-interface KnowledgeData {
-  amenities: string;
-  whereIs: string;
-  localRecommendations: string;
-  rulesAndPolicies: string;
 }
 
 interface ExactAnswer {
@@ -39,9 +46,12 @@ interface GuestInfo {
 const STEPS = [
   { id: 1, title: "Property Info", description: "Basic details about your property" },
   { id: 2, title: "Photo", description: "Upload a cover photo" },
-  { id: 3, title: "Knowledge Base", description: "Help your AI answer questions" },
-  { id: 4, title: "Exact Answers", description: "Set specific Q&A responses" },
-  { id: 5, title: "Guests", description: "Add your first guests" },
+  { id: 3, title: "Amenities", description: "What does your property offer?" },
+  { id: 4, title: "Where is?", description: "Help guests find things" },
+  { id: 5, title: "Local Tips", description: "Share your favorite spots" },
+  { id: 6, title: "Rules", description: "Set expectations" },
+  { id: 7, title: "Exact Answers", description: "Set specific Q&A responses" },
+  { id: 8, title: "Guests", description: "Add your first guests" },
 ];
 
 const AddProperty = () => {
@@ -61,12 +71,14 @@ const AddProperty = () => {
 
   const [photo, setPhoto] = useState<string | null>(null);
 
-  const [knowledge, setKnowledge] = useState<KnowledgeData>({
-    amenities: "",
-    whereIs: "",
-    localRecommendations: "",
-    rulesAndPolicies: "",
-  });
+  // Knowledge states - granular
+  const [amenities, setAmenities] = useState<AmenityItem[]>(defaultAmenities);
+  const [otherAmenities, setOtherAmenities] = useState("");
+  const [whereIsItems, setWhereIsItems] = useState<WhereIsItem[]>(defaultWhereIsItems);
+  const [otherWhereIs, setOtherWhereIs] = useState("");
+  const [recommendations, setRecommendations] = useState<RecommendationCategory[]>(defaultRecommendations);
+  const [rules, setRules] = useState<RuleItem[]>(defaultRules);
+  const [otherRules, setOtherRules] = useState("");
 
   const [exactAnswers, setExactAnswers] = useState<ExactAnswer[]>([
     { id: "1", question: "", answer: "" },
@@ -77,7 +89,7 @@ const AddProperty = () => {
   ]);
 
   const handleNext = () => {
-    if (currentStep === 5) {
+    if (currentStep === STEPS.length) {
       setIsAnimating(true);
       setTimeout(() => {
         setIsCompleted(true);
@@ -158,6 +170,23 @@ const AddProperty = () => {
   const handleFinish = () => {
     navigate("/");
   };
+
+  // Get the step group for progress display
+  const getStepGroup = (step: number) => {
+    if (step === 1) return "info";
+    if (step === 2) return "photo";
+    if (step >= 3 && step <= 6) return "knowledge";
+    if (step === 7) return "answers";
+    return "guests";
+  };
+
+  const progressGroups = [
+    { id: "info", label: "1", steps: [1] },
+    { id: "photo", label: "2", steps: [2] },
+    { id: "knowledge", label: "3", steps: [3, 4, 5, 6] },
+    { id: "answers", label: "4", steps: [7] },
+    { id: "guests", label: "5", steps: [8] },
+  ];
 
   if (isCompleted) {
     return (
@@ -252,34 +281,55 @@ const AddProperty = () => {
           </p>
         </div>
 
-        {/* Progress Indicator */}
+        {/* Progress Indicator - Grouped */}
         <div className="flex items-center gap-2 mb-8">
-          {STEPS.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
-                  step.id < currentStep
-                    ? "bg-primary text-primary-foreground"
-                    : step.id === currentStep
-                    ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {step.id < currentStep ? (
-                  <Check className="w-4 h-4" />
-                ) : (
-                  step.id
+          {progressGroups.map((group, index) => {
+            const isActive = group.steps.includes(currentStep);
+            const isComplete = group.steps.every((s) => s < currentStep);
+            const subProgress = isActive
+              ? ((currentStep - group.steps[0]) / group.steps.length) * 100
+              : isComplete
+              ? 100
+              : 0;
+
+            return (
+              <div key={group.id} className="flex items-center">
+                <div className="relative">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+                      isComplete
+                        ? "bg-primary text-primary-foreground"
+                        : isActive
+                        ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {isComplete ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      group.label
+                    )}
+                  </div>
+                  {/* Sub-progress for knowledge section */}
+                  {group.steps.length > 1 && isActive && (
+                    <div className="absolute -bottom-2 left-0 right-0 h-1 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-300"
+                        style={{ width: `${subProgress}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+                {index < progressGroups.length - 1 && (
+                  <div
+                    className={`w-8 sm:w-12 h-1 mx-1 rounded transition-all duration-300 ${
+                      isComplete ? "bg-primary" : "bg-muted"
+                    }`}
+                  />
                 )}
               </div>
-              {index < STEPS.length - 1 && (
-                <div
-                  className={`w-12 h-1 mx-1 rounded transition-all duration-300 ${
-                    step.id < currentStep ? "bg-primary" : "bg-muted"
-                  }`}
-                />
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Step Title */}
@@ -405,74 +455,70 @@ const AddProperty = () => {
             </div>
           )}
 
-          {/* Step 3: Knowledge Base */}
+          {/* Step 3: Amenities */}
           {currentStep === 3 && (
-            <div className="space-y-5">
-              <div>
-                <Label htmlFor="amenities">Amenities</Label>
-                <p className="text-sm text-muted-foreground mb-1.5">
-                  Wi-Fi, pool, gym, TV, kitchen, laundry, parking, etc.
-                </p>
-                <Textarea
-                  id="amenities"
-                  placeholder="High-speed Wi-Fi (password: MyWiFi123). Pool open 8 AM - 10 PM..."
-                  value={knowledge.amenities}
-                  onChange={(e) =>
-                    setKnowledge({ ...knowledge, amenities: e.target.value })
-                  }
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="whereIs">Where is?</Label>
-                <p className="text-sm text-muted-foreground mb-1.5">
-                  Towels, pots/pans, outdoor pillows, cleaning supplies, remote controls, etc.
-                </p>
-                <Textarea
-                  id="whereIs"
-                  placeholder="Towels in the bathroom closet. Extra blankets in the bedroom chest..."
-                  value={knowledge.whereIs}
-                  onChange={(e) =>
-                    setKnowledge({ ...knowledge, whereIs: e.target.value })
-                  }
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="localRecommendations">Local Recommendations</Label>
-                <p className="text-sm text-muted-foreground mb-1.5">
-                  Restaurants, grocery stores, hospitals, transport, nightlife
-                </p>
-                <Textarea
-                  id="localRecommendations"
-                  placeholder="Best pizza at Tony's (5 min drive). Grocery store: Metro on Main St..."
-                  value={knowledge.localRecommendations}
-                  onChange={(e) =>
-                    setKnowledge({ ...knowledge, localRecommendations: e.target.value })
-                  }
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="rulesAndPolicies">Rules & Policies</Label>
-                <p className="text-sm text-muted-foreground mb-1.5">
-                  Quiet hours, pets, smoking, parties
-                </p>
-                <Textarea
-                  id="rulesAndPolicies"
-                  placeholder="Quiet hours 10 PM - 8 AM. No smoking anywhere on property..."
-                  value={knowledge.rulesAndPolicies}
-                  onChange={(e) =>
-                    setKnowledge({ ...knowledge, rulesAndPolicies: e.target.value })
-                  }
-                  rows={3}
-                />
-              </div>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Tap to select amenities available at your property.
+              </p>
+              <AmenitiesSection
+                amenities={amenities}
+                setAmenities={setAmenities}
+                otherAmenities={otherAmenities}
+                setOtherAmenities={setOtherAmenities}
+                compact
+              />
             </div>
           )}
 
-          {/* Step 4: Exact Answers */}
+          {/* Step 4: Where Is */}
           {currentStep === 4 && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Help guests find common items. Tap to add locations.
+              </p>
+              <WhereIsSection
+                items={whereIsItems}
+                setItems={setWhereIsItems}
+                otherItems={otherWhereIs}
+                setOtherItems={setOtherWhereIs}
+                compact
+              />
+            </div>
+          )}
+
+          {/* Step 5: Local Recommendations */}
+          {currentStep === 5 && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Share your favorite local spots with guests.
+              </p>
+              <LocalRecommendationsSection
+                recommendations={recommendations}
+                setRecommendations={setRecommendations}
+                compact
+              />
+            </div>
+          )}
+
+          {/* Step 6: Rules */}
+          {currentStep === 6 && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Set clear expectations for your guests.
+              </p>
+              <RulesSection
+                rules={rules}
+                setRules={setRules}
+                otherRules={otherRules}
+                setOtherRules={setOtherRules}
+                compact
+              />
+            </div>
+          )}
+
+          {/* Step 7: Exact Answers */}
+          {currentStep === 7 && (
             <div className="space-y-5">
               <p className="text-sm text-muted-foreground">
                 Add questions that you want the AI to respond to with exact, word-for-word answers.
@@ -489,23 +535,30 @@ const AddProperty = () => {
                     {exactAnswers.length > 1 && (
                       <button
                         onClick={() => removeExactAnswer(ea.id)}
-                        className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
-                  <Input
-                    placeholder="Question (e.g., What's the Wi-Fi password?)"
-                    value={ea.question}
-                    onChange={(e) => updateExactAnswer(ea.id, "question", e.target.value)}
-                  />
-                  <Textarea
-                    placeholder="Answer (e.g., The Wi-Fi password is MyWiFi123)"
-                    value={ea.answer}
-                    onChange={(e) => updateExactAnswer(ea.id, "answer", e.target.value)}
-                    rows={2}
-                  />
+                  <div>
+                    <Label>Question</Label>
+                    <Input
+                      placeholder="e.g., What's the Wi-Fi password?"
+                      value={ea.question}
+                      onChange={(e) => updateExactAnswer(ea.id, "question", e.target.value)}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label>Answer</Label>
+                    <Textarea
+                      placeholder="The exact response the AI will give..."
+                      value={ea.answer}
+                      onChange={(e) => updateExactAnswer(ea.id, "answer", e.target.value)}
+                      className="mt-1.5 min-h-[80px] resize-none"
+                    />
+                  </div>
                 </div>
               ))}
               <Button
@@ -519,8 +572,8 @@ const AddProperty = () => {
             </div>
           )}
 
-          {/* Step 5: Guests */}
-          {currentStep === 5 && (
+          {/* Step 8: Guests */}
+          {currentStep === 8 && (
             <div className="space-y-5">
               <p className="text-sm text-muted-foreground">
                 Add up to 3 guests who will have access to your AI assistant.
@@ -537,36 +590,49 @@ const AddProperty = () => {
                     {guests.length > 1 && (
                       <button
                         onClick={() => removeGuest(guest.id)}
-                        className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <Input
-                      placeholder="Full Name"
-                      value={guest.fullName}
-                      onChange={(e) => updateGuest(guest.id, "fullName", e.target.value)}
-                    />
-                    <Input
-                      placeholder="Phone Number *"
-                      type="tel"
-                      value={guest.phone}
-                      onChange={(e) => updateGuest(guest.id, "phone", e.target.value)}
-                    />
-                    <Input
-                      placeholder="Start Date"
-                      type="date"
-                      value={guest.startDate}
-                      onChange={(e) => updateGuest(guest.id, "startDate", e.target.value)}
-                    />
-                    <Input
-                      placeholder="End Date"
-                      type="date"
-                      value={guest.endDate}
-                      onChange={(e) => updateGuest(guest.id, "endDate", e.target.value)}
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <Label>Full Name</Label>
+                      <Input
+                        placeholder="John Doe"
+                        value={guest.fullName}
+                        onChange={(e) => updateGuest(guest.id, "fullName", e.target.value)}
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div>
+                      <Label>Phone Number *</Label>
+                      <Input
+                        placeholder="+1 (555) 123-4567"
+                        value={guest.phone}
+                        onChange={(e) => updateGuest(guest.id, "phone", e.target.value)}
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div>
+                      <Label>Check-in Date</Label>
+                      <Input
+                        type="date"
+                        value={guest.startDate}
+                        onChange={(e) => updateGuest(guest.id, "startDate", e.target.value)}
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div>
+                      <Label>Check-out Date</Label>
+                      <Input
+                        type="date"
+                        value={guest.endDate}
+                        onChange={(e) => updateGuest(guest.id, "endDate", e.target.value)}
+                        className="mt-1.5"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -607,8 +673,8 @@ const AddProperty = () => {
               disabled={currentStep === 1 && !isStep1Valid}
               className="gap-2 min-w-[120px]"
             >
-              {currentStep === 5 ? "Complete" : "Continue"}
-              {currentStep < 5 && <ArrowRight className="w-4 h-4" />}
+              {currentStep === STEPS.length ? "Finish" : "Continue"}
+              {currentStep < STEPS.length && <ArrowRight className="w-4 h-4" />}
             </Button>
           </div>
         </div>
