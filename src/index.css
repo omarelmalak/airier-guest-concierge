@@ -139,3 +139,75 @@
     box-shadow: var(--shadow-elevated);
   }
 }
+
+/* Completion animation keyframes */
+@keyframes checkmark-draw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes circle-fill {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100%) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes success-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsla(var(--primary), 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 20px hsla(var(--primary), 0);
+  }
+}
+
+.animate-circle-fill {
+  animation: circle-fill 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-checkmark {
+  animation: checkmark-draw 0.4s ease-out 0.3s forwards;
+}
+
+.animate-float-up {
+  animation: float-up 0.6s ease-out forwards;
+}
+
+.animate-success-pulse {
+  animation: success-pulse 2s ease-in-out infinite;
+}
