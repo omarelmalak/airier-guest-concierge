@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react";
+import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import PropertyCard from "@/components/PropertyCard";
 import { mockProperties } from "@/data/mockData";
@@ -16,9 +17,11 @@ const Index = () => {
               Manage your property listings and check their activity.
             </p>
           </div>
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
-            <Plus className="w-4 h-4" />
-            Add Property
+          <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
+            <Link to="/add-property">
+              <Plus className="w-4 h-4" />
+              Add Property
+            </Link>
           </Button>
         </div>
 
