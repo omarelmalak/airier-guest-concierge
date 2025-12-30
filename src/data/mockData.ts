@@ -10,7 +10,7 @@ export type AIStatus = "online" | "warning" | "offline";
 export interface Guest {
   id: string;
   fullName: string;
-  email: string;
+  phone: string;
   startDate: string;
   endDate: string;
   isActive: boolean;
@@ -88,8 +88,8 @@ export const mockProperties: Property[] = [
     checkInMessage: "Welcome to our cozy cabin! Your check-in is at 3 PM. The lockbox code is 1234. Fresh towels are in the bathroom closet.",
     checkOutMessage: "Thank you for staying with us! Please leave the keys on the kitchen counter and ensure all windows are closed.",
     guests: [
-      { id: "g1", fullName: "Alice Johnson", email: "alice@email.com", startDate: "Jul 26, 2025", endDate: "Jul 30, 2025", isActive: true },
-      { id: "g2", fullName: "Mark Davidson", email: "mark.d@email.com", startDate: "Jul 22, 2025", endDate: "Jul 25, 2025", isActive: true },
+      { id: "g1", fullName: "Alice Johnson", phone: "+1 416-555-0123", startDate: "Jul 26, 2025", endDate: "Jul 30, 2025", isActive: true },
+      { id: "g2", fullName: "Mark Davidson", phone: "+1 416-555-0456", startDate: "Jul 22, 2025", endDate: "Jul 25, 2025", isActive: true },
     ],
     knowledge: {
       amenities: "High-speed Wi-Fi (password: CabinLife2024). Heated pool open 8 AM - 10 PM. Hot tub on the back deck. Full kitchen with coffee maker, blender, and all cookware.",
@@ -124,9 +124,9 @@ export const mockProperties: Property[] = [
     checkInMessage: "Welcome to downtown luxury! Check-in is at 4 PM. The concierge will provide your key fob.",
     checkOutMessage: "Thanks for choosing our apartment! Please return the key fob to the concierge.",
     guests: [
-      { id: "g3", fullName: "Sarah Miller", email: "sarah.m@email.com", startDate: "Jul 26, 2025", endDate: "Jul 29, 2025", isActive: true },
-      { id: "g4", fullName: "John Smith", email: "john.s@email.com", startDate: "Jul 28, 2025", endDate: "Aug 2, 2025", isActive: true },
-      { id: "g5", fullName: "Emma Wilson", email: "emma.w@email.com", startDate: "Jul 25, 2025", endDate: "Jul 27, 2025", isActive: true },
+      { id: "g3", fullName: "Sarah Miller", phone: "+1 416-555-0789", startDate: "Jul 26, 2025", endDate: "Jul 29, 2025", isActive: true },
+      { id: "g4", fullName: "John Smith", phone: "+1 416-555-0321", startDate: "Jul 28, 2025", endDate: "Aug 2, 2025", isActive: true },
+      { id: "g5", fullName: "Emma Wilson", phone: "+1 416-555-0654", startDate: "Jul 25, 2025", endDate: "Jul 27, 2025", isActive: true },
     ],
     knowledge: {
       amenities: "Building gym on floor 3, open 24/7. High-speed fiber Wi-Fi. 55-inch smart TV in living room.",
@@ -160,7 +160,7 @@ export const mockProperties: Property[] = [
     checkInMessage: "Your lakeside paradise awaits! Check-in at 3 PM. Gate code: 5678.",
     checkOutMessage: "Hope you enjoyed the lake! Please store kayaks and lock the gate on your way out.",
     guests: [
-      { id: "g6", fullName: "David Chen", email: "david.c@email.com", startDate: "Jul 20, 2025", endDate: "Jul 28, 2025", isActive: true },
+      { id: "g6", fullName: "David Chen", phone: "+1 705-555-0987", startDate: "Jul 20, 2025", endDate: "Jul 28, 2025", isActive: true },
     ],
     knowledge: {
       amenities: "Private dock with 2 kayaks. Infinity pool heated to 82°F. Professional BBQ on the deck.",

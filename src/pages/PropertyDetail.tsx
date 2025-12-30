@@ -552,7 +552,7 @@ const GuestsTab = ({ guests, toggleGuestActive, maxGuests }: GuestsTabProps) => 
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="font-semibold">Full Name</TableHead>
-              <TableHead className="font-semibold">Email</TableHead>
+              <TableHead className="font-semibold">Phone</TableHead>
               <TableHead className="font-semibold">Check-in</TableHead>
               <TableHead className="font-semibold">Check-out</TableHead>
               <TableHead className="font-semibold text-right">AI Access</TableHead>
@@ -562,7 +562,7 @@ const GuestsTab = ({ guests, toggleGuestActive, maxGuests }: GuestsTabProps) => 
             {guests.map((guest) => (
               <TableRow key={guest.id}>
                 <TableCell className="font-medium">{guest.fullName}</TableCell>
-                <TableCell className="text-muted-foreground">{guest.email}</TableCell>
+                <TableCell className="text-muted-foreground">{guest.phone}</TableCell>
                 <TableCell>{guest.startDate}</TableCell>
                 <TableCell>{guest.endDate}</TableCell>
                 <TableCell className="text-right">
