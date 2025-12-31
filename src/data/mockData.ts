@@ -22,6 +22,7 @@ export interface Property {
   address: string;
   image: string;
   aiStatus: AIStatus;
+  subscriptionActive: boolean;
   subscriptionExpiry: string;
   activeGuests: number;
   maxGuests: number;
@@ -72,6 +73,7 @@ export const mockProperties: Property[] = [
     address: "Toronto, Canada",
     image: property1,
     aiStatus: "online",
+    subscriptionActive: true,
     subscriptionExpiry: "Aug 7, 2025",
     activeGuests: 2,
     maxGuests: 3,
@@ -108,6 +110,7 @@ export const mockProperties: Property[] = [
     address: "Toronto, Canada",
     image: property2,
     aiStatus: "warning",
+    subscriptionActive: true,
     subscriptionExpiry: "Nov 16, 2025",
     activeGuests: 3,
     maxGuests: 3,
@@ -144,6 +147,7 @@ export const mockProperties: Property[] = [
     address: "Muskoka, Canada",
     image: property3,
     aiStatus: "online",
+    subscriptionActive: true,
     subscriptionExpiry: "Sep 2, 2025",
     activeGuests: 1,
     maxGuests: 3,
@@ -176,6 +180,7 @@ export const mockProperties: Property[] = [
     address: "Cape Cod, USA",
     image: property4,
     aiStatus: "offline",
+    subscriptionActive: false,
     subscriptionExpiry: "Oct 25, 2025",
     activeGuests: 0,
     maxGuests: 3,
