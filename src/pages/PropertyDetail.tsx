@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Star, Wifi, Car, Droplets, ChefHat, Plus, Trash2, Save, Clock, Bell } from "lucide-react";
+import { ArrowLeft, Star, Wifi, Car, Droplets, ChefHat, Plus, Trash2, Save, Clock, Bell, X } from "lucide-react";
 import { mockProperties, Property, Guest } from "@/data/mockData";
 import StatusBadge from "@/components/StatusBadge";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -239,7 +239,7 @@ const PropertyDetail = () => {
           )}
 
           {activeTab === "guests" && (
-            <GuestsTab guests={guests} toggleGuestActive={toggleGuestActive} maxGuests={property.maxGuests} />
+            <GuestsTab guests={guests} setGuests={setGuests} toggleGuestActive={toggleGuestActive} maxGuests={property.maxGuests} />
           )}
         </div>
       </div>
@@ -643,60 +643,201 @@ const ExactAnswersTab = ({
 // Guests Tab Component
 interface GuestsTabProps {
   guests: Guest[];
+  setGuests: (guests: Guest[]) => void;
   toggleGuestActive: (id: string) => void;
   maxGuests: number;
 }
 
-const GuestsTab = ({ guests, toggleGuestActive, maxGuests }: GuestsTabProps) => {
+interface NewGuestForm {
+  fullName: string;
+  phone: string;
+  startDate: string;
+  endDate: string;
+}
+
+const GuestsTab = ({ guests, setGuests, toggleGuestActive, maxGuests }: GuestsTabProps) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newGuest, setNewGuest] = useState<NewGuestForm>({
+    fullName: "",
+    phone: "",
+    startDate: "",
+    endDate: "",
+  });
+
   const activeCount = guests.filter((g) => g.isActive).length;
 
-  return (
-    <div className="bg-card rounded-2xl border border-border shadow-soft overflow-hidden">
-      <div className="p-6 border-b border-border">
-        <h3 className="text-lg font-semibold">Enrolled Guests</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          {activeCount} of {maxGuests} guest slots active
-        </p>
-      </div>
+  const handleAddGuest = () => {
+    if (newGuest.fullName && newGuest.phone) {
+      const guest: Guest = {
+        id: Date.now().toString(),
+        fullName: newGuest.fullName,
+        phone: newGuest.phone,
+        startDate: newGuest.startDate,
+        endDate: newGuest.endDate,
+        isActive: true,
+      };
+      setGuests([...guests, guest]);
+      setNewGuest({ fullName: "", phone: "", startDate: "", endDate: "" });
+      setShowAddForm(false);
+    }
+  };
 
-      {guests.length > 0 ? (
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="font-semibold">Full Name</TableHead>
-              <TableHead className="font-semibold">Phone</TableHead>
-              <TableHead className="font-semibold">Check-in</TableHead>
-              <TableHead className="font-semibold">Check-out</TableHead>
-              <TableHead className="font-semibold text-right">AI Access</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {guests.map((guest) => (
-              <TableRow key={guest.id}>
-                <TableCell className="font-medium">{guest.fullName}</TableCell>
-                <TableCell className="text-muted-foreground">{guest.phone}</TableCell>
-                <TableCell>{guest.startDate}</TableCell>
-                <TableCell>{guest.endDate}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      {guest.isActive ? "On" : "Off"}
-                    </span>
-                    <Switch
-                      checked={guest.isActive}
-                      onCheckedChange={() => toggleGuestActive(guest.id)}
-                    />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+  const handleRemoveGuest = (id: string) => {
+    setGuests(guests.filter((g) => g.id !== id));
+  };
+
+  const isFormValid = newGuest.fullName && newGuest.phone;
+
+  return (
+    <div className="space-y-6">
+      {/* Add Guest Button / Form */}
+      {!showAddForm ? (
+        <Button
+          onClick={() => setShowAddForm(true)}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Add Guest
+        </Button>
       ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          <p>No guests enrolled for this property.</p>
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-soft animate-fade-in">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Add New Guest</h3>
+            <button
+              onClick={() => {
+                setShowAddForm(false);
+                setNewGuest({ fullName: "", phone: "", startDate: "", endDate: "" });
+              }}
+              className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="md:col-span-2">
+              <Label htmlFor="guestName">Full Name *</Label>
+              <Input
+                id="guestName"
+                placeholder="e.g., John Smith"
+                value={newGuest.fullName}
+                onChange={(e) => setNewGuest({ ...newGuest, fullName: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="guestPhone">Phone Number *</Label>
+              <Input
+                id="guestPhone"
+                type="tel"
+                placeholder="e.g., +1 234 567 8900"
+                value={newGuest.phone}
+                onChange={(e) => setNewGuest({ ...newGuest, phone: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="startDate">Check-in Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={newGuest.startDate}
+                onChange={(e) => setNewGuest({ ...newGuest, startDate: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="endDate">Check-out Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={newGuest.endDate}
+                onChange={(e) => setNewGuest({ ...newGuest, endDate: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddForm(false);
+                setNewGuest({ fullName: "", phone: "", startDate: "", endDate: "" });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddGuest}
+              disabled={!isFormValid}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Guest
+            </Button>
+          </div>
         </div>
       )}
+
+      {/* Guests Table */}
+      <div className="bg-card rounded-2xl border border-border shadow-soft overflow-hidden">
+        <div className="p-6 border-b border-border">
+          <h3 className="text-lg font-semibold">Enrolled Guests</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            {activeCount} of {maxGuests} guest slots active
+          </p>
+        </div>
+
+        {guests.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="font-semibold">Full Name</TableHead>
+                <TableHead className="font-semibold">Phone</TableHead>
+                <TableHead className="font-semibold">Check-in</TableHead>
+                <TableHead className="font-semibold">Check-out</TableHead>
+                <TableHead className="font-semibold text-right">AI Access</TableHead>
+                <TableHead className="w-12"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {guests.map((guest) => (
+                <TableRow key={guest.id}>
+                  <TableCell className="font-medium">{guest.fullName}</TableCell>
+                  <TableCell className="text-muted-foreground">{guest.phone}</TableCell>
+                  <TableCell>{guest.startDate}</TableCell>
+                  <TableCell>{guest.endDate}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        {guest.isActive ? "On" : "Off"}
+                      </span>
+                      <Switch
+                        checked={guest.isActive}
+                        onCheckedChange={() => toggleGuestActive(guest.id)}
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => handleRemoveGuest(guest.id)}
+                      className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>No guests enrolled for this property.</p>
+            <p className="text-sm mt-1">Click "Add Guest" above to get started.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
