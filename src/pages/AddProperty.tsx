@@ -38,7 +38,8 @@ interface ExactAnswer {
 
 interface GuestInfo {
   id: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   startDate: string;
   endDate: string;
@@ -89,7 +90,7 @@ const AddProperty = () => {
   ]);
 
   const [guests, setGuests] = useState<GuestInfo[]>([
-    { id: "1", fullName: "", phone: "", startDate: "", endDate: "" },
+    { id: "1", firstName: "", lastName: "", phone: "", startDate: "", endDate: "" },
   ]);
 
   // Subscription state
@@ -158,7 +159,7 @@ const AddProperty = () => {
     if (guests.length < 3) {
       setGuests([
         ...guests,
-        { id: Date.now().toString(), fullName: "", phone: "", startDate: "", endDate: "" },
+        { id: Date.now().toString(), firstName: "", lastName: "", phone: "", startDate: "", endDate: "" },
       ]);
     }
   };
@@ -218,23 +219,23 @@ const AddProperty = () => {
               />
             ))}
           </div>
-          
+
           <div className="text-center">
             {/* Checkmark Animation */}
             <div className="relative w-32 h-32 mx-auto mb-8">
               {/* Outer pulse ring */}
               <div className="absolute inset-0 bg-primary/20 rounded-full animate-success-pulse" />
-              
+
               {/* Main circle with checkmark */}
               <div className="relative flex items-center justify-center w-32 h-32 bg-primary rounded-full shadow-xl animate-circle-fill">
-                <svg 
-                  viewBox="0 0 52 52" 
+                <svg
+                  viewBox="0 0 52 52"
                   className="w-16 h-16"
                 >
-                  <path 
-                    fill="none" 
-                    stroke="white" 
-                    strokeWidth="4" 
+                  <path
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="4"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     d="M14 27l8 8 16-16"
@@ -245,7 +246,7 @@ const AddProperty = () => {
                 </svg>
               </div>
             </div>
-            
+
             <div className="animate-float-up" style={{ animationDelay: '0.4s', opacity: 0 }}>
               <h1 className="text-3xl font-semibold text-foreground mb-3">
                 Property Created!
@@ -253,7 +254,7 @@ const AddProperty = () => {
               <p className="text-muted-foreground mb-8 max-w-md mx-auto">
                 Your property has been successfully added. You can now configure more settings or start welcoming guests.
               </p>
-              
+
               <div className="flex items-center justify-center gap-4">
                 <Button
                   variant="outline"
@@ -279,7 +280,7 @@ const AddProperty = () => {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/properties")}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -299,20 +300,19 @@ const AddProperty = () => {
             const subProgress = isActive
               ? ((currentStep - group.steps[0]) / group.steps.length) * 100
               : isComplete
-              ? 100
-              : 0;
+                ? 100
+                : 0;
 
             return (
               <div key={group.id} className="flex items-center">
                 <div className="relative">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
-                      isComplete
-                        ? "bg-primary text-primary-foreground"
-                        : isActive
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${isComplete
+                      ? "bg-primary text-primary-foreground"
+                      : isActive
                         ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
                         : "bg-muted text-muted-foreground"
-                    }`}
+                      }`}
                   >
                     {isComplete ? (
                       <Check className="w-5 h-5" />
@@ -332,9 +332,8 @@ const AddProperty = () => {
                 </div>
                 {index < progressGroups.length - 1 && (
                   <div
-                    className={`w-8 sm:w-12 h-1 mx-1 rounded transition-all duration-300 ${
-                      isComplete ? "bg-primary" : "bg-muted"
-                    }`}
+                    className={`w-8 sm:w-12 h-1 mx-1 rounded transition-all duration-300 ${isComplete ? "bg-primary" : "bg-muted"
+                      }`}
                   />
                 )}
               </div>
@@ -354,9 +353,8 @@ const AddProperty = () => {
 
         {/* Step Content */}
         <div
-          className={`bg-card rounded-xl border border-border p-6 mb-6 transition-all duration-300 ${
-            isAnimating ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
-          }`}
+          className={`bg-card rounded-xl border border-border p-6 mb-6 transition-all duration-300 ${isAnimating ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
+            }`}
         >
           {/* Step 1: Property Info */}
           {currentStep === 1 && (
@@ -608,11 +606,20 @@ const AddProperty = () => {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <Label>Full Name</Label>
+                      <Label>First Name *</Label>
                       <Input
                         placeholder="John Doe"
-                        value={guest.fullName}
-                        onChange={(e) => updateGuest(guest.id, "fullName", e.target.value)}
+                        value={guest.firstName}
+                        onChange={(e) => updateGuest(guest.id, "firstName", e.target.value)}
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div>
+                      <Label>Last Name</Label>
+                      <Input
+                        placeholder="John Doe"
+                        value={guest.lastName}
+                        onChange={(e) => updateGuest(guest.id, "lastName", e.target.value)}
                         className="mt-1.5"
                       />
                     </div>

@@ -54,7 +54,7 @@ const PropertyDetail = () => {
   const { id } = useParams();
   const property = mockProperties.find((p) => p.id === id);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
-  
+
   // Form states
   const [checkInTime, setCheckInTime] = useState(property?.checkInTime || "15:00");
   const [checkOutTime, setCheckOutTime] = useState(property?.checkOutTime || "11:00");
@@ -62,7 +62,7 @@ const PropertyDetail = () => {
   const [checkOutReminderHours, setCheckOutReminderHours] = useState(property?.checkOutReminderHours || 1);
   const [checkInMessage, setCheckInMessage] = useState(property?.checkInMessage || "");
   const [checkOutMessage, setCheckOutMessage] = useState(property?.checkOutMessage || "");
-  
+
   // Knowledge states - new granular structure
   const [amenities, setAmenities] = useState<AmenityItem[]>(defaultAmenities);
   const [otherAmenities, setOtherAmenities] = useState("");
@@ -71,12 +71,12 @@ const PropertyDetail = () => {
   const [recommendations, setRecommendations] = useState<RecommendationCategory[]>(defaultRecommendations);
   const [rules, setRules] = useState<RuleItem[]>(defaultRules);
   const [otherRules, setOtherRules] = useState("");
-  
+
   // Exact answers states
   const [exactAnswers, setExactAnswers] = useState(property?.exactAnswers || []);
   const [newQuestion, setNewQuestion] = useState("");
   const [newAnswer, setNewAnswer] = useState("");
-  
+
   // Guests state
   const [guests, setGuests] = useState<Guest[]>(property?.guests || []);
 
@@ -103,7 +103,7 @@ const PropertyDetail = () => {
       <DashboardLayout>
         <div className="text-center py-12">
           <p className="text-muted-foreground">Property not found</p>
-          <Link to="/" className="text-primary hover:underline mt-2 inline-block">
+          <Link to="/properties" className="text-primary hover:underline mt-2 inline-block">
             Back to Properties
           </Link>
         </div>
@@ -137,7 +137,7 @@ const PropertyDetail = () => {
       <div className="max-w-6xl mx-auto animate-fade-in">
         {/* Back Button */}
         <Link
-          to="/"
+          to="/properties"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -202,7 +202,7 @@ const PropertyDetail = () => {
                     )}
                   </div>
                 </div>
-                
+
                 <Button
                   variant={subscriptionActive ? "outline" : "default"}
                   size="sm"
@@ -717,7 +717,8 @@ interface GuestsTabProps {
 }
 
 interface NewGuestForm {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   startDate: string;
   endDate: string;
@@ -726,7 +727,8 @@ interface NewGuestForm {
 const GuestsTab = ({ guests, setGuests, toggleGuestActive, maxGuests }: GuestsTabProps) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newGuest, setNewGuest] = useState<NewGuestForm>({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     phone: "",
     startDate: "",
     endDate: "",
@@ -735,17 +737,18 @@ const GuestsTab = ({ guests, setGuests, toggleGuestActive, maxGuests }: GuestsTa
   const activeCount = guests.filter((g) => g.isActive).length;
 
   const handleAddGuest = () => {
-    if (newGuest.fullName && newGuest.phone) {
+    if (newGuest.firstName && newGuest.phone) {
       const guest: Guest = {
         id: Date.now().toString(),
-        fullName: newGuest.fullName,
+        firstName: newGuest.firstName,
+        lastName: newGuest.lastName,
         phone: newGuest.phone,
         startDate: newGuest.startDate,
         endDate: newGuest.endDate,
         isActive: true,
       };
       setGuests([...guests, guest]);
-      setNewGuest({ fullName: "", phone: "", startDate: "", endDate: "" });
+      setNewGuest({ firstName: "", lastName: "", phone: "", startDate: "", endDate: "" });
       setShowAddForm(false);
     }
   };
@@ -754,7 +757,7 @@ const GuestsTab = ({ guests, setGuests, toggleGuestActive, maxGuests }: GuestsTa
     setGuests(guests.filter((g) => g.id !== id));
   };
 
-  const isFormValid = newGuest.fullName && newGuest.phone;
+  const isFormValid = newGuest.firstName && newGuest.phone;
 
   return (
     <div className="space-y-6">
@@ -774,22 +777,32 @@ const GuestsTab = ({ guests, setGuests, toggleGuestActive, maxGuests }: GuestsTa
             <button
               onClick={() => {
                 setShowAddForm(false);
-                setNewGuest({ fullName: "", phone: "", startDate: "", endDate: "" });
+                setNewGuest({ firstName: "", lastName: "", phone: "", startDate: "", endDate: "" });
               }}
               className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="md:col-span-2">
-              <Label htmlFor="guestName">Full Name *</Label>
+            <div>
+              <Label htmlFor="guestName">First Name *</Label>
               <Input
-                id="guestName"
-                placeholder="e.g., John Smith"
-                value={newGuest.fullName}
-                onChange={(e) => setNewGuest({ ...newGuest, fullName: e.target.value })}
+                id="guestFirstName"
+                placeholder="e.g., John"
+                value={newGuest.firstName}
+                onChange={(e) => setNewGuest({ ...newGuest, firstName: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="guestName">Last Name</Label>
+              <Input
+                id="guestLastName"
+                placeholder="e.g., Smith"
+                value={newGuest.lastName}
+                onChange={(e) => setNewGuest({ ...newGuest, lastName: e.target.value })}
                 className="mt-1.5"
               />
             </div>
@@ -831,7 +844,7 @@ const GuestsTab = ({ guests, setGuests, toggleGuestActive, maxGuests }: GuestsTa
               variant="outline"
               onClick={() => {
                 setShowAddForm(false);
-                setNewGuest({ fullName: "", phone: "", startDate: "", endDate: "" });
+                setNewGuest({ firstName: "", lastName: "", phone: "", startDate: "", endDate: "" });
               }}
             >
               Cancel
@@ -872,7 +885,7 @@ const GuestsTab = ({ guests, setGuests, toggleGuestActive, maxGuests }: GuestsTa
             <TableBody>
               {guests.map((guest) => (
                 <TableRow key={guest.id}>
-                  <TableCell className="font-medium">{guest.fullName}</TableCell>
+                  <TableCell className="font-medium">{`${guest.firstName} ${guest.lastName}`}</TableCell>
                   <TableCell className="text-muted-foreground">{guest.phone}</TableCell>
                   <TableCell>{guest.startDate}</TableCell>
                   <TableCell>{guest.endDate}</TableCell>

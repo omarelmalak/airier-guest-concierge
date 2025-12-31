@@ -10,7 +10,7 @@ interface PropertyCardProps {
 const PropertyCard = ({ property }: PropertyCardProps) => {
   return (
     <Link
-      to={`/property/${property.id}`}
+      to={`/properties/${property.id}`}
       className="group block bg-card rounded-2xl border border-border overflow-hidden card-hover shadow-card"
     >
       {/* Header */}
@@ -38,20 +38,20 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
       {/* Footer */}
       <div className="p-4 pt-3">
         <h4 className="font-semibold text-foreground mb-2">{property.name}</h4>
-        
+
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${property.aiStatus === 'online' ? 'bg-status-online' : property.aiStatus === 'warning' ? 'bg-status-warning' : 'bg-status-offline'}`} />
             <span>{property.activeGuests}/{property.maxGuests} active guests</span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1.5">
           <Calendar className="w-3.5 h-3.5" />
           <span>Subscription until {property.subscriptionExpiry}</span>
         </div>
 
-        {/* Guest Avatars */}
+        {/* Guest Avatars
         {property.guests.length > 0 && (
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
             <div className="flex -space-x-2">
@@ -66,7 +66,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
               ))}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </Link>
   );
