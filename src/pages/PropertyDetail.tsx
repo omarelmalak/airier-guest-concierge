@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Star, Wifi, Car, Droplets, ChefHat, Plus, Trash2, Save, Clock, Bell, X } from "lucide-react";
+import { ArrowLeft, Star, Wifi, Car, Droplets, ChefHat, Plus, Trash2, Save, Clock, Bell, X, RotateCcw, Zap, Calendar } from "lucide-react";
 import { mockProperties, Property, Guest } from "@/data/mockData";
 import StatusBadge from "@/components/StatusBadge";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import SubscriptionDialog from "@/components/SubscriptionDialog";
 import {
   Table,
   TableBody,
@@ -78,6 +79,24 @@ const PropertyDetail = () => {
   
   // Guests state
   const [guests, setGuests] = useState<Guest[]>(property?.guests || []);
+
+  // Subscription state
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
+  const [subscriptionActive, setSubscriptionActive] = useState(property?.subscriptionActive || false);
+  const [subscriptionExpiry, setSubscriptionExpiry] = useState(property?.subscriptionExpiry || "");
+
+  const handleSubscriptionActivate = (months: number) => {
+    const baseDate = subscriptionExpiry ? new Date(subscriptionExpiry) : new Date();
+    const newDate = new Date(baseDate);
+    newDate.setMonth(newDate.getMonth() + months);
+    const newExpiry = newDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    setSubscriptionActive(true);
+    setSubscriptionExpiry(newExpiry);
+  };
+
+  const handleSubscriptionDeactivate = () => {
+    setSubscriptionActive(false);
+  };
 
   if (!property) {
     return (
@@ -155,15 +174,53 @@ const PropertyDetail = () => {
                 <StatusBadge status={property.aiStatus} />
               </div>
 
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-status-warning fill-status-warning" />
-                  <span className="font-semibold">{property.rating}</span>
-                  <span className="text-muted-foreground text-sm">({property.reviewCount} reviews)</span>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-1">
+                    <Star className="w-4 h-4 text-status-warning fill-status-warning" />
+                    <span className="font-semibold">{property.rating}</span>
+                    <span className="text-muted-foreground text-sm">({property.reviewCount} reviews)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    {subscriptionActive ? (
+                      <>
+                        <span className="flex items-center gap-1 text-status-online">
+                          <span className="w-1.5 h-1.5 rounded-full bg-status-online" />
+                          Active
+                        </span>
+                        <span className="text-muted-foreground mx-1">·</span>
+                        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          until <span className="font-medium text-foreground">{subscriptionExpiry}</span>
+                        </span>
+                      </>
+                    ) : (
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
+                        Subscription Inactive
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Subscription until <span className="font-medium text-foreground">{property.subscriptionExpiry}</span>
-                </div>
+                
+                <Button
+                  variant={subscriptionActive ? "outline" : "default"}
+                  size="sm"
+                  onClick={() => setSubscriptionDialogOpen(true)}
+                  className="flex-shrink-0"
+                >
+                  {subscriptionActive ? (
+                    <>
+                      <RotateCcw className="w-4 h-4 mr-1.5" />
+                      Renew
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4 mr-1.5" />
+                      Activate
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
@@ -243,6 +300,17 @@ const PropertyDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Subscription Dialog */}
+      <SubscriptionDialog
+        open={subscriptionDialogOpen}
+        onOpenChange={setSubscriptionDialogOpen}
+        propertyName={property.name}
+        currentExpiry={subscriptionExpiry}
+        isActive={subscriptionActive}
+        onActivate={handleSubscriptionActivate}
+        onDeactivate={handleSubscriptionDeactivate}
+      />
     </DashboardLayout>
   );
 };
