@@ -21,21 +21,27 @@ import {
   CheckCircle2,
   Building,
   BookOpen,
-  UserCheck
+  UserCheck,
+  Timer,
+  Star,
+  Wrench,
+  Calendar
 } from "lucide-react";
 
-// SMS-style questions that will appear scattered, then get answered
+// SMS-style questions that appear on scroll
 const guestQuestions = [
-  { text: "What's the WiFi password?", answer: "The WiFi is 'BeachHouse_Guest' and password is 'SunsetViews2024' 🏠", x: 8, y: 12 },
-  { text: "How do I turn on the AC?", answer: "The AC remote is in the top drawer of the nightstand. Set it to 72°F for comfort! ❄️", x: 68, y: 8 },
-  { text: "Where's the gym?", answer: "The gym is on the 2nd floor, open 6AM-10PM. Towels provided! 💪", x: 18, y: 42 },
-  { text: "What time is checkout?", answer: "Checkout is 11:00 AM. Just leave the keys on the kitchen counter. Safe travels! 👋", x: 58, y: 32 },
-  { text: "Is there parking?", answer: "Yes! Free parking in spot #24 in the garage. Use your door code to enter. 🚗", x: 6, y: 68 },
-  { text: "How does the smart lock work?", answer: "Enter your 4-digit code (sent to your phone) and press the check mark ✓", x: 62, y: 58 },
-  { text: "Are pets allowed?", answer: "Yes, we're pet-friendly! Just keep them off the furniture. 🐕", x: 32, y: 22 },
-  { text: "What's the check-in code?", answer: "Your check-in code is 4829. The lockbox is on the left side of the door 🔑", x: 78, y: 72 },
-  { text: "Is there a coffee maker?", answer: "Yes! Keurig on the counter with pods in the cabinet above. Enjoy! ☕", x: 12, y: 82 },
-  { text: "Where are extra towels?", answer: "Extra towels are in the hallway closet, top shelf 🛁", x: 52, y: 82 },
+  { text: "What's the WiFi password?", x: 8, y: 10 },
+  { text: "How do I turn on the AC?", x: 72, y: 5 },
+  { text: "Where's the gym?", x: 15, y: 35 },
+  { text: "What time is checkout?", x: 60, y: 28 },
+  { text: "Is there parking?", x: 5, y: 58 },
+  { text: "How does the smart lock work?", x: 65, y: 50 },
+  { text: "Are pets allowed?", x: 28, y: 18 },
+  { text: "What's the check-in code?", x: 78, y: 70 },
+  { text: "Is there a coffee maker?", x: 10, y: 78 },
+  { text: "Where are extra towels?", x: 55, y: 75 },
+  { text: "How do I use the TV?", x: 82, y: 35 },
+  { text: "Any restaurant recommendations?", x: 35, y: 48 },
 ];
 
 // Key features with checkmarks
@@ -107,66 +113,100 @@ const flowSteps = [
   }
 ];
 
+// Value propositions
+const valueProps = [
+  {
+    icon: Timer,
+    title: "Less than 10 minutes",
+    description: "From sign-up to your first AI-powered guest conversation"
+  },
+  {
+    icon: Star,
+    title: "More 5-star reviews",
+    description: "Hosts report increased guest satisfaction with instant support"
+  },
+  {
+    icon: Wrench,
+    title: "Zero technical experience",
+    description: "If you can send a text, you can set up airier"
+  },
+  {
+    icon: Calendar,
+    title: "Need help? Book a demo",
+    description: "Our team will walk you through everything",
+    isDemo: true
+  }
+];
+
 const Index = () => {
-  const [animationPhase, setAnimationPhase] = useState<"scatter" | "respond" | "answer">("scatter");
-  const [visibleQuestions, setVisibleQuestions] = useState<number[]>([]);
-  const [answeredQuestions, setAnsweredQuestions] = useState<number[]>([]);
-  const [activeFlowStep, setActiveFlowStep] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showAirierResponse, setShowAirierResponse] = useState(false);
+  const [activeFlowStep, setActiveFlowStep] = useState(-1);
+  const [pathProgress, setPathProgress] = useState(0);
+  const [valuePropsVisible, setValuePropsVisible] = useState<number[]>([]);
   const smsContainerRef = useRef<HTMLDivElement>(null);
   const flowRef = useRef<HTMLDivElement>(null);
-  const [flowVisible, setFlowVisible] = useState(false);
+  const valueRef = useRef<HTMLDivElement>(null);
 
-  // Scroll-triggered SMS appearance and animation sequence
+  // Sticky scroll effect for SMS questions
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && animationPhase === "scatter") {
-            // Phase 1: Show all questions scattered
-            guestQuestions.forEach((_, index) => {
-              setTimeout(() => {
-                setVisibleQuestions(prev => [...new Set([...prev, index])]);
-              }, index * 150);
-            });
+    const handleScroll = () => {
+      if (!smsContainerRef.current) return;
+      
+      const rect = smsContainerRef.current.getBoundingClientRect();
+      const sectionHeight = smsContainerRef.current.offsetHeight;
+      const viewportHeight = window.innerHeight;
+      
+      // Calculate how far through the section we've scrolled
+      const scrolledPast = viewportHeight - rect.top;
+      const totalScrollable = sectionHeight + viewportHeight;
+      const progress = Math.max(0, Math.min(1, scrolledPast / totalScrollable));
+      
+      setScrollProgress(progress);
+      
+      // Show airier response when we're 70% through
+      if (progress > 0.6) {
+        setShowAirierResponse(true);
+      }
+    };
 
-            // Phase 2: Show "I've got this" after questions appear
-            setTimeout(() => {
-              setAnimationPhase("respond");
-            }, guestQuestions.length * 150 + 800);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-            // Phase 3: Start answering questions one by one
-            setTimeout(() => {
-              setAnimationPhase("answer");
-              guestQuestions.forEach((_, index) => {
-                setTimeout(() => {
-                  setAnsweredQuestions(prev => [...new Set([...prev, index])]);
-                }, index * 400);
-              });
-            }, guestQuestions.length * 150 + 2000);
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
-
-    if (smsContainerRef.current) {
-      observer.observe(smsContainerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [animationPhase]);
-
-  // Flow section observer
+  // Flow section - ball animation synced with step reveals
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setFlowVisible(true);
+            // Start the slow path animation
+            let progress = 0;
+            const duration = 6000; // 6 seconds total
+            const stepInterval = duration / 4; // Each step takes 1.5s
+            const startTime = Date.now();
+            
+            const animate = () => {
+              const elapsed = Date.now() - startTime;
+              progress = Math.min(1, elapsed / duration);
+              setPathProgress(progress);
+              
+              // Reveal steps as ball reaches them
+              const currentStep = Math.floor(progress * 4);
+              if (currentStep > activeFlowStep) {
+                setActiveFlowStep(currentStep);
+              }
+              
+              if (progress < 1) {
+                requestAnimationFrame(animate);
+              }
+            };
+            
+            requestAnimationFrame(animate);
           }
         });
       },
-      { threshold: 0.2 }
+      { threshold: 0.3 }
     );
 
     if (flowRef.current) {
@@ -174,18 +214,37 @@ const Index = () => {
     }
 
     return () => observer.disconnect();
+  }, [activeFlowStep]);
+
+  // Value props sequential reveal
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            valueProps.forEach((_, index) => {
+              setTimeout(() => {
+                setValuePropsVisible(prev => [...new Set([...prev, index])]);
+              }, index * 400);
+            });
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    if (valueRef.current) {
+      observer.observe(valueRef.current);
+    }
+
+    return () => observer.disconnect();
   }, []);
 
-  // Auto-advance flow steps
-  useEffect(() => {
-    if (!flowVisible) return;
-    
-    const interval = setInterval(() => {
-      setActiveFlowStep((prev) => (prev + 1) % flowSteps.length);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [flowVisible]);
+  // Calculate which questions are visible based on scroll progress
+  const getQuestionVisibility = (index: number) => {
+    const threshold = index / guestQuestions.length;
+    return scrollProgress > threshold * 0.8;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -251,102 +310,84 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Sound Familiar Section - Questions scattered, then answered */}
-      <section ref={smsContainerRef} className="py-20 px-6 relative overflow-hidden min-h-[700px]">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/30 to-background" />
-        
-        <div className="max-w-6xl mx-auto relative">
-          <div className="text-center mb-8 relative z-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Sound familiar?
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-              Your guests have endless questions. Answering them shouldn't be your full-time job.
-            </p>
-          </div>
+      {/* Sound Familiar Section - Sticky parallax scroll effect */}
+      <section ref={smsContainerRef} className="relative min-h-[150vh]">
+        <div className="sticky top-0 h-screen overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/30 to-background" />
+          
+          <div className="relative h-full flex flex-col items-center justify-center px-6">
+            {/* Header */}
+            <div className="text-center mb-8 relative z-10">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Sound familiar?
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+                Your guests have endless questions. Answering them shouldn't be your full-time job.
+              </p>
+            </div>
 
-          {/* Scattered SMS bubbles that get answered */}
-          <div className="relative h-[500px] md:h-[550px]">
-            {guestQuestions.map((question, index) => (
-              <div
-                key={index}
-                className={`absolute transition-all duration-500 ${
-                  visibleQuestions.includes(index) 
-                    ? "opacity-100 translate-y-0" 
-                    : "opacity-0 translate-y-8"
-                }`}
-                style={{
-                  left: `${question.x}%`,
-                  top: `${question.y}%`,
-                  transform: "translate(-50%, -50%)",
-                  transitionDelay: `${index * 0.15}s`,
-                  zIndex: answeredQuestions.includes(index) ? 30 : 10
-                }}
-              >
-                {/* Question bubble */}
-                <div className={`transition-all duration-300 ${
-                  answeredQuestions.includes(index) ? "opacity-40 scale-90" : ""
-                }`}>
-                  <div className="bg-muted/90 backdrop-blur-sm border border-border rounded-2xl rounded-bl-sm px-3 py-2 shadow-card max-w-[160px] md:max-w-[200px]">
-                    <p className="text-xs md:text-sm text-foreground">
-                      {question.text}
-                    </p>
-                  </div>
-                </div>
+            {/* Scattered SMS bubbles with parallax */}
+            <div className="relative w-full max-w-5xl h-[400px] md:h-[450px]">
+              {guestQuestions.map((question, index) => {
+                const isVisible = getQuestionVisibility(index);
+                const parallaxOffset = scrollProgress * 30 * (index % 2 === 0 ? 1 : -1);
                 
-                {/* Answer bubble - appears after */}
-                <div 
-                  className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 transition-all duration-500 ${
-                    answeredQuestions.includes(index) 
-                      ? "opacity-100 translate-y-0 scale-100" 
-                      : "opacity-0 -translate-y-2 scale-95"
-                  }`}
-                  style={{ transitionDelay: `${index * 0.1}s` }}
-                >
-                  <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-3 py-2 shadow-elevated max-w-[180px] md:max-w-[220px]">
-                    <p className="text-xs md:text-sm leading-relaxed">
-                      {question.answer}
-                    </p>
+                return (
+                  <div
+                    key={index}
+                    className={`absolute transition-all duration-700 ease-out ${
+                      isVisible ? "opacity-100" : "opacity-0"
+                    }`}
+                    style={{
+                      left: `${question.x}%`,
+                      top: `${question.y}%`,
+                      transform: `translate(-50%, calc(-50% + ${parallaxOffset}px)) ${isVisible ? 'scale(1)' : 'scale(0.8)'}`,
+                    }}
+                  >
+                    <div className={`bg-muted/90 backdrop-blur-sm border border-border rounded-2xl rounded-bl-sm px-3 py-2 shadow-card max-w-[140px] md:max-w-[180px] transition-all duration-500 ${
+                      showAirierResponse ? "opacity-40 scale-95" : ""
+                    }`}>
+                      <p className="text-xs md:text-sm text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+                        {question.text}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
 
-            {/* Central airier "I've got this" - appears in phase 2 */}
-            <div 
-              className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 transition-all duration-700 ${
-                animationPhase !== "scatter" ? "opacity-100 scale-100" : "opacity-0 scale-90"
-              }`}
-            >
-              <div className="bg-primary text-primary-foreground rounded-2xl px-6 py-4 shadow-elevated">
-                <div className="flex items-center gap-2 mb-2">
-                  <img src={airierLogo} alt="airier" className="h-4 brightness-0 invert" />
-                  <span className="text-xs opacity-80">airier</span>
+              {/* Central airier response */}
+              <div 
+                className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 transition-all duration-700 ${
+                  showAirierResponse ? "opacity-100 scale-100" : "opacity-0 scale-90"
+                }`}
+              >
+                <div className="bg-primary text-primary-foreground rounded-2xl px-8 py-6 shadow-elevated text-center">
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <img src={airierLogo} alt="airier" className="h-5 brightness-0 invert" />
+                  </div>
+                  <p className="text-lg font-semibold mb-4">
+                    I've got this.
+                  </p>
+                  <p className="text-sm opacity-90 mb-4">
+                    Every question, any time, instantly answered.
+                  </p>
+                  <Link to="/auth?mode=signup">
+                    <Button 
+                      variant="secondary" 
+                      className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                    >
+                      Try it out
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
                 </div>
-                <p className="text-sm font-medium">
-                  {animationPhase === "answer" ? "Answering all of them..." : "I've got this."}
-                </p>
               </div>
             </div>
-          </div>
-
-          {/* CTA below */}
-          <div 
-            className={`text-center mt-8 transition-all duration-700 ${
-              answeredQuestions.length >= 6 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-          >
-            <Link to="/auth?mode=signup">
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                Let airier handle it
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </Link>
           </div>
         </div>
       </section>
       
-      {/* How It Works - End-to-End Flow with Dotted Path */}
+      {/* How It Works - End-to-End Flow with Synced Ball Animation */}
       <section id="how-it-works" ref={flowRef} className="py-24 px-6 bg-muted/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -358,76 +399,97 @@ const Index = () => {
             </p>
           </div>
 
-          {/* Desktop Flow - Horizontal with dotted path */}
+          {/* Desktop Flow - Horizontal with synced dotted path */}
           <div className="hidden lg:block relative">
-            {/* Dotted path SVG */}
+            {/* Dotted path SVG with animated ball */}
             <svg 
-              className="absolute top-24 left-0 w-full h-32 overflow-visible"
+              className="absolute top-20 left-0 w-full h-40 overflow-visible"
               viewBox="0 0 1000 120"
               preserveAspectRatio="none"
             >
+              {/* Background path */}
               <path
-                d="M 60 60 Q 200 20, 310 60 T 560 60 T 810 60 T 940 60"
+                d="M 60 60 C 150 20, 200 100, 310 60 S 450 20, 560 60 S 700 100, 810 60 S 900 20, 940 60"
                 fill="none"
                 stroke="hsl(var(--border))"
-                strokeWidth="2"
+                strokeWidth="3"
                 strokeDasharray="8 8"
-                className={`transition-all duration-1000 ${flowVisible ? "opacity-100" : "opacity-0"}`}
+                className="opacity-40"
               />
-              {/* Animated dot traveling along path */}
+              {/* Progress path */}
+              <path
+                d="M 60 60 C 150 20, 200 100, 310 60 S 450 20, 560 60 S 700 100, 810 60 S 900 20, 940 60"
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="3"
+                strokeDasharray="8 8"
+                style={{
+                  strokeDashoffset: 1000 * (1 - pathProgress),
+                  transition: "stroke-dashoffset 0.1s linear"
+                }}
+              />
+              {/* Animated ball */}
               <circle 
-                r="6" 
+                r="10" 
                 fill="hsl(var(--primary))"
-                className={`transition-opacity duration-500 ${flowVisible ? "opacity-100" : "opacity-0"}`}
+                className="drop-shadow-lg"
               >
                 <animateMotion
-                  dur="4s"
-                  repeatCount="indefinite"
-                  path="M 60 60 Q 200 20, 310 60 T 560 60 T 810 60 T 940 60"
+                  dur="6s"
+                  fill="freeze"
+                  path="M 60 60 C 150 20, 200 100, 310 60 S 450 20, 560 60 S 700 100, 810 60 S 900 20, 940 60"
+                  keyPoints={`0;${pathProgress}`}
+                  keyTimes="0;1"
+                  calcMode="linear"
                 />
               </circle>
             </svg>
 
             {/* Flow steps */}
-            <div className="grid grid-cols-4 gap-8 relative z-10">
-              {flowSteps.map((step, index) => (
-                <div 
-                  key={step.id}
-                  className={`flex flex-col items-center transition-all duration-500 ${
-                    flowVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                  }`}
-                  style={{ transitionDelay: `${index * 0.15}s` }}
-                >
-                  {/* Step number and icon */}
+            <div className="grid grid-cols-4 gap-8 relative z-10 pt-4">
+              {flowSteps.map((step, index) => {
+                const isRevealed = index <= activeFlowStep;
+                
+                return (
                   <div 
-                    className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 ${
-                      activeFlowStep === index 
-                        ? "bg-primary text-primary-foreground scale-110 shadow-elevated" 
-                        : "bg-card border border-border text-muted-foreground"
+                    key={step.id}
+                    className={`flex flex-col items-center transition-all duration-700 ${
+                      isRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                     }`}
                   >
-                    <step.icon className="w-7 h-7" />
+                    {/* Step number and icon */}
+                    <div 
+                      className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-500 ${
+                        isRevealed
+                          ? "bg-primary text-primary-foreground scale-110 shadow-elevated" 
+                          : "bg-card border border-border text-muted-foreground"
+                      }`}
+                    >
+                      <step.icon className="w-7 h-7" />
+                    </div>
+                    
+                    {/* Step label */}
+                    <div className="text-center">
+                      <span className={`text-xs font-medium mb-1 block transition-colors duration-500 ${
+                        isRevealed ? "text-primary" : "text-muted-foreground"
+                      }`}>Step {index + 1}</span>
+                      <h3 className={`font-semibold mb-1 transition-colors duration-500 ${
+                        isRevealed ? "text-foreground" : "text-muted-foreground"
+                      }`}>
+                        {step.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">{step.description}</p>
+                    </div>
                   </div>
-                  
-                  {/* Step label */}
-                  <div className="text-center">
-                    <span className="text-xs font-medium text-primary mb-1 block">Step {index + 1}</span>
-                    <h3 className={`font-semibold mb-1 transition-colors ${
-                      activeFlowStep === index ? "text-foreground" : "text-muted-foreground"
-                    }`}>
-                      {step.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{step.description}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Demo cards showing each step */}
+            {/* Demo cards */}
             <div className="mt-16 grid grid-cols-4 gap-6">
               {/* Add Property Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
-                activeFlowStep === 0 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-700 ${
+                activeFlowStep >= 0 ? "ring-2 ring-primary/50 shadow-elevated opacity-100" : "opacity-30"
               }`}>
                 <div className="text-xs text-muted-foreground mb-2">Dashboard</div>
                 <div className="bg-muted rounded-lg p-3 space-y-2">
@@ -447,8 +509,8 @@ const Index = () => {
               </div>
 
               {/* Knowledge Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
-                activeFlowStep === 1 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-700 ${
+                activeFlowStep >= 1 ? "ring-2 ring-primary/50 shadow-elevated opacity-100" : "opacity-30"
               }`}>
                 <div className="text-xs text-muted-foreground mb-2">Knowledge Base</div>
                 <div className="bg-muted rounded-lg p-3 space-y-2">
@@ -471,8 +533,8 @@ const Index = () => {
               </div>
 
               {/* Add Guest Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
-                activeFlowStep === 2 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-700 ${
+                activeFlowStep >= 2 ? "ring-2 ring-primary/50 shadow-elevated opacity-100" : "opacity-30"
               }`}>
                 <div className="text-xs text-muted-foreground mb-2">Guest Management</div>
                 <div className="bg-muted rounded-lg p-3 space-y-2">
@@ -492,8 +554,8 @@ const Index = () => {
               </div>
 
               {/* Guest Text Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
-                activeFlowStep === 3 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-700 ${
+                activeFlowStep >= 3 ? "ring-2 ring-primary/50 shadow-elevated opacity-100" : "opacity-30"
               }`}>
                 <div className="text-xs text-muted-foreground mb-2">SMS Conversation</div>
                 <div className="bg-muted rounded-lg p-3 space-y-2">
@@ -517,9 +579,8 @@ const Index = () => {
               <div 
                 key={step.id}
                 className={`relative pl-16 transition-all duration-500 ${
-                  flowVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
+                  index <= activeFlowStep ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
                 }`}
-                style={{ transitionDelay: `${index * 0.15}s` }}
               >
                 {/* Vertical line */}
                 {index < flowSteps.length - 1 && (
@@ -528,7 +589,7 @@ const Index = () => {
                 
                 {/* Step icon */}
                 <div className={`absolute left-0 w-14 h-14 rounded-xl flex items-center justify-center transition-all ${
-                  activeFlowStep === index 
+                  index <= activeFlowStep 
                     ? "bg-primary text-primary-foreground shadow-elevated" 
                     : "bg-card border border-border text-muted-foreground"
                 }`}>
@@ -572,8 +633,52 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Value Propositions Section */}
+      <section ref={valueRef} className="py-20 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {valueProps.map((prop, index) => (
+              <div
+                key={prop.title}
+                className={`relative p-6 rounded-2xl border transition-all duration-700 ${
+                  valuePropsVisible.includes(index) 
+                    ? "opacity-100 translate-y-0 border-primary/20 bg-card shadow-card" 
+                    : "opacity-0 translate-y-8 border-transparent"
+                } ${prop.isDemo ? "bg-primary/5" : ""}`}
+                style={{ transitionDelay: `${index * 0.1}s` }}
+              >
+                {/* Animated entrance effect */}
+                <div className={`absolute inset-0 rounded-2xl bg-primary/10 transition-transform duration-500 ${
+                  valuePropsVisible.includes(index) ? "scale-0" : "scale-100"
+                }`} style={{ transitionDelay: `${index * 0.1 + 0.3}s` }} />
+                
+                <div className="relative">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
+                    prop.isDemo ? "bg-primary text-primary-foreground" : "bg-primary/10"
+                  }`}>
+                    <prop.icon className={`w-6 h-6 ${prop.isDemo ? "" : "text-primary"}`} />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">{prop.title}</h3>
+                  <p className="text-sm text-muted-foreground">{prop.description}</p>
+                  
+                  {prop.isDemo && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-4 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    >
+                      Schedule Demo
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
-      <section id="features" className="py-20 px-6">
+      <section id="features" className="py-20 px-6 bg-muted/30">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -605,7 +710,7 @@ const Index = () => {
       </section>
       
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-6 bg-muted/30">
+      <section id="pricing" className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -672,7 +777,7 @@ const Index = () => {
       </section>
       
       {/* CTA Section */}
-      <section className="py-20 px-6">
+      <section className="py-20 px-6 bg-muted/30">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
             Ready to stop answering the same questions?
