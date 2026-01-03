@@ -17,23 +17,25 @@ import {
   Home,
   Brain,
   UserPlus,
-  CheckCircle2
+  Send,
+  CheckCircle2,
+  Building,
+  BookOpen,
+  UserCheck
 } from "lucide-react";
 
-// SMS-style questions that will appear scattered
+// SMS-style questions that will appear scattered, then get answered
 const guestQuestions = [
-  { text: "What's the WiFi password?", delay: 0, x: 5, y: 15 },
-  { text: "How do I turn on the AC?", delay: 0.2, x: 65, y: 8 },
-  { text: "Where's the gym?", delay: 0.4, x: 20, y: 45 },
-  { text: "What time is checkout?", delay: 0.6, x: 55, y: 35 },
-  { text: "Is there parking?", delay: 0.8, x: 8, y: 70 },
-  { text: "How does the smart lock work?", delay: 1.0, x: 60, y: 60 },
-  { text: "Are pets allowed?", delay: 1.2, x: 35, y: 25 },
-  { text: "What's the check-in code?", delay: 1.4, x: 75, y: 75 },
-  { text: "Is there a coffee maker?", delay: 1.6, x: 15, y: 85 },
-  { text: "Where are extra towels?", delay: 1.8, x: 50, y: 85 },
-  { text: "How do I use the TV?", delay: 2.0, x: 80, y: 45 },
-  { text: "Any restaurant recommendations?", delay: 2.2, x: 25, y: 55 },
+  { text: "What's the WiFi password?", answer: "The WiFi is 'BeachHouse_Guest' and password is 'SunsetViews2024' 🏠", x: 8, y: 12 },
+  { text: "How do I turn on the AC?", answer: "The AC remote is in the top drawer of the nightstand. Set it to 72°F for comfort! ❄️", x: 68, y: 8 },
+  { text: "Where's the gym?", answer: "The gym is on the 2nd floor, open 6AM-10PM. Towels provided! 💪", x: 18, y: 42 },
+  { text: "What time is checkout?", answer: "Checkout is 11:00 AM. Just leave the keys on the kitchen counter. Safe travels! 👋", x: 58, y: 32 },
+  { text: "Is there parking?", answer: "Yes! Free parking in spot #24 in the garage. Use your door code to enter. 🚗", x: 6, y: 68 },
+  { text: "How does the smart lock work?", answer: "Enter your 4-digit code (sent to your phone) and press the check mark ✓", x: 62, y: 58 },
+  { text: "Are pets allowed?", answer: "Yes, we're pet-friendly! Just keep them off the furniture. 🐕", x: 32, y: 22 },
+  { text: "What's the check-in code?", answer: "Your check-in code is 4829. The lockbox is on the left side of the door 🔑", x: 78, y: 72 },
+  { text: "Is there a coffee maker?", answer: "Yes! Keurig on the counter with pods in the cabinet above. Enjoy! ☕", x: 12, y: 82 },
+  { text: "Where are extra towels?", answer: "Extra towels are in the hallway closet, top shelf 🛁", x: 52, y: 82 },
 ];
 
 // Key features with checkmarks
@@ -77,27 +79,74 @@ const features = [
   }
 ];
 
-const Index = () => {
-  const [visibleQuestions, setVisibleQuestions] = useState<number[]>([]);
-  const [activeStep, setActiveStep] = useState(0);
-  const smsContainerRef = useRef<HTMLDivElement>(null);
+// End-to-end flow steps
+const flowSteps = [
+  {
+    id: "add-property",
+    icon: Building,
+    title: "Add your property",
+    description: "Enter property details, photos, and address"
+  },
+  {
+    id: "knowledge",
+    icon: BookOpen,
+    title: "Train the AI",
+    description: "Add WiFi, house rules, amenities, local tips"
+  },
+  {
+    id: "add-guest",
+    icon: UserCheck,
+    title: "Add a guest",
+    description: "Enter guest details before their arrival"
+  },
+  {
+    id: "guest-text",
+    icon: Send,
+    title: "Guest receives text",
+    description: "Instant AI support at their fingertips"
+  }
+];
 
-  // Scroll-triggered SMS appearance
+const Index = () => {
+  const [animationPhase, setAnimationPhase] = useState<"scatter" | "respond" | "answer">("scatter");
+  const [visibleQuestions, setVisibleQuestions] = useState<number[]>([]);
+  const [answeredQuestions, setAnsweredQuestions] = useState<number[]>([]);
+  const [activeFlowStep, setActiveFlowStep] = useState(0);
+  const smsContainerRef = useRef<HTMLDivElement>(null);
+  const flowRef = useRef<HTMLDivElement>(null);
+  const [flowVisible, setFlowVisible] = useState(false);
+
+  // Scroll-triggered SMS appearance and animation sequence
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            // Start revealing questions one by one
+          if (entry.isIntersecting && animationPhase === "scatter") {
+            // Phase 1: Show all questions scattered
             guestQuestions.forEach((_, index) => {
               setTimeout(() => {
                 setVisibleQuestions(prev => [...new Set([...prev, index])]);
-              }, index * 200);
+              }, index * 150);
             });
+
+            // Phase 2: Show "I've got this" after questions appear
+            setTimeout(() => {
+              setAnimationPhase("respond");
+            }, guestQuestions.length * 150 + 800);
+
+            // Phase 3: Start answering questions one by one
+            setTimeout(() => {
+              setAnimationPhase("answer");
+              guestQuestions.forEach((_, index) => {
+                setTimeout(() => {
+                  setAnsweredQuestions(prev => [...new Set([...prev, index])]);
+                }, index * 400);
+              });
+            }, guestQuestions.length * 150 + 2000);
           }
         });
       },
-      { threshold: 0.2 }
+      { threshold: 0.15 }
     );
 
     if (smsContainerRef.current) {
@@ -105,15 +154,38 @@ const Index = () => {
     }
 
     return () => observer.disconnect();
+  }, [animationPhase]);
+
+  // Flow section observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setFlowVisible(true);
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    if (flowRef.current) {
+      observer.observe(flowRef.current);
+    }
+
+    return () => observer.disconnect();
   }, []);
 
-  // Auto-cycle through demo steps
+  // Auto-advance flow steps
   useEffect(() => {
+    if (!flowVisible) return;
+    
     const interval = setInterval(() => {
-      setActiveStep((prev) => (prev + 1) % 3);
-    }, 4000);
+      setActiveFlowStep((prev) => (prev + 1) % flowSteps.length);
+    }, 3000);
+
     return () => clearInterval(interval);
-  }, []);
+  }, [flowVisible]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -142,11 +214,7 @@ const Index = () => {
                     stroke="hsl(var(--primary))" 
                     strokeWidth="3" 
                     strokeLinecap="round"
-                    style={{ 
-                      strokeDasharray: 300, 
-                      strokeDashoffset: 300,
-                      animation: "draw 1s ease-out 0.5s forwards"
-                    }}
+                    className="animate-draw"
                   />
                 </svg>
               </span>
@@ -158,7 +226,7 @@ const Index = () => {
 
             {/* Key feature checkmarks */}
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-10 animate-fade-in" style={{ animationDelay: "0.25s" }}>
-              {keyFeatures.map((feature, i) => (
+              {keyFeatures.map((feature) => (
                 <div key={feature} className="flex items-center gap-2 text-muted-foreground">
                   <CheckCircle2 className="w-4 h-4 text-primary" />
                   <span className="text-sm">{feature}</span>
@@ -183,8 +251,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Scattered SMS Messages Section - THE FOCAL POINT */}
-      <section ref={smsContainerRef} className="py-20 px-6 relative overflow-hidden min-h-[600px]">
+      {/* Sound Familiar Section - Questions scattered, then answered */}
+      <section ref={smsContainerRef} className="py-20 px-6 relative overflow-hidden min-h-[700px]">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/30 to-background" />
         
         <div className="max-w-6xl mx-auto relative">
@@ -197,12 +265,12 @@ const Index = () => {
             </p>
           </div>
 
-          {/* Scattered SMS bubbles */}
-          <div className="relative h-[450px] md:h-[500px]">
+          {/* Scattered SMS bubbles that get answered */}
+          <div className="relative h-[500px] md:h-[550px]">
             {guestQuestions.map((question, index) => (
               <div
                 key={index}
-                className={`absolute transition-all duration-700 ${
+                className={`absolute transition-all duration-500 ${
                   visibleQuestions.includes(index) 
                     ? "opacity-100 translate-y-0" 
                     : "opacity-0 translate-y-8"
@@ -210,43 +278,63 @@ const Index = () => {
                 style={{
                   left: `${question.x}%`,
                   top: `${question.y}%`,
-                  transform: `translate(-50%, -50%) ${visibleQuestions.includes(index) ? 'rotate(0deg)' : 'rotate(-5deg)'}`,
-                  transitionDelay: `${question.delay}s`
+                  transform: "translate(-50%, -50%)",
+                  transitionDelay: `${index * 0.15}s`,
+                  zIndex: answeredQuestions.includes(index) ? 30 : 10
                 }}
               >
-                <div className="bg-muted/80 backdrop-blur-sm border border-border rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-card max-w-[200px] md:max-w-[240px]">
-                  <p className="text-sm text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
-                    {question.text}
-                  </p>
+                {/* Question bubble */}
+                <div className={`transition-all duration-300 ${
+                  answeredQuestions.includes(index) ? "opacity-40 scale-90" : ""
+                }`}>
+                  <div className="bg-muted/90 backdrop-blur-sm border border-border rounded-2xl rounded-bl-sm px-3 py-2 shadow-card max-w-[160px] md:max-w-[200px]">
+                    <p className="text-xs md:text-sm text-foreground">
+                      {question.text}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Answer bubble - appears after */}
+                <div 
+                  className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 transition-all duration-500 ${
+                    answeredQuestions.includes(index) 
+                      ? "opacity-100 translate-y-0 scale-100" 
+                      : "opacity-0 -translate-y-2 scale-95"
+                  }`}
+                  style={{ transitionDelay: `${index * 0.1}s` }}
+                >
+                  <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-3 py-2 shadow-elevated max-w-[180px] md:max-w-[220px]">
+                    <p className="text-xs md:text-sm leading-relaxed">
+                      {question.answer}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
 
-            {/* Central airier response */}
+            {/* Central airier "I've got this" - appears in phase 2 */}
             <div 
-              className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-1000 ${
-                visibleQuestions.length >= 8 ? "opacity-100 scale-100" : "opacity-0 scale-90"
+              className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 transition-all duration-700 ${
+                animationPhase !== "scatter" ? "opacity-100 scale-100" : "opacity-0 scale-90"
               }`}
-              style={{ transitionDelay: "2.5s" }}
             >
-              <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-6 py-4 shadow-elevated max-w-[280px] md:max-w-[320px]">
+              <div className="bg-primary text-primary-foreground rounded-2xl px-6 py-4 shadow-elevated">
                 <div className="flex items-center gap-2 mb-2">
                   <img src={airierLogo} alt="airier" className="h-4 brightness-0 invert" />
-                  <span className="text-xs opacity-80">airier handles it all</span>
+                  <span className="text-xs opacity-80">airier</span>
                 </div>
-                <p className="text-sm">
-                  I've got this. Every question, any time, instantly answered.
+                <p className="text-sm font-medium">
+                  {animationPhase === "answer" ? "Answering all of them..." : "I've got this."}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* CTA below scattered messages */}
+          {/* CTA below */}
           <div 
             className={`text-center mt-8 transition-all duration-700 ${
-              visibleQuestions.length >= 10 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              answeredQuestions.length >= 6 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
-            style={{ transitionDelay: "3s" }}
           >
             <Link to="/auth?mode=signup">
               <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
@@ -258,155 +346,225 @@ const Index = () => {
         </div>
       </section>
       
-      {/* How It Works Section - Updated */}
-      <section id="how-it-works" className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
+      {/* How It Works - End-to-End Flow with Dotted Path */}
+      <section id="how-it-works" ref={flowRef} className="py-24 px-6 bg-muted/20">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Up and running in minutes
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              No technical skills required. Set up your AI text agent and let guests connect via SMS.
+              A complete flow from setup to your guest's first text
             </p>
           </div>
-          
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Steps */}
-            <div className="space-y-6">
-              {[
-                {
-                  icon: Home,
-                  title: "Add your property",
-                  description: "Enter your property details, upload photos, and set the basics like address and type."
-                },
-                {
-                  icon: Brain,
-                  title: "Train your AI",
-                  description: "Add amenities, house rules, WiFi info, local recommendations - everything a guest might ask about."
-                },
-                {
-                  icon: UserPlus,
-                  title: "Connect guests",
-                  description: "Pre-add guests before their stay, or let them text in themselves when they arrive. Either way works."
-                }
-              ].map((step, index) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveStep(index)}
-                  className={`w-full text-left p-6 rounded-xl border transition-all duration-300 ${
-                    activeStep === index 
-                      ? "bg-primary/5 border-primary shadow-card" 
-                      : "bg-card border-border hover:border-primary/30"
+
+          {/* Desktop Flow - Horizontal with dotted path */}
+          <div className="hidden lg:block relative">
+            {/* Dotted path SVG */}
+            <svg 
+              className="absolute top-24 left-0 w-full h-32 overflow-visible"
+              viewBox="0 0 1000 120"
+              preserveAspectRatio="none"
+            >
+              <path
+                d="M 60 60 Q 200 20, 310 60 T 560 60 T 810 60 T 940 60"
+                fill="none"
+                stroke="hsl(var(--border))"
+                strokeWidth="2"
+                strokeDasharray="8 8"
+                className={`transition-all duration-1000 ${flowVisible ? "opacity-100" : "opacity-0"}`}
+              />
+              {/* Animated dot traveling along path */}
+              <circle 
+                r="6" 
+                fill="hsl(var(--primary))"
+                className={`transition-opacity duration-500 ${flowVisible ? "opacity-100" : "opacity-0"}`}
+              >
+                <animateMotion
+                  dur="4s"
+                  repeatCount="indefinite"
+                  path="M 60 60 Q 200 20, 310 60 T 560 60 T 810 60 T 940 60"
+                />
+              </circle>
+            </svg>
+
+            {/* Flow steps */}
+            <div className="grid grid-cols-4 gap-8 relative z-10">
+              {flowSteps.map((step, index) => (
+                <div 
+                  key={step.id}
+                  className={`flex flex-col items-center transition-all duration-500 ${
+                    flowVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                   }`}
+                  style={{ transitionDelay: `${index * 0.15}s` }}
                 >
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
-                      activeStep === index ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                    }`}>
-                      <step.icon className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className={`text-lg font-semibold mb-1 ${activeStep === index ? "text-primary" : "text-foreground"}`}>
-                        {step.title}
-                      </h3>
-                      <p className="text-muted-foreground text-sm">{step.description}</p>
-                    </div>
+                  {/* Step number and icon */}
+                  <div 
+                    className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 ${
+                      activeFlowStep === index 
+                        ? "bg-primary text-primary-foreground scale-110 shadow-elevated" 
+                        : "bg-card border border-border text-muted-foreground"
+                    }`}
+                  >
+                    <step.icon className="w-7 h-7" />
                   </div>
-                </button>
+                  
+                  {/* Step label */}
+                  <div className="text-center">
+                    <span className="text-xs font-medium text-primary mb-1 block">Step {index + 1}</span>
+                    <h3 className={`font-semibold mb-1 transition-colors ${
+                      activeFlowStep === index ? "text-foreground" : "text-muted-foreground"
+                    }`}>
+                      {step.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">{step.description}</p>
+                  </div>
+                </div>
               ))}
             </div>
 
-            {/* SMS Demo */}
-            <div className="bg-card rounded-2xl shadow-elevated border border-border p-6 lg:p-8">
-              {/* Phone mockup */}
-              <div className="bg-muted rounded-[2rem] p-4 max-w-[320px] mx-auto">
-                <div className="bg-background rounded-[1.5rem] overflow-hidden">
-                  {/* Status bar */}
-                  <div className="bg-foreground/5 px-4 py-2 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>9:41</span>
-                    <div className="flex items-center gap-1">
-                      <div className="w-4 h-2 border border-current rounded-sm" />
-                    </div>
-                  </div>
-                  
-                  {/* Chat header */}
-                  <div className="px-4 py-3 border-b border-border flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                      <MessageSquare className="w-4 h-4 text-primary" />
+            {/* Demo cards showing each step */}
+            <div className="mt-16 grid grid-cols-4 gap-6">
+              {/* Add Property Card */}
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
+                activeFlowStep === 0 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
+              }`}>
+                <div className="text-xs text-muted-foreground mb-2">Dashboard</div>
+                <div className="bg-muted rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                      <Home className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium text-foreground text-sm">Beach House AI</p>
-                      <p className="text-xs text-muted-foreground">SMS • Online</p>
+                      <div className="h-2 w-20 bg-foreground/20 rounded" />
+                      <div className="h-1.5 w-14 bg-foreground/10 rounded mt-1" />
                     </div>
                   </div>
-
-                  {/* Messages */}
-                  <div className="p-4 space-y-3 min-h-[280px]">
-                    {activeStep === 0 && (
-                      <>
-                        <div className="bg-muted rounded-2xl rounded-tl-sm p-3 max-w-[85%] animate-fade-in">
-                          <p className="text-sm text-foreground">Hi! I just booked Beach House for next week</p>
-                        </div>
-                        <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm p-3 max-w-[85%] ml-auto animate-fade-in" style={{ animationDelay: "0.3s" }}>
-                          <p className="text-sm">Welcome! 🏖️ I'm the AI assistant for Beach House. I can help with check-in, amenities, local tips, and more. What would you like to know?</p>
-                        </div>
-                      </>
-                    )}
-                    {activeStep === 1 && (
-                      <>
-                        <div className="bg-muted rounded-2xl rounded-tl-sm p-3 max-w-[85%] animate-fade-in">
-                          <p className="text-sm text-foreground">What's the WiFi password?</p>
-                        </div>
-                        <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm p-3 max-w-[85%] ml-auto animate-fade-in" style={{ animationDelay: "0.3s" }}>
-                          <p className="text-sm">The WiFi network is "BeachHouse_Guest" and the password is "SunsetViews2024". You'll find it printed on the fridge too!</p>
-                        </div>
-                        <div className="bg-muted rounded-2xl rounded-tl-sm p-3 max-w-[85%] animate-fade-in" style={{ animationDelay: "0.6s" }}>
-                          <p className="text-sm text-foreground">Perfect! And checkout time?</p>
-                        </div>
-                        <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm p-3 max-w-[85%] ml-auto animate-fade-in" style={{ animationDelay: "0.9s" }}>
-                          <p className="text-sm">Checkout is at 11:00 AM. Just leave the keys on the kitchen counter. Safe travels! 👋</p>
-                        </div>
-                      </>
-                    )}
-                    {activeStep === 2 && (
-                      <>
-                        <div className="bg-muted rounded-2xl rounded-tl-sm p-3 max-w-[85%] animate-fade-in">
-                          <p className="text-sm text-foreground">We're here! How do we get in?</p>
-                        </div>
-                        <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm p-3 max-w-[85%] ml-auto animate-fade-in" style={{ animationDelay: "0.3s" }}>
-                          <p className="text-sm">Welcome! 🔑 The lockbox is on the left side of the front door. Your code is 4829. Let me know once you're inside!</p>
-                        </div>
-                        <div className="bg-muted rounded-2xl rounded-tl-sm p-3 max-w-[85%] animate-fade-in" style={{ animationDelay: "0.6s" }}>
-                          <p className="text-sm text-foreground">We're in! This place is amazing 😍</p>
-                        </div>
-                        <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm p-3 max-w-[85%] ml-auto animate-fade-in" style={{ animationDelay: "0.9s" }}>
-                          <p className="text-sm">So glad you love it! I'm here 24/7 if you need anything. Enjoy your stay! 🌊</p>
-                        </div>
-                      </>
-                    )}
+                  <div className="h-16 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg flex items-center justify-center">
+                    <span className="text-xs text-primary font-medium">+ Add Property</span>
                   </div>
+                </div>
+              </div>
 
-                  {/* Input */}
-                  <div className="px-4 py-3 border-t border-border">
-                    <div className="bg-muted rounded-full px-4 py-2 text-sm text-muted-foreground">
-                      Text Message
+              {/* Knowledge Card */}
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
+                activeFlowStep === 1 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
+              }`}>
+                <div className="text-xs text-muted-foreground mb-2">Knowledge Base</div>
+                <div className="bg-muted rounded-lg p-3 space-y-2">
+                  <div className="flex gap-2">
+                    <div className="flex-1 h-8 bg-background rounded px-2 flex items-center">
+                      <span className="text-xs text-muted-foreground">WiFi: BeachHouse_Guest</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1 h-8 bg-background rounded px-2 flex items-center">
+                      <span className="text-xs text-muted-foreground">Checkout: 11:00 AM</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1 h-8 bg-background rounded px-2 flex items-center">
+                      <span className="text-xs text-muted-foreground">Parking: Spot #24</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Guest connection info */}
-              <div className="mt-6 p-4 bg-muted/50 rounded-xl">
-                <p className="text-sm font-medium text-foreground mb-2">Two ways to connect guests:</p>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span><strong>Pre-add them</strong> - Enter guest details before their stay</span>
+              {/* Add Guest Card */}
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
+                activeFlowStep === 2 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
+              }`}>
+                <div className="text-xs text-muted-foreground mb-2">Guest Management</div>
+                <div className="bg-muted rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2 p-2 bg-background rounded">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-xs font-medium text-primary">JD</span>
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium">John Doe</div>
+                      <div className="text-xs text-muted-foreground">Jan 15 - Jan 18</div>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span><strong>Self-connect</strong> - Guests text a number to start chatting</span>
+                  <div className="h-10 border-2 border-dashed border-primary/30 rounded flex items-center justify-center">
+                    <span className="text-xs text-primary">+ Add Guest</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Guest Text Card */}
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
+                activeFlowStep === 3 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
+              }`}>
+                <div className="text-xs text-muted-foreground mb-2">SMS Conversation</div>
+                <div className="bg-muted rounded-lg p-3 space-y-2">
+                  <div className="bg-background rounded-xl rounded-tl-sm p-2 max-w-[85%]">
+                    <p className="text-xs">What's the WiFi?</p>
+                  </div>
+                  <div className="bg-primary text-primary-foreground rounded-xl rounded-tr-sm p-2 max-w-[85%] ml-auto">
+                    <p className="text-xs">BeachHouse_Guest, password: SunsetViews2024 🏠</p>
+                  </div>
+                  <div className="bg-background rounded-xl rounded-tl-sm p-2 max-w-[85%]">
+                    <p className="text-xs">Thanks! 🙏</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Flow - Vertical */}
+          <div className="lg:hidden space-y-6">
+            {flowSteps.map((step, index) => (
+              <div 
+                key={step.id}
+                className={`relative pl-16 transition-all duration-500 ${
+                  flowVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
+                }`}
+                style={{ transitionDelay: `${index * 0.15}s` }}
+              >
+                {/* Vertical line */}
+                {index < flowSteps.length - 1 && (
+                  <div className="absolute left-7 top-14 w-0.5 h-full bg-border" style={{ backgroundImage: "repeating-linear-gradient(to bottom, hsl(var(--border)) 0, hsl(var(--border)) 4px, transparent 4px, transparent 8px)" }} />
+                )}
+                
+                {/* Step icon */}
+                <div className={`absolute left-0 w-14 h-14 rounded-xl flex items-center justify-center transition-all ${
+                  activeFlowStep === index 
+                    ? "bg-primary text-primary-foreground shadow-elevated" 
+                    : "bg-card border border-border text-muted-foreground"
+                }`}>
+                  <step.icon className="w-6 h-6" />
+                </div>
+                
+                {/* Content */}
+                <div className="bg-card rounded-xl border border-border p-4">
+                  <span className="text-xs font-medium text-primary">Step {index + 1}</span>
+                  <h3 className="font-semibold text-foreground">{step.title}</h3>
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Two ways to connect */}
+          <div className="mt-16 bg-card rounded-2xl border border-border p-6 md:p-8">
+            <h3 className="text-lg font-semibold text-foreground mb-4 text-center">Two ways to connect guests</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-xl">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <UserPlus className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">Pre-add guests</h4>
+                  <p className="text-sm text-muted-foreground">Enter guest details before their stay. They'll receive a welcome text automatically.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-xl">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">Self-connect</h4>
+                  <p className="text-sm text-muted-foreground">Share a phone number or QR code. Guests text in themselves when they need help.</p>
                 </div>
               </div>
             </div>
@@ -415,7 +573,7 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-6 bg-muted/30">
+      <section id="features" className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -447,7 +605,7 @@ const Index = () => {
       </section>
       
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-6">
+      <section id="pricing" className="py-20 px-6 bg-muted/30">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -514,7 +672,7 @@ const Index = () => {
       </section>
       
       {/* CTA Section */}
-      <section className="py-20 px-6 bg-muted/30">
+      <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
             Ready to stop answering the same questions?
@@ -550,9 +708,17 @@ const Index = () => {
       
       <style>{`
         @keyframes draw {
+          from {
+            stroke-dashoffset: 300;
+          }
           to {
             stroke-dashoffset: 0;
           }
+        }
+        .animate-draw {
+          stroke-dasharray: 300;
+          stroke-dashoffset: 300;
+          animation: draw 1s ease-out 0.5s forwards;
         }
       `}</style>
     </div>
