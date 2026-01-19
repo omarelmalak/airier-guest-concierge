@@ -147,6 +147,23 @@ const Index = () => {
   const smsContainerRef = useRef<HTMLDivElement>(null);
   const flowRef = useRef<HTMLDivElement>(null);
   const valueRef = useRef<HTMLDivElement>(null);
+  const [visibleQuestions, setVisibleQuestions] = useState<number[]>([]);
+
+  // SMS-style questions that will appear scattered
+const guestQuestions = [
+  { text: "What's the WiFi password?", delay: 0, x: 5, y: 15 },
+  { text: "How do I turn on the AC?", delay: 0.2, x: 65, y: 8 },
+  { text: "Where's the gym?", delay: 0.4, x: 20, y: 45 },
+  { text: "What time is checkout?", delay: 0.6, x: 55, y: 35 },
+  { text: "Is there parking?", delay: 0.8, x: 8, y: 70 },
+  { text: "How does the smart lock work?", delay: 1.0, x: 60, y: 60 },
+  { text: "Are pets allowed?", delay: 1.2, x: 35, y: 25 },
+  { text: "What's the check-in code?", delay: 1.4, x: 75, y: 75 },
+  { text: "Is there a coffee maker?", delay: 1.6, x: 15, y: 85 },
+  { text: "Where are extra towels?", delay: 1.8, x: 50, y: 85 },
+  { text: "How do I use the TV?", delay: 2.0, x: 80, y: 45 },
+  { text: "Any restaurant recommendations?", delay: 2.2, x: 25, y: 55 },
+];
 
   // Sticky scroll effect for SMS questions
   useEffect(() => {
@@ -216,6 +233,30 @@ const Index = () => {
     return () => observer.disconnect();
   }, [activeFlowStep]);
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Start revealing questions one by one
+            guestQuestions.forEach((_, index) => {
+              setTimeout(() => {
+                setVisibleQuestions(prev => [...new Set([...prev, index])]);
+              }, index * 200);
+            });
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    if (smsContainerRef.current) {
+      observer.observe(smsContainerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   // Value props sequential reveal
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -240,11 +281,17 @@ const Index = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Calculate which questions are visible based on scroll progress
-  const getQuestionVisibility = (index: number) => {
-    const threshold = index / guestQuestions.length;
-    return scrollProgress > threshold * 0.8;
-  };
+  const [flowVisible, setFlowVisible] = useState(true);
+
+  useEffect(() => {
+    if (!flowVisible) return;
+    
+    const interval = setInterval(() => {
+      setActiveFlowStep((prev) => (prev + 1) % flowSteps.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [flowVisible]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -280,7 +327,7 @@ const Index = () => {
             </h1>
             
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: "0.2s" }}>
-              Deploy an AI text agent for your guests. They can connect themselves during their stay, or you can pre-add them before arrival.
+              Deploy an AI text agent for your guests. ZERO technical experience required.
             </p>
 
             {/* Key feature checkmarks */}
@@ -310,13 +357,10 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Sound Familiar Section - Sticky parallax scroll effect */}
-      <section ref={smsContainerRef} className="relative min-h-[150vh]">
-        <div className="sticky top-0 h-screen overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/30 to-background" />
+      <section ref={smsContainerRef} className="py-20 px-6 relative overflow-hidden min-h-[600px]">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/30 to-background" />
           
-          <div className="relative h-full flex flex-col items-center justify-center px-6">
-            {/* Header */}
+        <div className="max-w-6xl mx-auto relative">
             <div className="text-center mb-8 relative z-10">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                 Sound familiar?
@@ -324,70 +368,70 @@ const Index = () => {
               <p className="text-lg text-muted-foreground max-w-xl mx-auto">
                 Your guests have endless questions. Answering them shouldn't be your full-time job.
               </p>
-            </div>
+          </div>
 
-            {/* Scattered SMS bubbles with parallax */}
-            <div className="relative w-full max-w-5xl h-[400px] md:h-[450px]">
-              {guestQuestions.map((question, index) => {
-                const isVisible = getQuestionVisibility(index);
-                const parallaxOffset = scrollProgress * 30 * (index % 2 === 0 ? 1 : -1);
-                
-                return (
-                  <div
-                    key={index}
-                    className={`absolute transition-all duration-700 ease-out ${
-                      isVisible ? "opacity-100" : "opacity-0"
-                    }`}
-                    style={{
-                      left: `${question.x}%`,
-                      top: `${question.y}%`,
-                      transform: `translate(-50%, calc(-50% + ${parallaxOffset}px)) ${isVisible ? 'scale(1)' : 'scale(0.8)'}`,
-                    }}
-                  >
-                    <div className={`bg-muted/90 backdrop-blur-sm border border-border rounded-2xl rounded-bl-sm px-3 py-2 shadow-card max-w-[140px] md:max-w-[180px] transition-all duration-500 ${
-                      showAirierResponse ? "opacity-40 scale-95" : ""
-                    }`}>
-                      <p className="text-xs md:text-sm text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
-                        {question.text}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Central airier response */}
-              <div 
-                className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 transition-all duration-700 ${
-                  showAirierResponse ? "opacity-100 scale-100" : "opacity-0 scale-90"
+          {/* Scattered SMS bubbles */}
+          <div className="relative h-[450px] md:h-[500px]">
+            {guestQuestions.map((question, index) => (
+              <div
+                key={index}
+                className={`absolute transition-all duration-700 ${
+                  visibleQuestions.includes(index) 
+                    ? "opacity-100 translate-y-0" 
+                    : "opacity-0 translate-y-8"
                 }`}
+                style={{
+                  left: `${question.x}%`,
+                  top: `${question.y}%`,
+                  transform: `translate(-50%, -50%) ${visibleQuestions.includes(index) ? 'rotate(0deg)' : 'rotate(-5deg)'}`,
+                  transitionDelay: `${question.delay}s`
+                }}
               >
-                <div className="bg-primary text-primary-foreground rounded-2xl px-8 py-6 shadow-elevated text-center">
-                  <div className="flex items-center justify-center gap-2 mb-3">
-                    <img src={airierLogo} alt="airier" className="h-5 brightness-0 invert" />
-                  </div>
-                  <p className="text-lg font-semibold mb-4">
-                    I've got this.
+                <div className="bg-muted/80 backdrop-blur-sm border border-border rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-card max-w-[200px] md:max-w-[240px]">
+                  <p className="text-sm text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+                    {question.text}
                   </p>
-                  <p className="text-sm opacity-90 mb-4">
-                    Every question, any time, instantly answered.
-                  </p>
-                  <Link to="/auth?mode=signup">
-                    <Button 
-                      variant="secondary" 
-                      className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-                    >
-                      Try it out
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
                 </div>
+              </div>
+            ))}
+
+            {/* Central airier response */}
+            <div 
+              className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-1000 ${
+                visibleQuestions.length >= 8 ? "opacity-100 scale-100" : "opacity-0 scale-90"
+              }`}
+              style={{ transitionDelay: "2.5s" }}
+            >
+              <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-6 py-4 shadow-elevated max-w-[280px] md:max-w-[320px]">
+                <div className="flex items-center gap-2 mb-2">
+                  <img src={airierLogo} alt="airier" className="h-4 brightness-0 invert" />
+                  <span className="text-xs opacity-80">airier handles it all</span>
+                </div>
+                <p className="text-sm">
+                  I've got this. Every question, any time, instantly answered.
+                </p>
               </div>
             </div>
           </div>
+
+          {/* CTA below scattered messages */}
+          <div 
+            className={`text-center mt-8 transition-all duration-700 ${
+              visibleQuestions.length >= 10 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+            style={{ transitionDelay: "3s" }}
+          >
+            <Link to="/auth?mode=signup">
+              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                Let airier handle it
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
-      
-      {/* How It Works - End-to-End Flow with Synced Ball Animation */}
+
+      {/* How It Works - End-to-End Flow with Dotted Path */}
       <section id="how-it-works" ref={flowRef} className="py-24 px-6 bg-muted/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -399,97 +443,76 @@ const Index = () => {
             </p>
           </div>
 
-          {/* Desktop Flow - Horizontal with synced dotted path */}
+          {/* Desktop Flow - Horizontal with dotted path */}
           <div className="hidden lg:block relative">
-            {/* Dotted path SVG with animated ball */}
+            {/* Dotted path SVG */}
             <svg 
-              className="absolute top-20 left-0 w-full h-40 overflow-visible"
+              className="absolute top-24 left-0 w-full h-32 overflow-visible"
               viewBox="0 0 1000 120"
               preserveAspectRatio="none"
             >
-              {/* Background path */}
               <path
-                d="M 60 60 C 150 20, 200 100, 310 60 S 450 20, 560 60 S 700 100, 810 60 S 900 20, 940 60"
+                d="M 60 60 Q 200 20, 310 60 T 560 60 T 810 60 T 940 60"
                 fill="none"
                 stroke="hsl(var(--border))"
-                strokeWidth="3"
+                strokeWidth="2"
                 strokeDasharray="8 8"
-                className="opacity-40"
+                className={`transition-all duration-1000 ${flowVisible ? "opacity-100" : "opacity-0"}`}
               />
-              {/* Progress path */}
-              <path
-                d="M 60 60 C 150 20, 200 100, 310 60 S 450 20, 560 60 S 700 100, 810 60 S 900 20, 940 60"
-                fill="none"
-                stroke="hsl(var(--primary))"
-                strokeWidth="3"
-                strokeDasharray="8 8"
-                style={{
-                  strokeDashoffset: 1000 * (1 - pathProgress),
-                  transition: "stroke-dashoffset 0.1s linear"
-                }}
-              />
-              {/* Animated ball */}
+              {/* Animated dot traveling along path */}
               <circle 
-                r="10" 
+                r="6" 
                 fill="hsl(var(--primary))"
-                className="drop-shadow-lg"
+                className={`transition-opacity duration-500 ${flowVisible ? "opacity-100" : "opacity-0"}`}
               >
                 <animateMotion
-                  dur="6s"
-                  fill="freeze"
-                  path="M 60 60 C 150 20, 200 100, 310 60 S 450 20, 560 60 S 700 100, 810 60 S 900 20, 940 60"
-                  keyPoints={`0;${pathProgress}`}
-                  keyTimes="0;1"
-                  calcMode="linear"
+                  dur="4s"
+                  repeatCount="indefinite"
+                  path="M 60 60 Q 200 20, 310 60 T 560 60 T 810 60 T 940 60"
                 />
               </circle>
             </svg>
 
             {/* Flow steps */}
-            <div className="grid grid-cols-4 gap-8 relative z-10 pt-4">
-              {flowSteps.map((step, index) => {
-                const isRevealed = index <= activeFlowStep;
-                
-                return (
+            <div className="grid grid-cols-4 gap-8 relative z-10">
+              {flowSteps.map((step, index) => (
+                <div 
+                  key={step.id}
+                  className={`flex flex-col items-center transition-all duration-500 ${
+                    flowVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                  }`}
+                  style={{ transitionDelay: `${index * 0.15}s` }}
+                >
+                  {/* Step number and icon */}
                   <div 
-                    key={step.id}
-                    className={`flex flex-col items-center transition-all duration-700 ${
-                      isRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                    className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 ${
+                      activeFlowStep === index 
+                        ? "bg-primary text-primary-foreground scale-110 shadow-elevated" 
+                        : "bg-card border border-border text-muted-foreground"
                     }`}
                   >
-                    {/* Step number and icon */}
-                    <div 
-                      className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-500 ${
-                        isRevealed
-                          ? "bg-primary text-primary-foreground scale-110 shadow-elevated" 
-                          : "bg-card border border-border text-muted-foreground"
-                      }`}
-                    >
-                      <step.icon className="w-7 h-7" />
-                    </div>
-                    
-                    {/* Step label */}
-                    <div className="text-center">
-                      <span className={`text-xs font-medium mb-1 block transition-colors duration-500 ${
-                        isRevealed ? "text-primary" : "text-muted-foreground"
-                      }`}>Step {index + 1}</span>
-                      <h3 className={`font-semibold mb-1 transition-colors duration-500 ${
-                        isRevealed ? "text-foreground" : "text-muted-foreground"
-                      }`}>
-                        {step.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">{step.description}</p>
-                    </div>
+                    <step.icon className="w-7 h-7" />
                   </div>
-                );
-              })}
+                  
+                  {/* Step label */}
+                  <div className="text-center">
+                    <span className="text-xs font-medium text-primary mb-1 block">Step {index + 1}</span>
+                    <h3 className={`font-semibold mb-1 transition-colors ${
+                      activeFlowStep === index ? "text-foreground" : "text-muted-foreground"
+                    }`}>
+                      {step.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">{step.description}</p>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* Demo cards */}
+            {/* Demo cards showing each step */}
             <div className="mt-16 grid grid-cols-4 gap-6">
               {/* Add Property Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-700 ${
-                activeFlowStep >= 0 ? "ring-2 ring-primary/50 shadow-elevated opacity-100" : "opacity-30"
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
+                activeFlowStep === 0 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
               }`}>
                 <div className="text-xs text-muted-foreground mb-2">Dashboard</div>
                 <div className="bg-muted rounded-lg p-3 space-y-2">
@@ -509,8 +532,8 @@ const Index = () => {
               </div>
 
               {/* Knowledge Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-700 ${
-                activeFlowStep >= 1 ? "ring-2 ring-primary/50 shadow-elevated opacity-100" : "opacity-30"
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
+                activeFlowStep === 1 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
               }`}>
                 <div className="text-xs text-muted-foreground mb-2">Knowledge Base</div>
                 <div className="bg-muted rounded-lg p-3 space-y-2">
@@ -533,8 +556,8 @@ const Index = () => {
               </div>
 
               {/* Add Guest Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-700 ${
-                activeFlowStep >= 2 ? "ring-2 ring-primary/50 shadow-elevated opacity-100" : "opacity-30"
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
+                activeFlowStep === 2 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
               }`}>
                 <div className="text-xs text-muted-foreground mb-2">Guest Management</div>
                 <div className="bg-muted rounded-lg p-3 space-y-2">
@@ -554,8 +577,8 @@ const Index = () => {
               </div>
 
               {/* Guest Text Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-700 ${
-                activeFlowStep >= 3 ? "ring-2 ring-primary/50 shadow-elevated opacity-100" : "opacity-30"
+              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
+                activeFlowStep === 3 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
               }`}>
                 <div className="text-xs text-muted-foreground mb-2">SMS Conversation</div>
                 <div className="bg-muted rounded-lg p-3 space-y-2">
@@ -579,8 +602,9 @@ const Index = () => {
               <div 
                 key={step.id}
                 className={`relative pl-16 transition-all duration-500 ${
-                  index <= activeFlowStep ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
+                  flowVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
                 }`}
+                style={{ transitionDelay: `${index * 0.15}s` }}
               >
                 {/* Vertical line */}
                 {index < flowSteps.length - 1 && (
@@ -589,7 +613,7 @@ const Index = () => {
                 
                 {/* Step icon */}
                 <div className={`absolute left-0 w-14 h-14 rounded-xl flex items-center justify-center transition-all ${
-                  index <= activeFlowStep 
+                  activeFlowStep === index 
                     ? "bg-primary text-primary-foreground shadow-elevated" 
                     : "bg-card border border-border text-muted-foreground"
                 }`}>
