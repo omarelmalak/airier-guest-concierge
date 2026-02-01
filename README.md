@@ -57,7 +57,7 @@ bundle install
 Use the PostgreSQL database in Supabase and set the `DATABASE_URL` environment variable in the `.env` file in the `backend/` directory:
 
 ```bash
-DATABASE_URL="postgresql://postgres:password@db.qpzjdbthcmcihmejezos.supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres:{password}@db.qpzjdbthcmcihmejezos.supabase.co:5432/postgres"
 ```
 
 ### 4. Start the Rails server
@@ -81,7 +81,7 @@ The backend API will be available at `http://localhost:3000`.
 ### Backend
 Create a `.env` file in the `backend/` directory:
 ```env
-DATABASE_URL=postgresql://username:password@localhost:5432/airier_guest_concierge_development
+DATABASE_URL=postgresql://username:{password}@localhost:5432/airier_guest_concierge_development
 DATABASE_PASSWORD=password
 ```
 
