@@ -1,0 +1,2 @@
+class AutoMessage < ApplicationRecord
+end

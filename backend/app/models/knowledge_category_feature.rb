@@ -1,0 +1,2 @@
+class KnowledgeCategoryFeature < ApplicationRecord
+end
