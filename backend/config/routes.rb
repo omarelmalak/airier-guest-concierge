@@ -13,6 +13,11 @@ Rails.application.routes.draw do
       
       # Guests endpoints
       resources :guests, only: [:index, :show, :create]
+      
+      # Host endpoints
+      resource :hosts, only: [] do
+        patch :profile, to: "hosts#complete_profile"
+      end
     end
   end
 
