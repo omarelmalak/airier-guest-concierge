@@ -81,14 +81,17 @@ The backend API will be available at `http://localhost:3000`.
 ### Backend
 Create a `.env` file in the `backend/` directory:
 ```env
-DATABASE_URL=postgresql://username:{password}@localhost:5432/airier_guest_concierge_development
-DATABASE_PASSWORD=password
+# DATABASE_URL=postgresql://postgres:{password}@db.qpzjdbthcmcihmejezos.supabase.co:5432/postgres
+# DATABASE_PASSWORD=password
+# SUPABASE_JWT_SECRET=secret
 ```
 
 ### Frontend
 Create a `.env` file in the `frontend/` directory if needed:
 ```env
-SUPABASE_URL=
+# VITE_SUPABASE_URL=https://qpzjdbthcmcihmejezos.supabase.co
+# VITE_SUPABASE_ANON_KEY=anon_key
+# VITE_API_BASE_URL=http://localhost:3000/api/v1
 ```
 
 ## Troubleshooting
