@@ -9,7 +9,7 @@ export const signUp = async (email: string, password: string, firstName?: string
 
     if (error) throw error;
     if (!data.session) {
-        throw new Error("No session created. Please check your email for confirmation.");
+        throw new Error("No session created.");
     }
 
     // Only call API if we have a session and user data
@@ -35,21 +35,31 @@ export const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) throw error;
-    console.log(data, error);
+    console.log("Login data", data);
 
-    return data;
+    const sessionData = await supabase.auth.getSession();
+    console.log("Session data:", sessionData);
+
+    return sessionData;
 };
 
 export const signOut = async () => {
     await supabase.auth.signOut();
 };
 
-export const getSession = async () => {
-    const { data } = await supabase.auth.getSession();
-    return data.session;
-};
-
 export const getUser = async () => {
     const { data } = await supabase.auth.getUser();
     return data.user;
+};
+
+export const getSession = async () => {
+    const {
+        data: { session },
+        error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) throw sessionError;
+    if (!session) throw new Error("Not authenticated");
+
+    return session;
 };

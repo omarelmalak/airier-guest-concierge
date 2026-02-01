@@ -1,5 +1,5 @@
 // src/lib/api.ts
-import { supabase } from "./supabase";
+import { getSession } from "./auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -10,13 +10,7 @@ async function request<T>(
     method: HttpMethod,
     body?: unknown
 ): Promise<T> {
-    const {
-        data: { session },
-        error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError) throw sessionError;
-    if (!session) throw new Error("Not authenticated");
+    const session = await getSession();
 
     const res = await fetch(`${API_BASE_URL}${path}`, {
         method,
