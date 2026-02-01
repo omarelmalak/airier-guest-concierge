@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Mail, Lock, User } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Phone } from "lucide-react";
 import airierLogo from "@/assets/airier-logo.png";
+import { signUp, signIn } from "@/lib/auth";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -13,33 +14,50 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(searchParams.get("mode") === "signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [error, setError] = useState("");
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setIsSignUp(searchParams.get("mode") === "signup");
   }, [searchParams]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock auth - navigate to properties
-    navigate("/properties");
+    setError("");
+    setLoading(true);
+
+    try {
+      if (isSignUp) {
+        await signUp(email, password, firstName, lastName, phone);
+      } else {
+        await signIn(email, password);
+      }
+      navigate("/properties");
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-8">
       <div className="w-full max-w-md">
-        <Link 
-          to="/" 
+        <Link
+          to="/"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to home
         </Link>
-        
+
         <div className="mb-8 flex justify-center">
           <img src={airierLogo} alt="airier" className="h-10" />
         </div>
-        
+
         <Card className="border-0 shadow-elevated">
           <CardContent className="p-8">
             <div className="space-y-6">
@@ -48,30 +66,66 @@ const Auth = () => {
                   {isSignUp ? "Create your account" : "Welcome back"}
                 </h2>
                 <p className="text-muted-foreground">
-                  {isSignUp 
-                    ? "Start automating your guest communication today" 
+                  {isSignUp
+                    ? "Start automating your guest communication today"
                     : "Sign in to manage your properties"}
                 </p>
               </div>
-              
+
+              {error && (
+                <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
+                  {error}
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 {isSignUp && (
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-foreground">Full Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="name"
-                        type="text"
-                        placeholder="John Doe"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="pl-10"
-                      />
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName" className="text-foreground">First Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="firstName"
+                          type="text"
+                          placeholder="John"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
                     </div>
-                  </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName" className="text-foreground">Last Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="lastName"
+                          type="text"
+                          placeholder="Doe"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone" className="text-foreground">Phone</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="+1 (555) 123-4567"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-foreground">Email</Label>
                   <div className="relative">
@@ -86,7 +140,7 @@ const Auth = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-foreground">Password</Label>
                   <div className="relative">
@@ -101,12 +155,16 @@ const Auth = () => {
                     />
                   </div>
                 </div>
-                
-                <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                  {isSignUp ? "Create Account" : "Sign In"}
+
+                <Button
+                  type="submit"
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  disabled={loading}
+                >
+                  {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
                 </Button>
               </form>
-              
+
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border" />
@@ -117,7 +175,7 @@ const Auth = () => {
                   </span>
                 </div>
               </div>
-              
+
               <Button variant="outline" className="w-full">
                 <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                   <path
@@ -139,7 +197,7 @@ const Auth = () => {
                 </svg>
                 Google
               </Button>
-              
+
               <p className="text-center text-sm text-muted-foreground">
                 {isSignUp ? (
                   <>
@@ -168,7 +226,7 @@ const Auth = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <p className="text-center text-sm text-muted-foreground mt-8">
           © 2024 airier. All rights reserved.
         </p>
