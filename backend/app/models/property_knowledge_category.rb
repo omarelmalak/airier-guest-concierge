@@ -1,0 +1,2 @@
+class PropertyKnowledgeCategory < ApplicationRecord
+end

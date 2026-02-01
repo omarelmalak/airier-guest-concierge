@@ -1,0 +1,2 @@
+class ExactAnswer < ApplicationRecord
+end
