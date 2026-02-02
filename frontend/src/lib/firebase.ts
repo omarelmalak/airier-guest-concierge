@@ -4,13 +4,13 @@ import { getStorage } from "firebase/storage";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAIW21QucIJxV9KEjAK8tmLNAas9xxzDjU",
-    authDomain: "airier-ff7a0.firebaseapp.com",
-    projectId: "airier-ff7a0",
-    storageBucket: "airier-ff7a0.firebasestorage.app",
-    messagingSenderId: "1001569543833",
-    appId: "1:1001569543833:web:b23d09afb548c15dddfa08",
-    measurementId: "G-N3GV2K6TH8"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
