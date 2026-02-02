@@ -19,22 +19,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  AmenitiesSection,
-  WhereIsSection,
-  LocalRecommendationsSection,
-  RulesSection,
-  defaultAmenities,
-  defaultWhereIsItems,
-  defaultRecommendations,
-  defaultRules,
-  AmenityItem,
-  WhereIsItem,
-  RecommendationCategory,
-  RuleItem,
-} from "@/components/KnowledgeEditor";
-
-type TabType = "overview" | "knowledge" | "exact-answers" | "guests";
+import { AmenityItem, WhereIsItem, RecommendationCategory, RuleItem, TabType } from "@/lib/static-data/client-types";
+import { AmenitiesSection } from "@/components/knowledge/AmenitiesSection";
+import { WhereIsSection } from "@/components/knowledge/WhereIsSection";
+import { LocalRecommendationsSection } from "@/components/knowledge/LocalRecommendationsSection";
+import { RulesSection } from "@/components/knowledge/RulesSection";
 
 const tabs: { id: TabType; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -64,12 +53,13 @@ const PropertyDetail = () => {
   const [checkOutMessage, setCheckOutMessage] = useState(property?.checkOutMessage || "");
 
   // Knowledge states - new granular structure
-  const [amenities, setAmenities] = useState<AmenityItem[]>(defaultAmenities);
+  const [amenities, setAmenities] = useState<AmenityItem[]>();
   const [otherAmenities, setOtherAmenities] = useState("");
-  const [whereIsItems, setWhereIsItems] = useState<WhereIsItem[]>(defaultWhereIsItems);
+  const [whereIsItems, setWhereIsItems] = useState<WhereIsItem[]>();
   const [otherWhereIs, setOtherWhereIs] = useState("");
-  const [recommendations, setRecommendations] = useState<RecommendationCategory[]>(defaultRecommendations);
-  const [rules, setRules] = useState<RuleItem[]>(defaultRules);
+  const [recommendations, setRecommendations] = useState<RecommendationCategory[]>();
+  const [otherRecommendations, setOtherRecommendations] = useState("");
+  const [rules, setRules] = useState<RuleItem[]>();
   const [otherRules, setOtherRules] = useState("");
 
   // Exact answers states
@@ -164,7 +154,7 @@ const PropertyDetail = () => {
                     {property.name}, <span className="text-muted-foreground font-normal">{property.address}</span>
                   </h1>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{property.type}</span>
+                    <span>{property.ownershipLevel} {property.propertyType}</span>
                     <span>·</span>
                     <span>{property.bedrooms} bedrooms</span>
                     <span>·</span>
@@ -276,6 +266,8 @@ const PropertyDetail = () => {
               setOtherWhereIs={setOtherWhereIs}
               recommendations={recommendations}
               setRecommendations={setRecommendations}
+              otherRecommendations={otherRecommendations}
+              setOtherRecommendations={setOtherRecommendations}
               rules={rules}
               setRules={setRules}
               otherRules={otherRules}
@@ -354,7 +346,7 @@ const OverviewTab = ({
         <h3 className="text-lg font-semibold mb-4">Property Details</h3>
         <div className="space-y-4">
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-muted-foreground">{property.type}</span>
+            <span className="text-muted-foreground">{property.ownershipLevel} {property.propertyType}</span>
             <span className="text-muted-foreground">·</span>
             <span>{property.bedrooms} bedrooms</span>
             <span className="text-muted-foreground">·</span>
@@ -493,6 +485,8 @@ interface KnowledgeTabProps {
   setOtherWhereIs: (s: string) => void;
   recommendations: RecommendationCategory[];
   setRecommendations: (r: RecommendationCategory[]) => void;
+  otherRecommendations: string;
+  setOtherRecommendations: (s: string) => void;
   rules: RuleItem[];
   setRules: (r: RuleItem[]) => void;
   otherRules: string;
@@ -510,6 +504,8 @@ const KnowledgeTab = ({
   setOtherWhereIs,
   recommendations,
   setRecommendations,
+  otherRecommendations,
+  setOtherRecommendations,
   rules,
   setRules,
   otherRules,
@@ -584,6 +580,8 @@ const KnowledgeTab = ({
             <LocalRecommendationsSection
               recommendations={recommendations}
               setRecommendations={setRecommendations}
+              otherRecommendations={otherRecommendations}
+              setOtherRecommendations={setOtherRecommendations}
             />
           </div>
         )}

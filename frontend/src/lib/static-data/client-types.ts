@@ -1,0 +1,59 @@
+export interface PropertyInfo {
+    name: string;
+    address: string;
+    ownershipLevel: string;
+    propertyType: string;
+    bedrooms: string;
+    bathrooms: string;
+    photo: string;
+    checkinMessage: string;
+    checkoutMessage: string;
+}
+
+export interface ExactAnswer {
+    id: string;
+    question: string;
+    answer: string;
+}
+
+export interface GuestInfo {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    startDate: string;
+    endDate: string;
+}
+
+export interface WhereIsItem {
+    id: string;
+    label: string;
+    icon: React.ElementType;
+    location: string;
+}
+
+export interface AmenityItem {
+    id: string;
+    label: string;
+    icon: React.ElementType;
+    enabled: boolean;
+    details?: string;
+}
+
+export interface RecommendationCategory {
+    id: string;
+    label: string;
+    icon: React.ElementType;
+    recommendations: string;
+}
+
+export interface RuleItem {
+    id: string;
+    label: string;
+    icon: React.ElementType;
+    enabled: boolean;
+    details?: string;
+    type: "toggle" | "time";
+}
+
+export type TabType = "overview" | "knowledge" | "exact-answers" | "guests";

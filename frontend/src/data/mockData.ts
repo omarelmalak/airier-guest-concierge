@@ -1,9 +1,9 @@
 // Mock data for the application
 
-import property1 from "@/assets/property-1.jpg";
-import property2 from "@/assets/property-2.jpg";
-import property3 from "@/assets/property-3.jpg";
-import property4 from "@/assets/property-4.jpg";
+import cabin from "@/assets/default-property-photos/cabin.jpg";
+import apartment from "@/assets/default-property-photos/apartment.jpg";
+import villa from "@/assets/default-property-photos/villa.jpg";
+import house from "@/assets/default-property-photos/house.jpg";
 
 export type AIStatus = "online" | "warning" | "offline";
 
@@ -27,7 +27,8 @@ export interface Property {
   subscriptionExpiry: string;
   activeGuests: number;
   maxGuests: number;
-  type: string;
+  ownershipLevel: string;
+  propertyType: string;
   bedrooms: number;
   bathrooms: number;
   rating: number;
@@ -72,13 +73,14 @@ export const mockProperties: Property[] = [
     id: "1",
     name: "123 Pine St",
     address: "Toronto, Canada",
-    image: property1,
+    image: cabin,
     aiStatus: "online",
     subscriptionActive: true,
     subscriptionExpiry: "Aug 7, 2025",
     activeGuests: 2,
     maxGuests: 3,
-    type: "Entire cabin",
+    ownershipLevel: "Entire place",
+    propertyType: "Cabin",
     bedrooms: 2,
     bathrooms: 2,
     rating: 4.9,
@@ -109,13 +111,14 @@ export const mockProperties: Property[] = [
     id: "2",
     name: "789 Bay St",
     address: "Toronto, Canada",
-    image: property2,
+    image: apartment,
     aiStatus: "warning",
     subscriptionActive: true,
     subscriptionExpiry: "Nov 16, 2025",
     activeGuests: 3,
     maxGuests: 3,
-    type: "Luxury apartment",
+    ownershipLevel: "Entire place",
+    propertyType: "Apartment",
     bedrooms: 3,
     bathrooms: 2,
     rating: 4.8,
@@ -146,13 +149,14 @@ export const mockProperties: Property[] = [
     id: "3",
     name: "250 Lakeview Ave",
     address: "Muskoka, Canada",
-    image: property3,
+    image: villa,
     aiStatus: "online",
     subscriptionActive: true,
     subscriptionExpiry: "Sep 2, 2025",
     activeGuests: 1,
     maxGuests: 3,
-    type: "Lakefront villa",
+    ownershipLevel: "Entire place",
+    propertyType: "Villa",
     bedrooms: 4,
     bathrooms: 3,
     rating: 5.0,
@@ -179,13 +183,14 @@ export const mockProperties: Property[] = [
     id: "4",
     name: "93 Beach Rd",
     address: "Cape Cod, USA",
-    image: property4,
+    image: house,
     aiStatus: "offline",
     subscriptionActive: false,
     subscriptionExpiry: "Oct 25, 2025",
     activeGuests: 0,
     maxGuests: 3,
-    type: "Beach house",
+    ownershipLevel: "Entire place",
+    propertyType: "House",
     bedrooms: 3,
     bathrooms: 2,
     rating: 4.7,
