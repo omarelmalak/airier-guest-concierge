@@ -1,14 +1,15 @@
-import { RecommendationItem } from "@/lib/static-data/client-types";
+import { FeatureItem } from "@/lib/static-data/client-types";
 import { UtensilsCrossed, ShoppingCart, Stethoscope, Bus, Moon, Theater } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
+import { updateDetails } from "@/lib/knowledge-utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 interface LocalRecommendationsSectionProps {
-    recommendations: RecommendationItem[];
-    setRecommendations: (r: RecommendationItem[]) => void;
+    recommendations: FeatureItem[];
+    setRecommendations: (r: FeatureItem[]) => void;
     otherRecommendations: string;
     setOtherRecommendations: (s: string) => void;
     compact?: boolean;
@@ -23,17 +24,15 @@ export const LocalRecommendationsSection = ({
 }: LocalRecommendationsSectionProps) => {
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
-    const updateRecommendation = (id: string, value: string) => {
-        setRecommendations(
-            recommendations.map((r) => (r.id === id ? { ...r, recommendations: value } : r))
-        );
+    const handleUpdateDetails = (id: string, details: string) => {
+        updateDetails(id, details, recommendations, setRecommendations);
     };
 
     return (
         <div className="space-y-3">
             {recommendations.map((category) => {
                 const Icon = category.icon;
-                const hasContent = category.recommendations.length > 0;
+                const hasContent = category.details && category.details.length > 0;
                 const isExpanded = expandedId === category.id;
 
                 return (
@@ -79,8 +78,8 @@ export const LocalRecommendationsSection = ({
                             <div className="px-4 pb-4">
                                 <Textarea
                                     placeholder={`Add your ${category.label.toLowerCase()} recommendations...`}
-                                    value={category.recommendations}
-                                    onChange={(e) => updateRecommendation(category.id, e.target.value)}
+                                    value={category.details || ""}
+                                    onChange={(e) => handleUpdateDetails(category.id, e.target.value)}
                                     className="min-h-[100px] resize-none text-sm"
                                 />
                             </div>

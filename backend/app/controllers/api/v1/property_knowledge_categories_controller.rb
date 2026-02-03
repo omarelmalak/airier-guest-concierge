@@ -12,9 +12,10 @@ module Api
                     id: post_property_knowledge_category_params[:knowledge_category_id]
                 )
 
-                property_knowledge_category = PropertyKnowledgeCategory.find_or_create_by!(
+                property_knowledge_category = PropertyKnowledgeCategory.create!(
                     property: property,
-                    knowledge_category: knowledge_category
+                    knowledge_category: knowledge_category,
+                    description: post_property_knowledge_category_params[:description]
                 )
 
                 render json: format_create_property_knowledge_categories_response(property_knowledge_category)

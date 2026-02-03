@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AmenityItem, WhereIsItem, RecommendationItem, RuleItem, TabType } from "@/lib/static-data/client-types";
+import { FeatureItem, TabType } from "@/lib/static-data/client-types";
 import { AmenitiesSection } from "@/components/knowledge/AmenitiesSection";
 import { WhereIsSection } from "@/components/knowledge/WhereIsSection";
 import { LocalRecommendationsSection } from "@/components/knowledge/LocalRecommendationsSection";
@@ -53,13 +53,13 @@ const PropertyDetail = () => {
   const [checkOutMessage, setCheckOutMessage] = useState(property?.checkOutMessage || "");
 
   // Knowledge states - new granular structure
-  const [amenities, setAmenities] = useState<AmenityItem[]>();
+  const [amenities, setAmenities] = useState<FeatureItem[]>();
   const [otherAmenities, setOtherAmenities] = useState("");
-  const [whereIsItems, setWhereIsItems] = useState<WhereIsItem[]>();
+  const [whereIsItems, setWhereIsItems] = useState<FeatureItem[]>();
   const [otherWhereIs, setOtherWhereIs] = useState("");
-  const [recommendations, setRecommendations] = useState<RecommendationItem[]>();
+  const [recommendations, setRecommendations] = useState<FeatureItem[]>();
   const [otherRecommendations, setOtherRecommendations] = useState("");
-  const [rules, setRules] = useState<RuleItem[]>();
+  const [rules, setRules] = useState<FeatureItem[]>();
   const [otherRules, setOtherRules] = useState("");
 
   // Exact answers states
@@ -475,20 +475,20 @@ const OverviewTab = ({
 
 // Knowledge Tab Component
 interface KnowledgeTabProps {
-  amenities: AmenityItem[];
-  setAmenities: (a: AmenityItem[]) => void;
+  amenities: FeatureItem[];
+  setAmenities: (a: FeatureItem[]) => void;
   otherAmenities: string;
   setOtherAmenities: (s: string) => void;
-  whereIsItems: WhereIsItem[];
-  setWhereIsItems: (items: WhereIsItem[]) => void;
+  whereIsItems: FeatureItem[];
+  setWhereIsItems: (items: FeatureItem[]) => void;
   otherWhereIs: string;
   setOtherWhereIs: (s: string) => void;
-  recommendations: RecommendationItem[];
-  setRecommendations: (r: RecommendationItem[]) => void;
+  recommendations: FeatureItem[];
+  setRecommendations: (r: FeatureItem[]) => void;
   otherRecommendations: string;
   setOtherRecommendations: (s: string) => void;
-  rules: RuleItem[];
-  setRules: (r: RuleItem[]) => void;
+  rules: FeatureItem[];
+  setRules: (r: FeatureItem[]) => void;
   otherRules: string;
   setOtherRules: (s: string) => void;
 }

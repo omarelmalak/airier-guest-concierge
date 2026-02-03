@@ -24,6 +24,10 @@ Rails.application.routes.draw do
       resources :knowledge_categories, only: [:create]
 
       resources :property_knowledge_categories, only: [:create]
+
+      resources :features, only: [:create]
+
+      resources :knowledge_category_features, only: [:create]
     end
   end
 

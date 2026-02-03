@@ -15,7 +15,18 @@ export interface KnowledgeCategoryInfo {
 }
 
 export interface PropertyKnowledgeCategoryInfo {
-    property_id: string;
-    knowledge_category_id: string;
+    propertyId: string;
+    knowledgeCategoryId: string;
+    description: string;
+}
+
+export interface FeatureInfo {
+    name: string;
+}
+
+export interface KnowledgeCategoryFeatureInfo {
+    propertyId: string;
+    knowledgeCategoryId: string;
+    featureId: string;
     description: string;
 }

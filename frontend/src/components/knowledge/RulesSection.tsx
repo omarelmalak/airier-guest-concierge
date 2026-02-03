@@ -1,14 +1,15 @@
-import { RuleItem } from "@/lib/static-data/client-types";
+import { FeatureItem } from "@/lib/static-data/client-types";
 import { Volume2, Dog, Cigarette, PartyPopper, Baby } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { toggleItem, updateDetails } from "@/lib/knowledge-utils";
 
 interface RulesSectionProps {
-    rules: RuleItem[];
-    setRules: (r: RuleItem[]) => void;
+    rules: FeatureItem[];
+    setRules: (r: FeatureItem[]) => void;
     otherRules: string;
     setOtherRules: (s: string) => void;
     compact?: boolean;
@@ -20,12 +21,12 @@ export const RulesSection = ({
     otherRules,
     setOtherRules,
 }: RulesSectionProps) => {
-    const toggleRule = (id: string) => {
-        setRules(rules.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r)));
+    const handleToggleItem = (id: string) => {
+        toggleItem(id, rules, setRules);
     };
 
-    const updateDetails = (id: string, details: string) => {
-        setRules(rules.map((r) => (r.id === id ? { ...r, details } : r)));
+    const handleUpdateDetails = (id: string, details: string) => {
+        updateDetails(id, details, rules, setRules);
     };
 
     return (
@@ -47,7 +48,7 @@ export const RulesSection = ({
                             <div className="flex items-center gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => toggleRule(rule.id)}
+                                    onClick={() => handleToggleItem(rule.id)}
                                     className={cn(
                                         "p-2 rounded-lg transition-colors",
                                         rule.enabled ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
@@ -63,7 +64,7 @@ export const RulesSection = ({
                                 </span>
                                 <button
                                     type="button"
-                                    onClick={() => toggleRule(rule.id)}
+                                    onClick={() => handleToggleItem(rule.id)}
                                     className={cn(
                                         "w-12 h-7 rounded-full transition-colors relative",
                                         rule.enabled ? "bg-primary" : "bg-muted"
@@ -78,23 +79,12 @@ export const RulesSection = ({
                                 </button>
                             </div>
 
-                            {rule.enabled && rule.type === "time" && (
+                            {rule.enabled && rule.allowDetails && (
                                 <div className="mt-3 pl-11">
                                     <Input
-                                        placeholder="e.g., 10 PM - 8 AM"
+                                        placeholder={rule.id === "quiet" ? "e.g., 10 PM - 8 AM" : "e.g., Small dogs only, $50 pet fee"}
                                         value={rule.details || ""}
-                                        onChange={(e) => updateDetails(rule.id, e.target.value)}
-                                        className="text-sm"
-                                    />
-                                </div>
-                            )}
-
-                            {rule.enabled && rule.id === "pets" && (
-                                <div className="mt-3 pl-11">
-                                    <Input
-                                        placeholder="e.g., Small dogs only, $50 pet fee"
-                                        value={rule.details || ""}
-                                        onChange={(e) => updateDetails(rule.id, e.target.value)}
+                                        onChange={(e) => handleUpdateDetails(rule.id, e.target.value)}
                                         className="text-sm"
                                     />
                                 </div>

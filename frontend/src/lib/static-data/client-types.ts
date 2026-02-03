@@ -13,35 +13,13 @@ export interface GuestInfo {
     endDate: string;
 }
 
-export interface WhereIsItem {
+export interface FeatureItem {
     id: string;
     label: string;
     icon: React.ElementType;
-    location: string;
-}
-
-export interface AmenityItem {
-    id: string;
-    label: string;
-    icon: React.ElementType;
-    enabled: boolean;
+    enabled?: boolean;
     details?: string;
-}
-
-export interface RecommendationItem {
-    id: string;
-    label: string;
-    icon: React.ElementType;
-    recommendations: string;
-}
-
-export interface RuleItem {
-    id: string;
-    label: string;
-    icon: React.ElementType;
-    enabled: boolean;
-    details?: string;
-    type: "toggle" | "time";
+    allowDetails?: boolean;
 }
 
 export type TabType = "overview" | "knowledge" | "exact-answers" | "guests";

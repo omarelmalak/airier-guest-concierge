@@ -24,9 +24,15 @@ export interface CreatePropertyKnowledgeCategoryResponse {
     description: string;
 }
 
-export interface PropertyKnowledgeCategoryInfo {
+export interface CreateFeatureResponse {
+    id: string;
+    name: string;
+}
+
+export interface CreateKnowledgeCategoryFeatureResponse {
     id: string;
     property_id: string;
     knowledge_category_id: string;
+    feature_id: string;
     description: string;
 }

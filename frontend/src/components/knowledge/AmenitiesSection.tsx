@@ -2,16 +2,17 @@ import {
     Wifi, Car, Droplets, Tv, ChefHat, WashingMachine, Thermometer,
     Dumbbell, Flame, Coffee, Utensils, Bath, ChevronDown, ChevronUp
 } from "lucide-react";
-import { AmenityItem } from "@/lib/static-data/client-types";
+import { FeatureItem } from "@/lib/static-data/client-types";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { toggleItem, updateDetails } from "@/lib/knowledge-utils";
 
 interface AmenitiesSectionProps {
-    amenities: AmenityItem[];
-    setAmenities: (a: AmenityItem[]) => void;
+    amenities: FeatureItem[];
+    setAmenities: (a: FeatureItem[]) => void;
     otherAmenities: string;
     setOtherAmenities: (s: string) => void;
     compact?: boolean;
@@ -26,18 +27,12 @@ export const AmenitiesSection = ({
 }: AmenitiesSectionProps) => {
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
-    const toggleAmenity = (id: string) => {
-        setAmenities(
-            amenities.map((a) =>
-                a.id === id ? { ...a, enabled: !a.enabled } : a
-            )
-        );
+    const handleToggleItem = (id: string) => {
+        toggleItem(id, amenities, setAmenities);
     };
 
-    const updateDetails = (id: string, details: string) => {
-        setAmenities(
-            amenities.map((a) => (a.id === id ? { ...a, details } : a))
-        );
+    const handleUpdateDetails = (id: string, details: string) => {
+        updateDetails(id, details, amenities, setAmenities);
     };
 
     return (
@@ -51,7 +46,7 @@ export const AmenitiesSection = ({
                         <div key={amenity.id} className="space-y-2">
                             <button
                                 type="button"
-                                onClick={() => toggleAmenity(amenity.id)}
+                                onClick={() => handleToggleItem(amenity.id)}
                                 className={cn(
                                     "w-full flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200",
                                     amenity.enabled
@@ -78,7 +73,7 @@ export const AmenitiesSection = ({
                                 <Input
                                     placeholder={`e.g., Password: MyWifi123`}
                                     value={amenity.details || ""}
-                                    onChange={(e) => updateDetails(amenity.id, e.target.value)}
+                                    onChange={(e) => handleUpdateDetails(amenity.id, e.target.value)}
                                     className="text-sm"
                                 />
                             )}

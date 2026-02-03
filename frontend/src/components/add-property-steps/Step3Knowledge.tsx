@@ -1,4 +1,4 @@
-import { AmenityItem, WhereIsItem, RecommendationItem, RuleItem } from "@/lib/static-data/client-types";
+import { FeatureItem } from "@/lib/static-data/client-types";
 import { AmenitiesSection } from "@/components/knowledge/AmenitiesSection";
 import { WhereIsSection } from "@/components/knowledge/WhereIsSection";
 import { LocalRecommendationsSection } from "@/components/knowledge/LocalRecommendationsSection";
@@ -6,20 +6,20 @@ import { RulesSection } from "@/components/knowledge/RulesSection";
 
 interface Step3KnowledgeProps {
   currentSubStep: number; // 3, 4, 5, or 6
-  amenities?: AmenityItem[];
-  setAmenities: (amenities: AmenityItem[] | undefined) => void;
+  amenities?: FeatureItem[];
+  setAmenities: (amenities: FeatureItem[] | undefined) => void;
   otherAmenities: string;
   setOtherAmenities: (value: string) => void;
-  whereIsItems?: WhereIsItem[];
-  setWhereIsItems: (items: WhereIsItem[] | undefined) => void;
+  whereIsItems?: FeatureItem[];
+  setWhereIsItems: (items: FeatureItem[] | undefined) => void;
   otherWhereIs: string;
   setOtherWhereIs: (value: string) => void;
-  recommendations?: RecommendationItem[];
-  setRecommendations: (recommendations: RecommendationItem[] | undefined) => void;
+  recommendations?: FeatureItem[];
+  setRecommendations: (recommendations: FeatureItem[] | undefined) => void;
   otherRecommendations: string;
   setOtherRecommendations: (value: string) => void;
-  rules?: RuleItem[];
-  setRules: (rules: RuleItem[] | undefined) => void;
+  rules?: FeatureItem[];
+  setRules: (rules: FeatureItem[] | undefined) => void;
   otherRules: string;
   setOtherRules: (value: string) => void;
 }

@@ -1,14 +1,15 @@
 import { Bath, Bed, Utensils, Tv, Trash2, Thermometer, Lock, Speaker, Plus } from "lucide-react";
-import { WhereIsItem } from "@/lib/static-data/client-types";
+import { FeatureItem } from "@/lib/static-data/client-types";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { toggleItem, updateDetails } from "@/lib/knowledge-utils";
 
 interface WhereIsSectionProps {
-    items: WhereIsItem[];
-    setItems: (items: WhereIsItem[]) => void;
+    items: FeatureItem[];
+    setItems: (items: FeatureItem[]) => void;
     otherItems: string;
     setOtherItems: (s: string) => void;
     compact?: boolean;
@@ -21,21 +22,12 @@ export const WhereIsSection = ({
     setOtherItems,
     compact = false,
 }: WhereIsSectionProps) => {
-    const [activeItems, setActiveItems] = useState<Set<string>>(new Set());
-
-    const toggleItem = (id: string) => {
-        const newActive = new Set(activeItems);
-        if (newActive.has(id)) {
-            newActive.delete(id);
-            setItems(items.map((i) => (i.id === id ? { ...i, location: "" } : i)));
-        } else {
-            newActive.add(id);
-        }
-        setActiveItems(newActive);
+    const handleToggleItem = (id: string) => {
+        toggleItem(id, items, setItems);
     };
 
-    const updateLocation = (id: string, location: string) => {
-        setItems(items.map((i) => (i.id === id ? { ...i, location } : i)));
+    const handleUpdateDetails = (id: string, details: string) => {
+        updateDetails(id, details, items, setItems);
     };
 
     return (
@@ -43,7 +35,7 @@ export const WhereIsSection = ({
             <div className={cn("grid gap-3", compact ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2")}>
                 {items.map((item) => {
                     const Icon = item.icon;
-                    const isActive = activeItems.has(item.id) || item.location.length > 0;
+                    const isActive = item.enabled || (item.details && item.details.length > 0);
 
                     return (
                         <div
@@ -57,7 +49,7 @@ export const WhereIsSection = ({
                         >
                             <button
                                 type="button"
-                                onClick={() => toggleItem(item.id)}
+                                onClick={() => handleToggleItem(item.id)}
                                 className="w-full flex items-center gap-3 p-3"
                             >
                                 <div className={cn(
@@ -82,8 +74,8 @@ export const WhereIsSection = ({
                                 <div className="px-3 pb-3">
                                     <Input
                                         placeholder={`Where can guests find ${item.label.toLowerCase()}?`}
-                                        value={item.location}
-                                        onChange={(e) => updateLocation(item.id, e.target.value)}
+                                        value={item.details || ""}
+                                        onChange={(e) => handleUpdateDetails(item.id, e.target.value)}
                                         className="text-sm"
                                     />
                                 </div>
