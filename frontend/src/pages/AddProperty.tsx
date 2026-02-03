@@ -5,7 +5,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { createProperty } from "@/lib/properties";
-import { PropertyInfo, ExactAnswer, GuestInfo, AmenityItem, WhereIsItem, RecommendationCategory, RuleItem } from "@/lib/static-data/client-types";
+import { ExactAnswer, GuestInfo, AmenityItem, WhereIsItem, RecommendationItem, RuleItem } from "@/lib/static-data/client-types";
+import { PropertyInfo, KnowledgeCategoryInfo, PropertyKnowledgeCategoryInfo } from "@/lib/static-data/request-types";
 import { Step1PropertyInfo } from "../components/add-property-steps/Step1PropertyInfo";
 import { Step2PhotoUpload } from "../components/add-property-steps/Step2PhotoUpload";
 import { Step3Knowledge } from "../components/add-property-steps/Step3Knowledge";
@@ -14,6 +15,7 @@ import { Step8Guests } from "../components/add-property-steps/Step8Guests";
 import { Step9Subscription } from "../components/add-property-steps/Step9Subscription";
 import { PropertyCreated } from "../components/add-property-steps/PropertyCreated";
 import { defaultAmenities, defaultWhereIsItems, defaultRecommendations, defaultRules } from "@/lib/static-data/defaults";
+import { createKnowledgeCategory, createPropertyKnowledgeCategory } from "@/lib/knowledge";
 
 const STEPS = [
   { id: 1, title: "Property Info", description: "Basic details about your property" },
@@ -36,7 +38,6 @@ const AddProperty = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [createdPropertyId, setCreatedPropertyId] = useState<number | string | null>(null);
 
-  // Form states
   const [propertyInfo, setPropertyInfo] = useState<PropertyInfo>({
     name: "",
     address: "",
@@ -49,12 +50,11 @@ const AddProperty = () => {
     checkoutMessage: "",
   });
 
-  // Knowledge states - granular
   const [amenities, setAmenities] = useState<AmenityItem[]>(defaultAmenities);
   const [otherAmenities, setOtherAmenities] = useState("");
   const [whereIsItems, setWhereIsItems] = useState<WhereIsItem[]>(defaultWhereIsItems);
   const [otherWhereIs, setOtherWhereIs] = useState("");
-  const [recommendations, setRecommendations] = useState<RecommendationCategory[]>(defaultRecommendations);
+  const [recommendations, setRecommendations] = useState<RecommendationItem[]>(defaultRecommendations);
   const [otherRecommendations, setOtherRecommendations] = useState("");
   const [rules, setRules] = useState<RuleItem[]>(defaultRules);
   const [otherRules, setOtherRules] = useState("");
@@ -67,18 +67,41 @@ const AddProperty = () => {
     { id: "1", firstName: "", lastName: "", phone: "", startDate: "", endDate: "" },
   ]);
 
-  // Subscription state
   const [selectedMonths, setSelectedMonths] = useState(1);
   const [activateSubscription, setActivateSubscription] = useState(true);
+
+  const createKnowledgeCategoryForProperty = async (
+    categoryName: string,
+    items: unknown[],
+    description: string,
+    propertyId: string
+  ) => {
+    if (items.length === 0 && description === "") return;
+
+    const knowledgeCategoryResponse = await createKnowledgeCategory({ name: categoryName });
+
+    await createPropertyKnowledgeCategory({
+      property_id: propertyId,
+      knowledge_category_id: knowledgeCategoryResponse.id,
+      description: description,
+    });
+  };
 
   const handleNext = async () => {
     if (currentStep === STEPS.length) {
       setIsAnimating(true);
 
       try {
-        const response = await createProperty(propertyInfo);
-        console.log("Property created:", response);
-        setCreatedPropertyId(response.id);
+        const propertyResponse = await createProperty(propertyInfo);
+        const propertyId = propertyResponse.id;
+
+        await createKnowledgeCategoryForProperty("Amenities", amenities, otherAmenities, propertyId);
+        await createKnowledgeCategoryForProperty("WhereIs", whereIsItems, otherWhereIs, propertyId);
+        await createKnowledgeCategoryForProperty("Recommendations", recommendations, otherRecommendations, propertyId);
+        await createKnowledgeCategoryForProperty("Rules", rules, otherRules, propertyId);
+
+        console.log("Property created:", propertyResponse);
+        setCreatedPropertyId(propertyId);
         setIsCompleted(true);
       } catch (error) {
         console.error("Failed to create property:", error);

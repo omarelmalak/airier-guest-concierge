@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AmenityItem, WhereIsItem, RecommendationCategory, RuleItem, TabType } from "@/lib/static-data/client-types";
+import { AmenityItem, WhereIsItem, RecommendationItem, RuleItem, TabType } from "@/lib/static-data/client-types";
 import { AmenitiesSection } from "@/components/knowledge/AmenitiesSection";
 import { WhereIsSection } from "@/components/knowledge/WhereIsSection";
 import { LocalRecommendationsSection } from "@/components/knowledge/LocalRecommendationsSection";
@@ -57,7 +57,7 @@ const PropertyDetail = () => {
   const [otherAmenities, setOtherAmenities] = useState("");
   const [whereIsItems, setWhereIsItems] = useState<WhereIsItem[]>();
   const [otherWhereIs, setOtherWhereIs] = useState("");
-  const [recommendations, setRecommendations] = useState<RecommendationCategory[]>();
+  const [recommendations, setRecommendations] = useState<RecommendationItem[]>();
   const [otherRecommendations, setOtherRecommendations] = useState("");
   const [rules, setRules] = useState<RuleItem[]>();
   const [otherRules, setOtherRules] = useState("");
@@ -483,8 +483,8 @@ interface KnowledgeTabProps {
   setWhereIsItems: (items: WhereIsItem[]) => void;
   otherWhereIs: string;
   setOtherWhereIs: (s: string) => void;
-  recommendations: RecommendationCategory[];
-  setRecommendations: (r: RecommendationCategory[]) => void;
+  recommendations: RecommendationItem[];
+  setRecommendations: (r: RecommendationItem[]) => void;
   otherRecommendations: string;
   setOtherRecommendations: (s: string) => void;
   rules: RuleItem[];

@@ -2,7 +2,7 @@ module Api
   module V1
     class HostsController < ApplicationController
 
-        # POST /api/v1/hosts/profile (SIGNUP)
+        # PATCH /api/v1/hosts/profile (COMPLETE PROFILE)
         def complete_profile
             host = Host.find_by!(auth_user_id: @auth_user_id)
         

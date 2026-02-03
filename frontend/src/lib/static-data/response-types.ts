@@ -11,3 +11,22 @@ export interface CreatePropertyResponse {
     checkin_msg: string;
     checkout_msg: string;
 }
+
+export interface CreateKnowledgeCategoryResponse {
+    id: string;
+    name: string;
+}
+
+export interface CreatePropertyKnowledgeCategoryResponse {
+    id: string;
+    property_id: string;
+    knowledge_category_id: string;
+    description: string;
+}
+
+export interface PropertyKnowledgeCategoryInfo {
+    id: string;
+    property_id: string;
+    knowledge_category_id: string;
+    description: string;
+}

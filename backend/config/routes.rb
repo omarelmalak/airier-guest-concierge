@@ -18,6 +18,12 @@ Rails.application.routes.draw do
       resource :hosts, only: [] do
         patch :profile, to: "hosts#complete_profile"
       end
+
+      resources :properties, only: [:create]
+
+      resources :knowledge_categories, only: [:create]
+
+      resources :property_knowledge_categories, only: [:create]
     end
   end
 

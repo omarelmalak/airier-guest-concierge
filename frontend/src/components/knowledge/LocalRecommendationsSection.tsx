@@ -1,4 +1,4 @@
-import { RecommendationCategory } from "@/lib/static-data/client-types";
+import { RecommendationItem } from "@/lib/static-data/client-types";
 import { UtensilsCrossed, ShoppingCart, Stethoscope, Bus, Moon, Theater } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,8 +7,8 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 interface LocalRecommendationsSectionProps {
-    recommendations: RecommendationCategory[];
-    setRecommendations: (r: RecommendationCategory[]) => void;
+    recommendations: RecommendationItem[];
+    setRecommendations: (r: RecommendationItem[]) => void;
     otherRecommendations: string;
     setOtherRecommendations: (s: string) => void;
     compact?: boolean;

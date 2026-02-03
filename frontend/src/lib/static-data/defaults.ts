@@ -1,4 +1,4 @@
-import { AmenityItem, RecommendationCategory, RuleItem, WhereIsItem } from "./client-types";
+import { AmenityItem, RecommendationItem, RuleItem, WhereIsItem } from "./client-types";
 import {
     Wifi, Car, Droplets, Tv, ChefHat, WashingMachine, Thermometer,
     Flame, Dumbbell, Bath, Coffee, Utensils, Theater, Moon, Bus,
@@ -22,7 +22,7 @@ export const defaultAmenities: AmenityItem[] = [
     { id: "workspace", label: "Workspace", icon: Utensils, enabled: false },
 ];
 
-export const defaultRecommendations: RecommendationCategory[] = [
+export const defaultRecommendations: RecommendationItem[] = [
     { id: "restaurants", label: "Restaurants", icon: UtensilsCrossed, recommendations: "" },
     { id: "grocery", label: "Grocery Stores", icon: ShoppingCart, recommendations: "" },
     { id: "hospital", label: "Hospital / Pharmacy", icon: Stethoscope, recommendations: "" },

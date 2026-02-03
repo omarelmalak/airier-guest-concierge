@@ -1,15 +1,3 @@
-export interface PropertyInfo {
-    name: string;
-    address: string;
-    ownershipLevel: string;
-    propertyType: string;
-    bedrooms: string;
-    bathrooms: string;
-    photo: string;
-    checkinMessage: string;
-    checkoutMessage: string;
-}
-
 export interface ExactAnswer {
     id: string;
     question: string;
@@ -40,7 +28,7 @@ export interface AmenityItem {
     details?: string;
 }
 
-export interface RecommendationCategory {
+export interface RecommendationItem {
     id: string;
     label: string;
     icon: React.ElementType;

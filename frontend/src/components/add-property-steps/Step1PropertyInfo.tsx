@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PropertyInfo } from "@/lib/static-data/client-types";
+import { PropertyInfo } from "@/lib/static-data/request-types";
 
 interface Step1PropertyInfoProps {
   propertyInfo: PropertyInfo;

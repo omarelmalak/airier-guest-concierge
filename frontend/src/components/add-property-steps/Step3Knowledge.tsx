@@ -1,4 +1,4 @@
-import { AmenityItem, WhereIsItem, RecommendationCategory, RuleItem } from "@/lib/static-data/client-types";
+import { AmenityItem, WhereIsItem, RecommendationItem, RuleItem } from "@/lib/static-data/client-types";
 import { AmenitiesSection } from "@/components/knowledge/AmenitiesSection";
 import { WhereIsSection } from "@/components/knowledge/WhereIsSection";
 import { LocalRecommendationsSection } from "@/components/knowledge/LocalRecommendationsSection";
@@ -14,8 +14,8 @@ interface Step3KnowledgeProps {
   setWhereIsItems: (items: WhereIsItem[] | undefined) => void;
   otherWhereIs: string;
   setOtherWhereIs: (value: string) => void;
-  recommendations?: RecommendationCategory[];
-  setRecommendations: (recommendations: RecommendationCategory[] | undefined) => void;
+  recommendations?: RecommendationItem[];
+  setRecommendations: (recommendations: RecommendationItem[] | undefined) => void;
   otherRecommendations: string;
   setOtherRecommendations: (value: string) => void;
   rules?: RuleItem[];
