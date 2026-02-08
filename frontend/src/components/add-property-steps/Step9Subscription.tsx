@@ -1,6 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { Zap, Users, Calendar } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 
 interface Step9SubscriptionProps {
   selectedMonths: number;

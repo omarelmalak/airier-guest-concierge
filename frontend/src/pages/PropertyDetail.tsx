@@ -4,7 +4,7 @@ import { ArrowLeft, Star, Wifi, Car, Droplets, ChefHat, Plus, Trash2, Save, Cloc
 import { mockProperties, Property, Guest } from "@/data/mockData";
 import StatusBadge from "@/components/StatusBadge";
 import DashboardLayout from "@/components/DashboardLayout";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

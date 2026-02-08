@@ -1,4 +1,4 @@
-import { FeatureItem } from './static-data/client-types';
+import { FeatureItem } from '../static-data/client-types';
 
 export const toggleItem = (
     id: string,

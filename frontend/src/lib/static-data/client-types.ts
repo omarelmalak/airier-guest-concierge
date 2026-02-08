@@ -4,7 +4,7 @@ export interface ExactAnswer {
     answer: string;
 }
 
-export interface GuestInfo {
+export interface Guest {
     id: string;
     firstName: string;
     lastName: string;

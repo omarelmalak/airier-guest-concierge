@@ -2,13 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2 } from "lucide-react";
-import { GuestInfo } from "@/lib/static-data/client-types";
+import { Guest } from "@/lib/static-data/client-types";
 
 interface Step8GuestsProps {
-  guests: GuestInfo[];
+  guests: Guest[];
   addGuest: () => void;
   removeGuest: (id: string) => void;
-  updateGuest: (id: string, field: keyof GuestInfo, value: string) => void;
+  updateGuest: (id: string, field: keyof Guest, value: string) => void;
 }
 
 export const Step8Guests = ({

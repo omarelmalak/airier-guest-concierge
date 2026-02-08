@@ -7,7 +7,7 @@ import { Save, User, Bell, Shield, CreditCard, Home, Calendar, Users, Zap, Rotat
 import { useState } from "react";
 import { mockProperties, Property } from "@/data/mockData";
 import SubscriptionDialog from "@/components/SubscriptionDialog";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 
 const Settings = () => {
   const [name, setName] = useState("Omar El Malak");
@@ -28,16 +28,16 @@ const Settings = () => {
 
   const handleSubscriptionActivate = (months: number) => {
     if (!selectedProperty) return;
-    
-    const baseDate = selectedProperty.subscriptionExpiry 
-      ? new Date(selectedProperty.subscriptionExpiry) 
+
+    const baseDate = selectedProperty.subscriptionExpiry
+      ? new Date(selectedProperty.subscriptionExpiry)
       : new Date();
     const newDate = new Date(baseDate);
     newDate.setMonth(newDate.getMonth() + months);
     const newExpiry = newDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-    setProperties(prev => prev.map(p => 
-      p.id === selectedProperty.id 
+    setProperties(prev => prev.map(p =>
+      p.id === selectedProperty.id
         ? { ...p, subscriptionActive: true, subscriptionExpiry: newExpiry }
         : p
     ));
@@ -45,8 +45,8 @@ const Settings = () => {
 
   const handleSubscriptionDeactivate = () => {
     if (!selectedProperty) return;
-    setProperties(prev => prev.map(p => 
-      p.id === selectedProperty.id 
+    setProperties(prev => prev.map(p =>
+      p.id === selectedProperty.id
         ? { ...p, subscriptionActive: false }
         : p
     ));

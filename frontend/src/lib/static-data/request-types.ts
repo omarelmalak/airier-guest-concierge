@@ -30,3 +30,22 @@ export interface KnowledgeCategoryFeatureInfo {
     featureId: string;
     description: string;
 }
+
+export interface ExactAnswerInfo {
+    propertyId: string;
+    question: string;
+    answer: string;
+}
+
+export interface GuestInfo {
+    firstName: string;
+    lastName: string;
+    phone: string;
+}
+
+export interface ReservationInfo {
+    propertyId: string;
+    guestId: string;
+    checkIn: string;
+    checkOut: string;
+}

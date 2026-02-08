@@ -1,7 +1,7 @@
-import { supabase } from './supabase';
-import { api } from './api';
-import { CreateKnowledgeCategoryResponse, CreatePropertyKnowledgeCategoryResponse, CreateFeatureResponse, CreateKnowledgeCategoryFeatureResponse } from '@/lib/static-data/response-types';
-import { KnowledgeCategoryInfo, PropertyKnowledgeCategoryInfo, FeatureInfo, KnowledgeCategoryFeatureInfo } from './static-data/request-types';
+import { supabase } from '../supabase';
+import { api } from '../api';
+import { CreateKnowledgeCategoryResponse, CreatePropertyKnowledgeCategoryResponse, CreateFeatureResponse, CreateKnowledgeCategoryFeatureResponse, CreateExactAnswerResponse } from '@/lib/static-data/response-types';
+import { KnowledgeCategoryInfo, PropertyKnowledgeCategoryInfo, FeatureInfo, KnowledgeCategoryFeatureInfo, ExactAnswerInfo } from '../static-data/request-types';
 
 export const createKnowledgeCategory = async (knowledgeCategory: KnowledgeCategoryInfo): Promise<CreateKnowledgeCategoryResponse> => {
     const response = await api.post<CreateKnowledgeCategoryResponse>('/knowledge_categories', {
@@ -42,6 +42,18 @@ export const createKnowledgeCategoryFeature = async (knowledgeCategoryFeature: K
             knowledge_category_id: knowledgeCategoryFeature.knowledgeCategoryId,
             feature_id: knowledgeCategoryFeature.featureId,
             description: knowledgeCategoryFeature.description,
+        },
+    });
+
+    return response;
+}
+
+export const createExactAnswer = async (exactAnswer: ExactAnswerInfo): Promise<CreateExactAnswerResponse> => {
+    const response = await api.post<CreateExactAnswerResponse>('/exact_answers', {
+        exact_answer: {
+            property_id: exactAnswer.propertyId,
+            question: exactAnswer.question,
+            answer: exactAnswer.answer,
         },
     });
 

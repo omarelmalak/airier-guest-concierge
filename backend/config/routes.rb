@@ -28,6 +28,12 @@ Rails.application.routes.draw do
       resources :features, only: [:create]
 
       resources :knowledge_category_features, only: [:create]
+
+      resources :exact_answers, only: [:create]
+
+      resources :guests, only: [:create]
+
+      resources :reservations, only: [:create]
     end
   end
 

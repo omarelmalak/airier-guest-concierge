@@ -3,12 +3,12 @@ import {
     Dumbbell, Flame, Coffee, Utensils, Bath, ChevronDown, ChevronUp
 } from "lucide-react";
 import { FeatureItem } from "@/lib/static-data/client-types";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { toggleItem, updateDetails } from "@/lib/knowledge-utils";
+import { toggleItem, updateDetails } from "@/lib/utils/knowledge-utils";
 
 interface AmenitiesSectionProps {
     amenities: FeatureItem[];

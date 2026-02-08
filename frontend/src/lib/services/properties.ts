@@ -1,5 +1,5 @@
-import { supabase } from './supabase';
-import { api } from './api';
+import { supabase } from '../supabase';
+import { api } from '../api';
 import { PropertyInfo } from '@/lib/static-data/request-types';
 import { CreatePropertyResponse } from '@/lib/static-data/response-types';
 import apartmentPhoto from '@/assets/default-property-photos/apartment.jpg';

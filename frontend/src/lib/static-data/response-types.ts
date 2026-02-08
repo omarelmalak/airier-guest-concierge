@@ -36,3 +36,25 @@ export interface CreateKnowledgeCategoryFeatureResponse {
     feature_id: string;
     description: string;
 }
+
+export interface CreateExactAnswerResponse {
+    id: string;
+    property_id: string;
+    question: string;
+    answer: string;
+}
+
+export interface CreateGuestResponse {
+    id: string;
+    first_name: string;
+    last_name: string;
+    phone: string;
+}
+
+export interface CreateReservationResponse {
+    id: string;
+    property_id: string;
+    guest_id: string;
+    check_in: string;
+    check_out: string;
+}

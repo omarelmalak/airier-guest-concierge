@@ -1,9 +1,9 @@
 import { FeatureItem } from "@/lib/static-data/client-types";
 import { UtensilsCrossed, ShoppingCart, Stethoscope, Bus, Moon, Theater } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-import { updateDetails } from "@/lib/knowledge-utils";
+import { updateDetails } from "@/lib/utils/knowledge-utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/label";
 

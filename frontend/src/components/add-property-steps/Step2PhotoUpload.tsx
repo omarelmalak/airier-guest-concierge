@@ -31,7 +31,6 @@ export const Step2PhotoUpload = ({ photo, setPhoto }: Step2PhotoUploadProps) => 
       }
 
       const downloadUrl = await uploadPropertyPhoto(file, user.id);
-      console.log("Download URL:", downloadUrl);
 
       setPhoto(downloadUrl);
     } catch (error: any) {

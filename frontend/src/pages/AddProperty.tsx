@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { createProperty } from "@/lib/properties";
-import { ExactAnswer, GuestInfo, FeatureItem } from "@/lib/static-data/client-types";
+import { ExactAnswer, Guest, FeatureItem } from "@/lib/static-data/client-types";
 import { PropertyInfo, KnowledgeCategoryInfo, PropertyKnowledgeCategoryInfo } from "@/lib/static-data/request-types";
 import { Step1PropertyInfo } from "../components/add-property-steps/Step1PropertyInfo";
 import { Step2PhotoUpload } from "../components/add-property-steps/Step2PhotoUpload";
@@ -15,7 +13,9 @@ import { Step8Guests } from "../components/add-property-steps/Step8Guests";
 import { Step9Subscription } from "../components/add-property-steps/Step9Subscription";
 import { PropertyCreated } from "../components/add-property-steps/PropertyCreated";
 import { defaultAmenities, defaultWhereIsItems, defaultRecommendations, defaultRules } from "@/lib/static-data/defaults";
-import { createKnowledgeCategory, createPropertyKnowledgeCategory, createFeature } from "@/lib/knowledge";
+import { createProperty } from "@/lib/services/properties";
+import { createKnowledgeCategory, createPropertyKnowledgeCategory, createFeature, createKnowledgeCategoryFeature, createExactAnswer } from "@/lib/services/knowledge";
+import { createGuest, createReservation } from "@/lib/services/guests";
 
 const STEPS = [
   { id: 1, title: "Property Info", description: "Basic details about your property" },
@@ -63,16 +63,16 @@ const AddProperty = () => {
     { id: "1", question: "", answer: "" },
   ]);
 
-  const [guests, setGuests] = useState<GuestInfo[]>([
+  const [guests, setGuests] = useState<Guest[]>([
     { id: "1", firstName: "", lastName: "", phone: "", startDate: "", endDate: "" },
   ]);
 
   const [selectedMonths, setSelectedMonths] = useState(1);
   const [activateSubscription, setActivateSubscription] = useState(true);
 
-  const buildKnowledgePerCategory = async (
+  const addKnowledgePerCategory = async (
     categoryName: string,
-    items: unknown[],
+    items: FeatureItem[],
     description: string,
     propertyId: string
   ) => {
@@ -87,11 +87,47 @@ const AddProperty = () => {
     });
 
     for (const item of items) {
-      if (item && typeof item === 'object' && 'label' in item) {
-        await createFeature({
-          name: (item as FeatureItem).label,
+      if (item.enabled) {
+        // CREATE THE FEATURE AND ATTACH TO THE KNOWLEDGE CATEGORY FOR THIS PROPERTY
+        const response = await createFeature({
+          name: item.label,
+        });
+        const knowledgeCategoryFeatureResponse = await createKnowledgeCategoryFeature({
+          propertyId: propertyId,
+          knowledgeCategoryId: knowledgeCategoryResponse.id,
+          featureId: response.id,
+          description: item.details || "",
         });
       }
+    }
+  };
+
+  const addExactAnswers = async (exactAnswers: ExactAnswer[], propertyId: string) => {
+    for (const exactAnswer of exactAnswers) {
+      await createExactAnswer({
+        propertyId: propertyId,
+        question: exactAnswer.question,
+        answer: exactAnswer.answer,
+      });
+    }
+  };
+
+  const addGuests = async (guests: Guest[], propertyId: string) => {
+    for (const guest of guests) {
+      const guestResponse = await createGuest({
+        firstName: guest.firstName,
+        lastName: guest.lastName,
+        phone: guest.phone,
+      });
+
+
+      console.log("guestResponse:", guestResponse);
+      const reservationResponse = await createReservation({
+        propertyId: propertyId,
+        guestId: guestResponse.id,
+        checkIn: new Date(guest.startDate).toISOString(),
+        checkOut: new Date(guest.endDate).toISOString(),
+      });
     }
   };
 
@@ -103,12 +139,14 @@ const AddProperty = () => {
         const propertyResponse = await createProperty(propertyInfo);
         const propertyId = propertyResponse.id;
 
-        await buildKnowledgePerCategory("Amenities", amenities, otherAmenities, propertyId);
-        await buildKnowledgePerCategory("WhereIs", whereIsItems, otherWhereIs, propertyId);
-        await buildKnowledgePerCategory("Recommendations", recommendations, otherRecommendations, propertyId);
-        await buildKnowledgePerCategory("Rules", rules, otherRules, propertyId);
+        await addKnowledgePerCategory("Amenities", amenities, otherAmenities, propertyId);
+        await addKnowledgePerCategory("WhereIs", whereIsItems, otherWhereIs, propertyId);
+        await addKnowledgePerCategory("Recommendations", recommendations, otherRecommendations, propertyId);
+        await addKnowledgePerCategory("Rules", rules, otherRules, propertyId);
 
-        console.log("Property created:", propertyResponse);
+        await addExactAnswers(exactAnswers, propertyId);
+        await addGuests(guests, propertyId);
+
         setCreatedPropertyId(propertyId);
         setIsCompleted(true);
       } catch (error) {
@@ -172,7 +210,7 @@ const AddProperty = () => {
     }
   };
 
-  const updateGuest = (id: string, field: keyof GuestInfo, value: string) => {
+  const updateGuest = (id: string, field: keyof Guest, value: string) => {
     setGuests(guests.map((g) => (g.id === id ? { ...g, [field]: value } : g)));
   };
 
@@ -180,16 +218,6 @@ const AddProperty = () => {
 
   const handleFinish = () => {
     navigate("/");
-  };
-
-  // Get the step group for progress display
-  const getStepGroup = (step: number) => {
-    if (step === 1) return "info";
-    if (step === 2) return "photo";
-    if (step >= 3 && step <= 6) return "knowledge";
-    if (step === 7) return "answers";
-    if (step === 8) return "guests";
-    return "subscription";
   };
 
   const progressGroups = [

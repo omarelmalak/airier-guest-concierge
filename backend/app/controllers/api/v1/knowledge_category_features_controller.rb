@@ -1,6 +1,7 @@
 module Api
     module V1
         class KnowledgeCategoryFeaturesController < ApplicationController
+
             # POST /api/v1/knowledge_category_features (CREATE KNOWLEDGE CATEGORY FEATURE)
             def create
                 host = Host.find_by!(auth_user_id: @auth_user_id)
@@ -15,7 +16,7 @@ module Api
                     id: post_knowledge_category_feature_params[:feature_id]
                 )
 
-                property_knowledge_category = PropertyKnowledgeCategory.find_or_create_by!(
+                knowledge_category_feature = KnowledgeCategoryFeature.create!(
                     property: property,
                     knowledge_category: knowledge_category,
                     feature: feature,
