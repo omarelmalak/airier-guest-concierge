@@ -8,7 +8,7 @@ module Api
 
                 property = Property.where(host_id: host.id).find_by!(id: post_exact_answer_params[:property_id])
 
-                exact_answer = ExactAnswer.new(
+                exact_answer = ExactAnswer.create!(
                     post_exact_answer_params
                 )
 
