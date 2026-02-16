@@ -58,3 +58,14 @@ export interface CreateReservationResponse {
     check_in: string;
     check_out: string;
 }
+
+export interface GetPropertiesResponse {
+    id: string;
+    name: string;
+    address: string;
+    photo: string;
+    active_guests_count: number;
+    subscription_expires_at: string;
+    escalations_count: number;
+    ai_status: string;
+}

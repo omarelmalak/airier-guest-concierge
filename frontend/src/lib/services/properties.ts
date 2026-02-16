@@ -1,7 +1,7 @@
 import { supabase } from '../supabase';
 import { api } from '../api';
 import { PropertyInfo } from '@/lib/static-data/request-types';
-import { CreatePropertyResponse } from '@/lib/static-data/response-types';
+import { CreatePropertyResponse, GetPropertiesResponse } from '@/lib/static-data/response-types';
 import apartmentPhoto from '@/assets/default-property-photos/apartment.jpg';
 import cabinPhoto from '@/assets/default-property-photos/cabin.jpg';
 import condoPhoto from '@/assets/default-property-photos/condo.jpg';
@@ -43,5 +43,10 @@ export const createProperty = async (property: PropertyInfo): Promise<CreateProp
         }
     });
 
+    return response;
+}
+
+export const getProperties = async (): Promise<GetPropertiesResponse[]> => {
+    const response = await api.get<GetPropertiesResponse[]>('/properties');
     return response;
 }

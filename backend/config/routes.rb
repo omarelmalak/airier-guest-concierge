@@ -19,7 +19,7 @@ Rails.application.routes.draw do
         patch :profile, to: "hosts#complete_profile"
       end
 
-      resources :properties, only: [:create]
+      resources :properties, only: [:create, :index]
 
       resources :knowledge_categories, only: [:create]
 
