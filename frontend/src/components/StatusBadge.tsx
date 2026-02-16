@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils/common";
 import { AIStatus } from "@/data/mockData";
 
 interface StatusBadgeProps {
-  status: AIStatus;
+  status: string;
   className?: string;
 }
 
@@ -25,7 +25,12 @@ const statusConfig = {
 };
 
 const StatusBadge = ({ status, className }: StatusBadgeProps) => {
-  const config = statusConfig[status];
+  let config: typeof statusConfig[keyof typeof statusConfig];
+  if (!statusConfig[status]) {
+    config = statusConfig.offline;
+  } else {
+    config = statusConfig[status];
+  }
 
   return (
     <div

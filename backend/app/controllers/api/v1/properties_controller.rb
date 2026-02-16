@@ -10,7 +10,27 @@ module Api
                     post_property_params.merge(host_id: host.id)
                 )
 
-                render json: format_property(property), status: :created
+                render json: post_format_property(property)
+            end
+
+            # GET /api/v1/properties (GET ALL PROPERTIES – list with card summary data)
+            def index
+                host = Host.find_by!(auth_user_id: @auth_user_id)
+                properties = Property.where(host_id: host.id)
+                property_ids = properties.pluck(:id)
+
+                active_guests_by_property = Reservation
+                    .where(property_id: property_ids)
+                    .where('? BETWEEN check_in AND check_out', Date.current)
+                    .group(:property_id).count
+
+                subscription_ends_by_property = Subscription
+                    .where(property_id: property_ids)
+                    .where(cancelled_at: nil)
+                    .pluck(:property_id, :current_period_end)
+                    .to_h
+
+                render json: properties.map { |property| get_format_property(property, active_guests_by_property, subscription_ends_by_property) }
             end
 
             private
@@ -29,19 +49,32 @@ module Api
                   )
             end
             
-            def format_property(property)
-                { id: property.id, 
-                host_id: property.host_id,
-                name: property.name, 
-                property_type: property.property_type, 
-                bedrooms: property.bedrooms, 
-                bathrooms: property.bathrooms, 
-                address: property.address,
-                photo: property.photo,
-                ownership_level: property.ownership_level,
-                checkin_msg: property.checkin_msg, 
-                checkout_msg: property.checkout_msg }
-        end
+            def post_format_property(property)
+                { id: property.id,
+                  host_id: property.host_id,
+                  name: property.name,
+                  property_type: property.property_type,
+                  bedrooms: property.bedrooms,
+                  bathrooms: property.bathrooms,
+                  address: property.address,
+                  photo: property.photo,
+                  ownership_level: property.ownership_level,
+                  checkin_msg: property.checkin_msg,
+                  checkout_msg: property.checkout_msg }
+            end
+
+            def get_format_property(property, active_guests_by_property, subscription_ends_by_property)
+                {
+                    id: property.id,
+                    name: property.name,
+                    address: property.address,
+                    photo: property.photo,
+                    active_guests_count: active_guests_by_property[property.id] || 0,
+                    subscription_expires_at: subscription_ends_by_property[property.id]&.iso8601,
+                    escalations_count: 0, # TODO: from escalations when linked to property
+                    ai_status: 'active'     # TODO: from real source when defined
+                }
+            end
     end
   end
 end

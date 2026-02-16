@@ -4,8 +4,16 @@ import DashboardLayout from "@/components/DashboardLayout";
 import PropertyCard from "@/components/PropertyCard";
 import { mockProperties } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
+import { getProperties } from "@/lib/services/properties";
+import { useQuery } from "@tanstack/react-query";
 
 const Properties = () => {
+    const { data: properties, isLoading } = useQuery({
+        queryKey: ['properties'],
+        queryFn: () => getProperties(),
+        refetchInterval: 30_000,
+    });
+
     return (
         <DashboardLayout>
             <div className="max-w-7xl mx-auto animate-fade-in">
@@ -27,7 +35,7 @@ const Properties = () => {
 
                 {/* Property Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
-                    {mockProperties.map((property, index) => (
+                    {properties?.map((property, index) => (
                         <div
                             key={property.id}
                             className="animate-fade-in"
