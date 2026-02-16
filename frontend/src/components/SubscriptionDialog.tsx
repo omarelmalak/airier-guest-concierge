@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 
 interface SubscriptionDialogProps {
   open: boolean;
@@ -122,8 +122,8 @@ const SubscriptionDialog = ({
             {step === "success"
               ? `Your subscription for ${propertyName} is now active.`
               : step === "cancel-confirm"
-              ? `Are you sure you want to cancel the subscription for ${propertyName}?`
-              : `Manage AI assistant subscription for ${propertyName}`}
+                ? `Are you sure you want to cancel the subscription for ${propertyName}?`
+                : `Manage AI assistant subscription for ${propertyName}`}
           </DialogDescription>
         </DialogHeader>
 

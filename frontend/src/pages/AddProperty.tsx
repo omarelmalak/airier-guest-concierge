@@ -1,57 +1,29 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, Upload, X, Plus, Trash2, Zap, Users, Calendar, CreditCard } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  AmenitiesSection,
-  WhereIsSection,
-  LocalRecommendationsSection,
-  RulesSection,
-  defaultAmenities,
-  defaultWhereIsItems,
-  defaultRecommendations,
-  defaultRules,
-  AmenityItem,
-  WhereIsItem,
-  RecommendationCategory,
-  RuleItem,
-} from "@/components/KnowledgeEditor";
-import { cn } from "@/lib/utils";
-
-interface PropertyInfo {
-  name: string;
-  address: string;
-  type: string;
-  bedrooms: string;
-  bathrooms: string;
-}
-
-interface ExactAnswer {
-  id: string;
-  question: string;
-  answer: string;
-}
-
-interface GuestInfo {
-  id: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  startDate: string;
-  endDate: string;
-}
+import { ExactAnswer, Guest, FeatureItem } from "@/lib/static-data/client-types";
+import { PropertyInfo, KnowledgeCategoryInfo, PropertyKnowledgeCategoryInfo } from "@/lib/static-data/request-types";
+import { Step1PropertyInfo } from "../components/add-property-steps/Step1PropertyInfo";
+import { Step2PhotoUpload } from "../components/add-property-steps/Step2PhotoUpload";
+import { Step3Knowledge } from "../components/add-property-steps/Step3Knowledge";
+import { Step7ExactAnswers } from "../components/add-property-steps/Step7ExactAnswers";
+import { Step8Guests } from "../components/add-property-steps/Step8Guests";
+import { Step9Subscription } from "../components/add-property-steps/Step9Subscription";
+import { PropertyCreated } from "../components/add-property-steps/PropertyCreated";
+import { defaultAmenities, defaultWhereIsItems, defaultRecommendations, defaultRules } from "@/lib/static-data/defaults";
+import { createProperty } from "@/lib/services/properties";
+import { createKnowledgeCategory, createPropertyKnowledgeCategory, createFeature, createKnowledgeCategoryFeature, createExactAnswer } from "@/lib/services/knowledge";
+import { createGuest, createReservation } from "@/lib/services/guests";
 
 const STEPS = [
   { id: 1, title: "Property Info", description: "Basic details about your property" },
   { id: 2, title: "Photo", description: "Upload a cover photo" },
-  { id: 3, title: "Amenities", description: "What does your property offer?" },
-  { id: 4, title: "Where is?", description: "Help guests find things" },
-  { id: 5, title: "Local Tips", description: "Share your favorite spots" },
-  { id: 6, title: "Rules", description: "Set expectations" },
+  { id: 3, title: "Knowledge", description: "What your concierge should know about your property" },
+  { id: 4, title: "Knowledge", description: "What your concierge should know about your property" },
+  { id: 5, title: "Knowledge", description: "What your concierge should know about your property" },
+  { id: 6, title: "Knowledge", description: "What your concierge should know about your property" },
   { id: 7, title: "Exact Answers", description: "Set specific Q&A responses" },
   { id: 8, title: "Guests", description: "Add your first guests" },
   { id: 9, title: "Subscription", description: "Activate your AI assistant" },
@@ -64,45 +36,123 @@ const AddProperty = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [createdPropertyId, setCreatedPropertyId] = useState<number | string | null>(null);
 
-  // Form states
   const [propertyInfo, setPropertyInfo] = useState<PropertyInfo>({
     name: "",
     address: "",
-    type: "",
+    ownershipLevel: "",
+    propertyType: "",
     bedrooms: "",
     bathrooms: "",
+    photo: "",
+    checkinMessage: "",
+    checkoutMessage: "",
   });
 
-  const [photo, setPhoto] = useState<string | null>(null);
-
-  // Knowledge states - granular
-  const [amenities, setAmenities] = useState<AmenityItem[]>(defaultAmenities);
+  const [amenities, setAmenities] = useState<FeatureItem[]>(defaultAmenities);
   const [otherAmenities, setOtherAmenities] = useState("");
-  const [whereIsItems, setWhereIsItems] = useState<WhereIsItem[]>(defaultWhereIsItems);
+  const [whereIsItems, setWhereIsItems] = useState<FeatureItem[]>(defaultWhereIsItems);
   const [otherWhereIs, setOtherWhereIs] = useState("");
-  const [recommendations, setRecommendations] = useState<RecommendationCategory[]>(defaultRecommendations);
-  const [rules, setRules] = useState<RuleItem[]>(defaultRules);
+  const [recommendations, setRecommendations] = useState<FeatureItem[]>(defaultRecommendations);
+  const [otherRecommendations, setOtherRecommendations] = useState("");
+  const [rules, setRules] = useState<FeatureItem[]>(defaultRules);
   const [otherRules, setOtherRules] = useState("");
 
   const [exactAnswers, setExactAnswers] = useState<ExactAnswer[]>([
     { id: "1", question: "", answer: "" },
   ]);
 
-  const [guests, setGuests] = useState<GuestInfo[]>([
+  const [guests, setGuests] = useState<Guest[]>([
     { id: "1", firstName: "", lastName: "", phone: "", startDate: "", endDate: "" },
   ]);
 
-  // Subscription state
   const [selectedMonths, setSelectedMonths] = useState(1);
   const [activateSubscription, setActivateSubscription] = useState(true);
 
-  const handleNext = () => {
+  const addKnowledgePerCategory = async (
+    categoryName: string,
+    items: FeatureItem[],
+    description: string,
+    propertyId: string
+  ) => {
+    if (items.length === 0 && description === "") return;
+
+    const knowledgeCategoryResponse = await createKnowledgeCategory({ name: categoryName });
+
+    await createPropertyKnowledgeCategory({
+      propertyId: propertyId,
+      knowledgeCategoryId: knowledgeCategoryResponse.id,
+      description: description,
+    });
+
+    for (const item of items) {
+      if (item.enabled) {
+        // CREATE THE FEATURE AND ATTACH TO THE KNOWLEDGE CATEGORY FOR THIS PROPERTY
+        const response = await createFeature({
+          name: item.label,
+        });
+        const knowledgeCategoryFeatureResponse = await createKnowledgeCategoryFeature({
+          propertyId: propertyId,
+          knowledgeCategoryId: knowledgeCategoryResponse.id,
+          featureId: response.id,
+          description: item.details || "",
+        });
+      }
+    }
+  };
+
+  const addExactAnswers = async (exactAnswers: ExactAnswer[], propertyId: string) => {
+    for (const exactAnswer of exactAnswers) {
+      await createExactAnswer({
+        propertyId: propertyId,
+        question: exactAnswer.question,
+        answer: exactAnswer.answer,
+      });
+    }
+  };
+
+  const addGuests = async (guests: Guest[], propertyId: string) => {
+    for (const guest of guests) {
+      const guestResponse = await createGuest({
+        firstName: guest.firstName,
+        lastName: guest.lastName,
+        phone: guest.phone,
+      });
+
+
+      console.log("guestResponse:", guestResponse);
+      const reservationResponse = await createReservation({
+        propertyId: propertyId,
+        guestId: guestResponse.id,
+        checkIn: new Date(guest.startDate).toISOString(),
+        checkOut: new Date(guest.endDate).toISOString(),
+      });
+    }
+  };
+
+  const handleNext = async () => {
     if (currentStep === STEPS.length) {
       setIsAnimating(true);
-      setTimeout(() => {
+
+      try {
+        const propertyResponse = await createProperty(propertyInfo);
+        const propertyId = propertyResponse.id;
+
+        await addKnowledgePerCategory("Amenities", amenities, otherAmenities, propertyId);
+        await addKnowledgePerCategory("WhereIs", whereIsItems, otherWhereIs, propertyId);
+        await addKnowledgePerCategory("Recommendations", recommendations, otherRecommendations, propertyId);
+        await addKnowledgePerCategory("Rules", rules, otherRules, propertyId);
+
+        await addExactAnswers(exactAnswers, propertyId);
+        await addGuests(guests, propertyId);
+
+        setCreatedPropertyId(propertyId);
         setIsCompleted(true);
-      }, 300);
+      } catch (error) {
+        console.error("Failed to create property:", error);
+        setIsAnimating(false);
+      }
       return;
     }
     setIsAnimating(true);
@@ -125,16 +175,6 @@ const AddProperty = () => {
     }, 300);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhoto(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const addExactAnswer = () => {
     setExactAnswers([
@@ -170,24 +210,14 @@ const AddProperty = () => {
     }
   };
 
-  const updateGuest = (id: string, field: keyof GuestInfo, value: string) => {
+  const updateGuest = (id: string, field: keyof Guest, value: string) => {
     setGuests(guests.map((g) => (g.id === id ? { ...g, [field]: value } : g)));
   };
 
-  const isStep1Valid = propertyInfo.name && propertyInfo.address && propertyInfo.type;
+  const isStep1Valid = propertyInfo.name && propertyInfo.address && propertyInfo.ownershipLevel && propertyInfo.propertyType;
 
   const handleFinish = () => {
     navigate("/");
-  };
-
-  // Get the step group for progress display
-  const getStepGroup = (step: number) => {
-    if (step === 1) return "info";
-    if (step === 2) return "photo";
-    if (step >= 3 && step <= 6) return "knowledge";
-    if (step === 7) return "answers";
-    if (step === 8) return "guests";
-    return "subscription";
   };
 
   const progressGroups = [
@@ -199,79 +229,8 @@ const AddProperty = () => {
     { id: "subscription", label: "6", steps: [9] },
   ];
 
-  if (isCompleted) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] relative overflow-hidden">
-          {/* Confetti particles */}
-          <div className="absolute inset-0 pointer-events-none">
-            {[...Array(12)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-3 h-3 rounded-sm"
-                style={{
-                  left: `${10 + (i * 7)}%`,
-                  top: '-20px',
-                  backgroundColor: i % 3 === 0 ? 'hsl(var(--primary))' : i % 3 === 1 ? 'hsl(var(--primary-light))' : 'hsl(var(--status-online))',
-                  animation: `confetti-fall ${2 + (i * 0.2)}s ease-out ${i * 0.1}s forwards`,
-                  transform: `rotate(${i * 30}deg)`,
-                }}
-              />
-            ))}
-          </div>
-
-          <div className="text-center">
-            {/* Checkmark Animation */}
-            <div className="relative w-32 h-32 mx-auto mb-8">
-              {/* Outer pulse ring */}
-              <div className="absolute inset-0 bg-primary/20 rounded-full animate-success-pulse" />
-
-              {/* Main circle with checkmark */}
-              <div className="relative flex items-center justify-center w-32 h-32 bg-primary rounded-full shadow-xl animate-circle-fill">
-                <svg
-                  viewBox="0 0 52 52"
-                  className="w-16 h-16"
-                >
-                  <path
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M14 27l8 8 16-16"
-                    strokeDasharray="100"
-                    strokeDashoffset="100"
-                    className="animate-checkmark"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            <div className="animate-float-up" style={{ animationDelay: '0.4s', opacity: 0 }}>
-              <h1 className="text-3xl font-semibold text-foreground mb-3">
-                Property Created!
-              </h1>
-              <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                Your property has been successfully added. You can now configure more settings or start welcoming guests.
-              </p>
-
-              <div className="flex items-center justify-center gap-4">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/property/new")}
-                  className="min-w-[140px]"
-                >
-                  View Property
-                </Button>
-                <Button onClick={handleFinish} className="min-w-[140px]">
-                  Back to Dashboard
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
+  if (isCompleted && createdPropertyId) {
+    return <PropertyCreated propertyId={createdPropertyId} />;
   }
 
   return (
@@ -358,397 +317,72 @@ const AddProperty = () => {
         >
           {/* Step 1: Property Info */}
           {currentStep === 1 && (
-            <div className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="md:col-span-2">
-                  <Label htmlFor="name">Property Name *</Label>
-                  <Input
-                    id="name"
-                    placeholder="e.g., Cozy Downtown Loft"
-                    value={propertyInfo.name}
-                    onChange={(e) =>
-                      setPropertyInfo({ ...propertyInfo, name: e.target.value })
-                    }
-                    className="mt-1.5"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <Label htmlFor="address">Address *</Label>
-                  <Input
-                    id="address"
-                    placeholder="e.g., 123 Main St, Toronto, Canada"
-                    value={propertyInfo.address}
-                    onChange={(e) =>
-                      setPropertyInfo({ ...propertyInfo, address: e.target.value })
-                    }
-                    className="mt-1.5"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <Label htmlFor="type">Property Type *</Label>
-                  <Input
-                    id="type"
-                    placeholder="e.g., Entire apartment, Private room, Cabin"
-                    value={propertyInfo.type}
-                    onChange={(e) =>
-                      setPropertyInfo({ ...propertyInfo, type: e.target.value })
-                    }
-                    className="mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="bedrooms">Bedrooms</Label>
-                  <Input
-                    id="bedrooms"
-                    type="number"
-                    placeholder="2"
-                    value={propertyInfo.bedrooms}
-                    onChange={(e) =>
-                      setPropertyInfo({ ...propertyInfo, bedrooms: e.target.value })
-                    }
-                    className="mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="bathrooms">Bathrooms</Label>
-                  <Input
-                    id="bathrooms"
-                    type="number"
-                    placeholder="1"
-                    value={propertyInfo.bathrooms}
-                    onChange={(e) =>
-                      setPropertyInfo({ ...propertyInfo, bathrooms: e.target.value })
-                    }
-                    className="mt-1.5"
-                  />
-                </div>
-              </div>
-            </div>
+            <Step1PropertyInfo
+              propertyInfo={propertyInfo}
+              setPropertyInfo={setPropertyInfo}
+            />
           )}
 
           {/* Step 2: Photo Upload */}
           {currentStep === 2 && (
-            <div className="space-y-5">
-              <div className="relative">
-                {photo ? (
-                  <div className="relative aspect-video rounded-xl overflow-hidden bg-muted">
-                    <img
-                      src={photo}
-                      alt="Property preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={() => setPhoto(null)}
-                      className="absolute top-3 right-3 p-2 bg-foreground/80 text-background rounded-full hover:bg-foreground transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="block aspect-video rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer">
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                      <Upload className="w-12 h-12 mb-3" />
-                      <span className="font-medium">Click to upload a photo</span>
-                      <span className="text-sm mt-1">PNG, JPG up to 10MB</span>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-              </div>
-            </div>
+            <Step2PhotoUpload
+              photo={propertyInfo.photo || null}
+              setPhoto={(photo) => setPropertyInfo({ ...propertyInfo, photo: photo || "" })}
+            />
           )}
 
-          {/* Step 3: Amenities */}
-          {currentStep === 3 && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Tap to select amenities available at your property.
-              </p>
-              <AmenitiesSection
-                amenities={amenities}
-                setAmenities={setAmenities}
-                otherAmenities={otherAmenities}
-                setOtherAmenities={setOtherAmenities}
-                compact
-              />
-            </div>
-          )}
-
-          {/* Step 4: Where Is */}
-          {currentStep === 4 && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Help guests find common items. Tap to add locations.
-              </p>
-              <WhereIsSection
-                items={whereIsItems}
-                setItems={setWhereIsItems}
-                otherItems={otherWhereIs}
-                setOtherItems={setOtherWhereIs}
-                compact
-              />
-            </div>
-          )}
-
-          {/* Step 5: Local Recommendations */}
-          {currentStep === 5 && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Share your favorite local spots with guests.
-              </p>
-              <LocalRecommendationsSection
-                recommendations={recommendations}
-                setRecommendations={setRecommendations}
-                compact
-              />
-            </div>
-          )}
-
-          {/* Step 6: Rules */}
-          {currentStep === 6 && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Set clear expectations for your guests.
-              </p>
-              <RulesSection
-                rules={rules}
-                setRules={setRules}
-                otherRules={otherRules}
-                setOtherRules={setOtherRules}
-                compact
-              />
-            </div>
+          {/* Steps 3-6: Knowledge (Amenities, Where Is, Recommendations, Rules) */}
+          {(currentStep === 3 || currentStep === 4 || currentStep === 5 || currentStep === 6) && (
+            <Step3Knowledge
+              currentSubStep={currentStep}
+              amenities={amenities}
+              setAmenities={setAmenities}
+              otherAmenities={otherAmenities}
+              setOtherAmenities={setOtherAmenities}
+              whereIsItems={whereIsItems}
+              setWhereIsItems={setWhereIsItems}
+              otherWhereIs={otherWhereIs}
+              setOtherWhereIs={setOtherWhereIs}
+              recommendations={recommendations}
+              setRecommendations={setRecommendations}
+              otherRecommendations={otherRecommendations}
+              setOtherRecommendations={setOtherRecommendations}
+              rules={rules}
+              setRules={setRules}
+              otherRules={otherRules}
+              setOtherRules={setOtherRules}
+            />
           )}
 
           {/* Step 7: Exact Answers */}
           {currentStep === 7 && (
-            <div className="space-y-5">
-              <p className="text-sm text-muted-foreground">
-                Add questions that you want the AI to respond to with exact, word-for-word answers.
-              </p>
-              {exactAnswers.map((ea, index) => (
-                <div
-                  key={ea.id}
-                  className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      Q&A #{index + 1}
-                    </span>
-                    {exactAnswers.length > 1 && (
-                      <button
-                        onClick={() => removeExactAnswer(ea.id)}
-                        className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Question</Label>
-                    <Input
-                      placeholder="e.g., What's the Wi-Fi password?"
-                      value={ea.question}
-                      onChange={(e) => updateExactAnswer(ea.id, "question", e.target.value)}
-                      className="mt-1.5"
-                    />
-                  </div>
-                  <div>
-                    <Label>Answer</Label>
-                    <Textarea
-                      placeholder="The exact response the AI will give..."
-                      value={ea.answer}
-                      onChange={(e) => updateExactAnswer(ea.id, "answer", e.target.value)}
-                      className="mt-1.5 min-h-[80px] resize-none"
-                    />
-                  </div>
-                </div>
-              ))}
-              <Button
-                variant="outline"
-                onClick={addExactAnswer}
-                className="w-full gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Add Another Q&A
-              </Button>
-            </div>
+            <Step7ExactAnswers
+              exactAnswers={exactAnswers}
+              addExactAnswer={addExactAnswer}
+              removeExactAnswer={removeExactAnswer}
+              updateExactAnswer={updateExactAnswer}
+            />
           )}
 
           {/* Step 8: Guests */}
           {currentStep === 8 && (
-            <div className="space-y-5">
-              <p className="text-sm text-muted-foreground">
-                Add up to 3 guests who will have access to your AI assistant.
-              </p>
-              {guests.map((guest, index) => (
-                <div
-                  key={guest.id}
-                  className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      Guest #{index + 1}
-                    </span>
-                    {guests.length > 1 && (
-                      <button
-                        onClick={() => removeGuest(guest.id)}
-                        className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <Label>First Name *</Label>
-                      <Input
-                        placeholder="John Doe"
-                        value={guest.firstName}
-                        onChange={(e) => updateGuest(guest.id, "firstName", e.target.value)}
-                        className="mt-1.5"
-                      />
-                    </div>
-                    <div>
-                      <Label>Last Name</Label>
-                      <Input
-                        placeholder="John Doe"
-                        value={guest.lastName}
-                        onChange={(e) => updateGuest(guest.id, "lastName", e.target.value)}
-                        className="mt-1.5"
-                      />
-                    </div>
-                    <div>
-                      <Label>Phone Number *</Label>
-                      <Input
-                        placeholder="+1 (555) 123-4567"
-                        value={guest.phone}
-                        onChange={(e) => updateGuest(guest.id, "phone", e.target.value)}
-                        className="mt-1.5"
-                      />
-                    </div>
-                    <div>
-                      <Label>Check-in Date</Label>
-                      <Input
-                        type="date"
-                        value={guest.startDate}
-                        onChange={(e) => updateGuest(guest.id, "startDate", e.target.value)}
-                        className="mt-1.5"
-                      />
-                    </div>
-                    <div>
-                      <Label>Check-out Date</Label>
-                      <Input
-                        type="date"
-                        value={guest.endDate}
-                        onChange={(e) => updateGuest(guest.id, "endDate", e.target.value)}
-                        className="mt-1.5"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {guests.length < 3 && (
-                <Button
-                  variant="outline"
-                  onClick={addGuest}
-                  className="w-full gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Another Guest
-                </Button>
-              )}
-            </div>
+            <Step8Guests
+              guests={guests}
+              addGuest={addGuest}
+              removeGuest={removeGuest}
+              updateGuest={updateGuest}
+            />
           )}
 
           {/* Step 9: Subscription */}
           {currentStep === 9 && (
-            <div className="space-y-6">
-              <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">AI Assistant Subscription</h3>
-                    <p className="text-sm text-muted-foreground">$29/month per property</p>
-                  </div>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-primary" />
-                    <span>Up to 3 simultaneous guests</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" />
-                    <span>24/7 AI-powered guest support</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    <span>Automated check-in/out reminders</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm text-muted-foreground mb-3 block">
-                  Choose subscription duration
-                </Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[1, 3, 6].map((months) => (
-                    <button
-                      key={months}
-                      onClick={() => setSelectedMonths(months)}
-                      className={cn(
-                        "p-3 rounded-xl border-2 transition-all text-center",
-                        selectedMonths === months
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      )}
-                    >
-                      <div className="font-semibold">{months} month{months > 1 ? "s" : ""}</div>
-                      <div className="text-sm text-muted-foreground">${PLAN_PRICE * months}</div>
-                      {months === 6 && (
-                        <div className="text-xs text-status-online mt-1">Best value</div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-secondary rounded-xl">
-                <div>
-                  <p className="font-medium">Activate subscription now</p>
-                  <p className="text-sm text-muted-foreground">You can also do this later</p>
-                </div>
-                <button
-                  onClick={() => setActivateSubscription(!activateSubscription)}
-                  className={cn(
-                    "w-12 h-7 rounded-full transition-colors relative",
-                    activateSubscription ? "bg-primary" : "bg-muted"
-                  )}
-                >
-                  <div className={cn(
-                    "absolute top-1 w-5 h-5 rounded-full bg-white transition-transform",
-                    activateSubscription ? "translate-x-6" : "translate-x-1"
-                  )} />
-                </button>
-              </div>
-
-              {activateSubscription && (
-                <div className="bg-card border border-border rounded-xl p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Total due today</span>
-                    <span className="text-xl font-bold">${PLAN_PRICE * selectedMonths}</span>
-                  </div>
-                </div>
-              )}
-            </div>
+            <Step9Subscription
+              selectedMonths={selectedMonths}
+              setSelectedMonths={setSelectedMonths}
+              activateSubscription={activateSubscription}
+              setActivateSubscription={setActivateSubscription}
+              planPrice={PLAN_PRICE}
+            />
           )}
         </div>
 

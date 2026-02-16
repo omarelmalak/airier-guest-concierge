@@ -1,0 +1,47 @@
+import { supabase } from '../supabase';
+import { api } from '../api';
+import { PropertyInfo } from '@/lib/static-data/request-types';
+import { CreatePropertyResponse } from '@/lib/static-data/response-types';
+import apartmentPhoto from '@/assets/default-property-photos/apartment.jpg';
+import cabinPhoto from '@/assets/default-property-photos/cabin.jpg';
+import condoPhoto from '@/assets/default-property-photos/condo.jpg';
+import housePhoto from '@/assets/default-property-photos/house.jpg';
+import loftPhoto from '@/assets/default-property-photos/loft.jpg';
+import studioPhoto from '@/assets/default-property-photos/studio.jpg';
+import townhousePhoto from '@/assets/default-property-photos/townhouse.jpg';
+import villaPhoto from '@/assets/default-property-photos/villa.jpg';
+
+const defaultPhotoMap: Record<string, string> = {
+    'Apartment': apartmentPhoto,
+    'Cabin': cabinPhoto,
+    'Condo': condoPhoto,
+    'House': housePhoto,
+    'Loft': loftPhoto,
+    'Studio': studioPhoto,
+    'Townhouse': townhousePhoto,
+    'Villa': villaPhoto,
+};
+
+const getDefaultPhoto = (propertyType: string): string => {
+    return defaultPhotoMap[propertyType] || housePhoto;
+};
+
+export const createProperty = async (property: PropertyInfo): Promise<CreatePropertyResponse> => {
+    const photo = property.photo?.trim() || getDefaultPhoto(property.propertyType);
+
+    const response = await api.post<CreatePropertyResponse>('/properties', {
+        property: {
+            name: property.name,
+            property_type: property.propertyType,
+            bedrooms: property.bedrooms,
+            bathrooms: property.bathrooms,
+            address: property.address,
+            photo: photo,
+            ownership_level: property.ownershipLevel,
+            checkin_msg: property.checkinMessage,
+            checkout_msg: property.checkoutMessage
+        }
+    });
+
+    return response;
+}

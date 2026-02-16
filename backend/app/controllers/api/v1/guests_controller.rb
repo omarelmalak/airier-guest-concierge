@@ -29,35 +29,25 @@ module Api
 
       # POST /api/v1/guests
       def create
-        guest = Guest.new(guest_params)
+        host = Host.find_by!(auth_user_id: @auth_user_id)
+
+        guest = Guest.create!(guest_params)
         
-        if guest.save
-          render json: {
-            status: 'success',
-            data: format_guest(guest)
-          }, status: :created
-        else
-          render json: {
-            status: 'error',
-            message: guest.errors.full_messages
-          }, status: :unprocessable_entity
-        end
+        render json: format_guest(guest)
       end
 
       private
 
       def guest_params
-        params.require(:guest).permit(:name, :email, :phone)
+        params.require(:guest).permit(:first_name, :last_name, :phone)
       end
 
       def format_guest(guest)
         {
           id: guest.id,
-          name: guest.name,
-          email: guest.email,
+          first_name: guest.first_name,
+          last_name: guest.last_name,
           phone: guest.phone,
-          created_at: guest.created_at,
-          updated_at: guest.updated_at
         }
       end
     end
