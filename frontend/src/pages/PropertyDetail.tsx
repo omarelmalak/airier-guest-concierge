@@ -135,84 +135,87 @@ const PropertyDetail = () => {
         </Link>
 
         {/* Property Header */}
-        <div className="bg-card rounded-2xl border border-border shadow-card p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Image */}
-            <div className="w-full md:w-64 h-44 rounded-xl overflow-hidden flex-shrink-0">
-              <img
-                src={property.image}
-                alt={property.name}
-                className="w-full h-full object-cover"
-              />
+        <div className="rounded-2xl border border-border shadow-card overflow-hidden mb-6">
+          {/* Banner Image */}
+          <div className="relative h-52 md:h-64">
+            <img
+              src={property.image}
+              alt={property.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            
+            {/* Overlaid top-right badge */}
+            <div className="absolute top-4 right-4">
+              <StatusBadge status={property.aiStatus} />
             </div>
 
-            {/* Info */}
-            <div className="flex-1">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h1 className="text-2xl font-semibold text-foreground mb-1">
-                    {property.name}, <span className="text-muted-foreground font-normal">{property.address}</span>
-                  </h1>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{property.ownershipLevel} {property.propertyType}</span>
-                    <span>·</span>
-                    <span>{property.bedrooms} bedrooms</span>
-                    <span>·</span>
-                    <span>{property.bathrooms} bathrooms</span>
-                  </div>
-                </div>
-                <StatusBadge status={property.aiStatus} />
+            {/* Overlaid bottom info */}
+            <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
+              <h1 className="text-2xl md:text-3xl font-semibold text-white mb-1 drop-shadow-sm">
+                {property.name}
+              </h1>
+              <p className="text-white/80 text-sm md:text-base">
+                {property.address} · {property.ownershipLevel} {property.propertyType} · {property.bedrooms} bed · {property.bathrooms} bath
+              </p>
+            </div>
+          </div>
+
+          {/* Info Bar */}
+          <div className="bg-card px-5 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-5">
+              {/* Rating */}
+              <div className="flex items-center gap-1.5">
+                <Star className="w-4 h-4 text-status-warning fill-status-warning" />
+                <span className="font-semibold text-foreground">{property.rating}</span>
+                <span className="text-muted-foreground text-sm">({property.reviewCount})</span>
               </div>
 
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-status-warning fill-status-warning" />
-                    <span className="font-semibold">{property.rating}</span>
-                    <span className="text-muted-foreground text-sm">({property.reviewCount} reviews)</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-sm">
-                    {subscriptionActive ? (
-                      <>
-                        <span className="flex items-center gap-1 text-status-online">
-                          <span className="w-1.5 h-1.5 rounded-full bg-status-online" />
-                          Active
-                        </span>
-                        <span className="text-muted-foreground mx-1">·</span>
-                        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-muted-foreground">
-                          until <span className="font-medium text-foreground">{subscriptionExpiry}</span>
-                        </span>
-                      </>
-                    ) : (
-                      <span className="flex items-center gap-1 text-muted-foreground">
-                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
-                        Subscription Inactive
-                      </span>
-                    )}
-                  </div>
-                </div>
+              <span className="w-px h-5 bg-border" />
 
-                <Button
-                  variant={subscriptionActive ? "outline" : "default"}
-                  size="sm"
-                  onClick={() => setSubscriptionDialogOpen(true)}
-                  className="flex-shrink-0"
-                >
-                  {subscriptionActive ? (
-                    <>
-                      <RotateCcw className="w-4 h-4 mr-1.5" />
-                      Renew
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-4 h-4 mr-1.5" />
-                      Activate
-                    </>
-                  )}
-                </Button>
+              {/* Active Guests */}
+              <div className="flex items-center gap-1.5 text-sm">
+                <Users className="w-4 h-4 text-muted-foreground" />
+                <span className="text-foreground font-medium">{property.activeGuests}</span>
+                <span className="text-muted-foreground">/ {property.maxGuests} guests</span>
+              </div>
+
+              <span className="w-px h-5 bg-border" />
+
+              {/* Subscription */}
+              <div className="flex items-center gap-1.5 text-sm">
+                {subscriptionActive ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-status-online" />
+                    <span className="text-foreground font-medium">Active</span>
+                    <span className="text-muted-foreground">until {subscriptionExpiry}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-muted-foreground" />
+                    <span className="text-muted-foreground">Inactive</span>
+                  </>
+                )}
               </div>
             </div>
+
+            <Button
+              variant={subscriptionActive ? "outline" : "default"}
+              size="sm"
+              onClick={() => setSubscriptionDialogOpen(true)}
+            >
+              {subscriptionActive ? (
+                <>
+                  <RotateCcw className="w-4 h-4 mr-1.5" />
+                  Renew
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-1.5" />
+                  Activate
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
