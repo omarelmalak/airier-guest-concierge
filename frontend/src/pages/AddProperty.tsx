@@ -16,17 +16,19 @@ import { defaultAmenities, defaultWhereIsItems, defaultRecommendations, defaultR
 import { createProperty } from "@/lib/services/properties";
 import { createKnowledgeCategory, createPropertyKnowledgeCategory, createFeature, createKnowledgeCategoryFeature, createExactAnswer } from "@/lib/services/knowledge";
 import { createGuest, createReservation } from "@/lib/services/guests";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const STEPS = [
   { id: 1, title: "Property Info", description: "Basic details about your property" },
-  { id: 2, title: "Photo", description: "Upload a cover photo" },
-  { id: 3, title: "Knowledge", description: "What your concierge should know about your property" },
+  { id: 2, title: "Property Info", description: "Check-in & check-out times and reminders" },
+  { id: 3, title: "Photo", description: "Upload a cover photo" },
   { id: 4, title: "Knowledge", description: "What your concierge should know about your property" },
   { id: 5, title: "Knowledge", description: "What your concierge should know about your property" },
   { id: 6, title: "Knowledge", description: "What your concierge should know about your property" },
-  { id: 7, title: "Exact Answers", description: "Set specific Q&A responses" },
-  { id: 8, title: "Guests", description: "Add your first guests" },
-  { id: 9, title: "Subscription", description: "Activate your AI assistant" },
+  { id: 7, title: "Knowledge", description: "What your concierge should know about your property" },
+  { id: 8, title: "Exact Answers", description: "Set specific Q&A responses" },
+  { id: 9, title: "Guests", description: "Add your first guests" },
+  { id: 10, title: "Subscription", description: "Activate your AI assistant" },
 ];
 
 const PLAN_PRICE = 29;
@@ -36,6 +38,8 @@ const AddProperty = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const [createdPropertyId, setCreatedPropertyId] = useState<number | string | null>(null);
 
   const [propertyInfo, setPropertyInfo] = useState<PropertyInfo>({
@@ -48,6 +52,10 @@ const AddProperty = () => {
     photo: "",
     checkinMessage: "",
     checkoutMessage: "",
+    checkinTime: "",
+    checkoutTime: "",
+    checkinReminderHours: "",
+    checkoutReminderHours: "",
   });
 
   const [amenities, setAmenities] = useState<FeatureItem[]>(defaultAmenities);
@@ -120,8 +128,6 @@ const AddProperty = () => {
         phone: guest.phone,
       });
 
-
-      console.log("guestResponse:", guestResponse);
       const reservationResponse = await createReservation({
         propertyId: propertyId,
         guestId: guestResponse.id,
@@ -133,7 +139,7 @@ const AddProperty = () => {
 
   const handleNext = async () => {
     if (currentStep === STEPS.length) {
-      setIsAnimating(true);
+      setIsLoading(true);
 
       try {
         const propertyResponse = await createProperty(propertyInfo);
@@ -144,14 +150,30 @@ const AddProperty = () => {
         await addKnowledgePerCategory("Recommendations", recommendations, otherRecommendations, propertyId);
         await addKnowledgePerCategory("Rules", rules, otherRules, propertyId);
 
-        await addExactAnswers(exactAnswers, propertyId);
-        await addGuests(guests, propertyId);
+        const exactAnswersWithData = exactAnswers.filter(
+          (ea) => ea.question.trim() !== "" || ea.answer.trim() !== ""
+        );
+        if (exactAnswersWithData.length > 0) {
+          await addExactAnswers(exactAnswersWithData, propertyId);
+        }
+
+        const guestsWithData = guests.filter(
+          (g) =>
+            g.firstName.trim() !== "" &&
+            g.lastName.trim() !== "" &&
+            g.phone.trim() !== "" &&
+            g.startDate !== "" &&
+            g.endDate !== ""
+        );
+        if (guestsWithData.length > 0) {
+          await addGuests(guestsWithData, propertyId);
+        }
 
         setCreatedPropertyId(propertyId);
         setIsCompleted(true);
       } catch (error) {
         console.error("Failed to create property:", error);
-        setIsAnimating(false);
+        setIsLoading(false);
       }
       return;
     }
@@ -221,16 +243,26 @@ const AddProperty = () => {
   };
 
   const progressGroups = [
-    { id: "info", label: "1", steps: [1] },
-    { id: "photo", label: "2", steps: [2] },
-    { id: "knowledge", label: "3", steps: [3, 4, 5, 6] },
-    { id: "answers", label: "4", steps: [7] },
-    { id: "guests", label: "5", steps: [8] },
-    { id: "subscription", label: "6", steps: [9] },
+    { id: "info", label: "1", steps: [1, 2] },
+    { id: "photo", label: "2", steps: [3] },
+    { id: "knowledge", label: "3", steps: [4, 5, 6, 7] },
+    { id: "answers", label: "4", steps: [8] },
+    { id: "guests", label: "5", steps: [9] },
+    { id: "subscription", label: "6", steps: [10] },
   ];
 
-  if (isCompleted && createdPropertyId) {
+  if (isCompleted && createdPropertyId != null) {
     return <PropertyCreated propertyId={createdPropertyId} />;
+  }
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <LoadingSpinner size="lg" />
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (
@@ -315,24 +347,25 @@ const AddProperty = () => {
           className={`bg-card rounded-xl border border-border p-6 mb-6 transition-all duration-300 ${isAnimating ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
             }`}
         >
-          {/* Step 1: Property Info */}
-          {currentStep === 1 && (
+          {/* Steps 1–2: Property Info (Basic details, Check-in & Check-out) */}
+          {(currentStep === 1 || currentStep === 2) && (
             <Step1PropertyInfo
+              currentSubStep={currentStep}
               propertyInfo={propertyInfo}
               setPropertyInfo={setPropertyInfo}
             />
           )}
 
-          {/* Step 2: Photo Upload */}
-          {currentStep === 2 && (
+          {/* Step 3: Photo Upload */}
+          {currentStep === 3 && (
             <Step2PhotoUpload
               photo={propertyInfo.photo || null}
               setPhoto={(photo) => setPropertyInfo({ ...propertyInfo, photo: photo || "" })}
             />
           )}
 
-          {/* Steps 3-6: Knowledge (Amenities, Where Is, Recommendations, Rules) */}
-          {(currentStep === 3 || currentStep === 4 || currentStep === 5 || currentStep === 6) && (
+          {/* Steps 4–7: Knowledge (Amenities, Where Is, Recommendations, Rules) */}
+          {(currentStep === 4 || currentStep === 5 || currentStep === 6 || currentStep === 7) && (
             <Step3Knowledge
               currentSubStep={currentStep}
               amenities={amenities}
@@ -354,8 +387,8 @@ const AddProperty = () => {
             />
           )}
 
-          {/* Step 7: Exact Answers */}
-          {currentStep === 7 && (
+          {/* Step 8: Exact Answers */}
+          {currentStep === 8 && (
             <Step7ExactAnswers
               exactAnswers={exactAnswers}
               addExactAnswer={addExactAnswer}
@@ -364,8 +397,8 @@ const AddProperty = () => {
             />
           )}
 
-          {/* Step 8: Guests */}
-          {currentStep === 8 && (
+          {/* Step 9: Guests */}
+          {currentStep === 9 && (
             <Step8Guests
               guests={guests}
               addGuest={addGuest}
@@ -374,8 +407,8 @@ const AddProperty = () => {
             />
           )}
 
-          {/* Step 9: Subscription */}
-          {currentStep === 9 && (
+          {/* Step 10: Subscription */}
+          {currentStep === 10 && (
             <Step9Subscription
               selectedMonths={selectedMonths}
               setSelectedMonths={setSelectedMonths}

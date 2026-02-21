@@ -8,6 +8,10 @@ export interface PropertyInfo {
     photo: string;
     checkinMessage: string;
     checkoutMessage: string;
+    checkinTime: string;
+    checkoutTime: string;
+    checkinReminderHours: string;
+    checkoutReminderHours: string;
 }
 
 export interface KnowledgeCategoryInfo {

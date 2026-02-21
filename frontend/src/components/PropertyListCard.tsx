@@ -4,11 +4,11 @@ import { Calendar, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { GetPropertiesResponse } from "@/lib/static-data/response-types";
 
-interface PropertyCardProps {
+interface PropertyListCardProps {
   property: GetPropertiesResponse;
 }
 
-const PropertyCard = ({ property }: PropertyCardProps) => {
+const PropertyListCard = ({ property }: PropertyListCardProps) => {
   return (
     <Link
       to={`/properties/${property.id}`}
@@ -56,4 +56,4 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   );
 };
 
-export default PropertyCard;
+export default PropertyListCard;

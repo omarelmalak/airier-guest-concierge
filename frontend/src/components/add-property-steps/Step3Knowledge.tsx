@@ -5,7 +5,7 @@ import { LocalRecommendationsSection } from "@/components/knowledge/LocalRecomme
 import { RulesSection } from "@/components/knowledge/RulesSection";
 
 interface Step3KnowledgeProps {
-  currentSubStep: number; // 3, 4, 5, or 6
+  currentSubStep: number; // 4, 5, 6, or 7 (Amenities, Where Is, Recommendations, Rules)
   amenities?: FeatureItem[];
   setAmenities: (amenities: FeatureItem[] | undefined) => void;
   otherAmenities: string;
@@ -43,8 +43,8 @@ export const Step3Knowledge = ({
   otherRules,
   setOtherRules,
 }: Step3KnowledgeProps) => {
-  // Step 3: Amenities
-  if (currentSubStep === 3) {
+  // Step 4: Amenities
+  if (currentSubStep === 4) {
     return (
       <div className="space-y-4">
         <div>
@@ -63,8 +63,8 @@ export const Step3Knowledge = ({
     );
   }
 
-  // Step 4: Where Is
-  if (currentSubStep === 4) {
+  // Step 5: Where Is
+  if (currentSubStep === 5) {
     return (
       <div className="space-y-4">
         <div>
@@ -83,8 +83,8 @@ export const Step3Knowledge = ({
     );
   }
 
-  // Step 5: Local Recommendations
-  if (currentSubStep === 5) {
+  // Step 6: Local Recommendations
+  if (currentSubStep === 6) {
     return (
       <div className="space-y-4">
         <div>
@@ -103,7 +103,7 @@ export const Step3Knowledge = ({
     );
   }
 
-  // Step 6: Rules
+  // Step 7: Rules
   return (
     <div className="space-y-4">
       <div>

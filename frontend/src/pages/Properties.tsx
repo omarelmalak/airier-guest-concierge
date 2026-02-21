@@ -1,11 +1,11 @@
 import { Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-import PropertyCard from "@/components/PropertyCard";
-import { mockProperties } from "@/data/mockData";
+import PropertyListCard from "@/components/PropertyListCard";
 import { Button } from "@/components/ui/button";
 import { getProperties } from "@/lib/services/properties";
 import { useQuery } from "@tanstack/react-query";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const Properties = () => {
     const { data: properties, isLoading } = useQuery({
@@ -13,6 +13,16 @@ const Properties = () => {
         queryFn: () => getProperties(),
         refetchInterval: 30_000,
     });
+
+    if (isLoading) {
+        return (
+            <DashboardLayout>
+                <div className="flex min-h-[60vh] items-center justify-center">
+                    <LoadingSpinner size="lg" />
+                </div>
+            </DashboardLayout>
+        );
+    }
 
     return (
         <DashboardLayout>
@@ -41,7 +51,7 @@ const Properties = () => {
                             className="animate-fade-in"
                             style={{ animationDelay: `${index * 0.1}s` }}
                         >
-                            <PropertyCard property={property} />
+                            <PropertyListCard property={property} />
                         </div>
                     ))}
                 </div>

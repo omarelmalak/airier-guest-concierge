@@ -1,7 +1,7 @@
 import { supabase } from '../supabase';
 import { api } from '../api';
 import { PropertyInfo } from '@/lib/static-data/request-types';
-import { CreatePropertyResponse, GetPropertiesResponse } from '@/lib/static-data/response-types';
+import { CreatePropertyResponse, GetPropertiesResponse, GetPropertyDetailsResponse } from '@/lib/static-data/response-types';
 import apartmentPhoto from '@/assets/default-property-photos/apartment.jpg';
 import cabinPhoto from '@/assets/default-property-photos/cabin.jpg';
 import condoPhoto from '@/assets/default-property-photos/condo.jpg';
@@ -39,7 +39,11 @@ export const createProperty = async (property: PropertyInfo): Promise<CreateProp
             photo: photo,
             ownership_level: property.ownershipLevel,
             checkin_msg: property.checkinMessage,
-            checkout_msg: property.checkoutMessage
+            checkout_msg: property.checkoutMessage,
+            checkin_time: property.checkinTime,
+            checkout_time: property.checkoutTime,
+            checkin_reminder_hours: property.checkinReminderHours,
+            checkout_reminder_hours: property.checkoutReminderHours,
         }
     });
 
@@ -48,5 +52,10 @@ export const createProperty = async (property: PropertyInfo): Promise<CreateProp
 
 export const getProperties = async (): Promise<GetPropertiesResponse[]> => {
     const response = await api.get<GetPropertiesResponse[]>('/properties');
+    return response;
+}
+
+export const getPropertyDetails = async (propertyId: string): Promise<GetPropertyDetailsResponse> => {
+    const response = await api.get<GetPropertyDetailsResponse>(`/properties/${propertyId}`);
     return response;
 }

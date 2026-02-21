@@ -10,6 +10,10 @@ export interface CreatePropertyResponse {
     ownership_level: string;
     checkin_msg: string;
     checkout_msg: string;
+    checkin_time: string;
+    checkout_time: string;
+    checkin_reminder_hours: number;
+    checkout_reminder_hours: number;
 }
 
 export interface CreateKnowledgeCategoryResponse {
@@ -68,4 +72,23 @@ export interface GetPropertiesResponse {
     subscription_expires_at: string;
     escalations_count: number;
     ai_status: string;
+}
+
+export interface GetPropertyDetailsResponse {
+    id: string;
+    name: string;
+    address: string;
+    photo: string;
+    active_guests_count: number;
+    subscription_expires_at: string;
+    ownership_level: string;
+    property_type: string;
+    bedrooms: number;
+    bathrooms: number;
+    checkin_msg: string;
+    checkout_msg: string;
+    checkin_time: string;
+    checkin_reminder_hours: number;
+    checkout_time: string;
+    checkout_reminder_hours: number;
 }
