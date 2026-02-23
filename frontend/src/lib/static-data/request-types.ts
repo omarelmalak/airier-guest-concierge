@@ -14,6 +14,8 @@ export interface PropertyInfo {
     checkoutReminderHours: string;
 }
 
+export type UpdatePropertyInfo = Partial<PropertyInfo>;
+
 export interface KnowledgeCategoryInfo {
     name: string;
 }

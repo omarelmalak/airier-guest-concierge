@@ -5,38 +5,70 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { getPropertyDetails, updateProperty } from "@/lib/services/properties";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { PropertyInfo, UpdatePropertyInfo } from "@/lib/static-data/request-types";
+import { toast } from "sonner";
 
-interface OverviewTabProps {
-    property: GetPropertyDetailsResponse;
-    checkInTime: string;
-    setCheckInTime: (v: string) => void;
-    checkOutTime: string;
-    setCheckOutTime: (v: string) => void;
-    checkInReminderHours: number;
-    setCheckInReminderHours: (v: number) => void;
-    checkOutReminderHours: number;
-    setCheckOutReminderHours: (v: number) => void;
-    checkInMessage: string;
-    setCheckInMessage: (v: string) => void;
-    checkOutMessage: string;
-    setCheckOutMessage: (v: string) => void;
-}
+const OverviewTab = ({ propertyId }: { propertyId: string }) => {
+    const queryClient = useQueryClient();
+    const { data: propertyDetails, isLoading, error } = useQuery({
+        queryKey: ['property', propertyId],
+        queryFn: () => getPropertyDetails(propertyId),
+    });
 
-const OverviewTab = ({
-    property,
-    checkInTime,
-    setCheckInTime,
-    checkOutTime,
-    setCheckOutTime,
-    checkInReminderHours,
-    setCheckInReminderHours,
-    checkOutReminderHours,
-    setCheckOutReminderHours,
-    checkInMessage,
-    setCheckInMessage,
-    checkOutMessage,
-    setCheckOutMessage,
-}: OverviewTabProps) => {
+    const [checkInTime, setCheckInTime] = useState("");
+    const [checkOutTime, setCheckOutTime] = useState("");
+    const [checkInReminderHours, setCheckInReminderHours] = useState<number | string>("");
+    const [checkOutReminderHours, setCheckOutReminderHours] = useState<number | string>("");
+    const [checkInMessage, setCheckInMessage] = useState("");
+    const [checkOutMessage, setCheckOutMessage] = useState("");
+
+    useEffect(() => {
+        if (!propertyDetails) return;
+        setCheckInTime(propertyDetails.checkin_time ?? "");
+        setCheckOutTime(propertyDetails.checkout_time ?? "");
+        setCheckInReminderHours(propertyDetails.checkin_reminder_hours ?? "");
+        setCheckOutReminderHours(propertyDetails.checkout_reminder_hours ?? "");
+        setCheckInMessage(propertyDetails.checkin_msg ?? "");
+        setCheckOutMessage(propertyDetails.checkout_msg ?? "");
+    }, [propertyDetails]);
+
+    const handleSaveChanges = async () => {
+        const payload: UpdatePropertyInfo = {
+            checkinMessage: checkInMessage,
+            checkoutMessage: checkOutMessage,
+            checkinTime: checkInTime,
+            checkoutTime: checkOutTime,
+            checkinReminderHours: String(checkInReminderHours ?? ""),
+            checkoutReminderHours: String(checkOutReminderHours ?? ""),
+        };
+        try {
+            await updateProperty(propertyId, payload);
+            toast.success('Changes saved successfully');
+            await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
+        } catch {
+            toast.error('Failed to save changes');
+        }
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <LoadingSpinner size="lg" />
+            </div>
+        );
+    }
+    if (error) {
+        return (
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <p className="text-muted-foreground">Failed to load overview.</p>
+            </div>
+        );
+    }
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-card rounded-2xl border border-border p-6 shadow-soft">
@@ -47,24 +79,24 @@ const OverviewTab = ({
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <span className="text-sm text-muted-foreground">Type</span>
-                        <p className="text-sm font-medium text-foreground">Cabin</p>
+                        <p className="text-sm font-medium text-foreground">{propertyDetails?.property_type}</p>
                     </div>
                     <div className="space-y-1">
                         <span className="text-sm text-muted-foreground">Access</span>
-                        <p className="text-sm font-medium text-foreground">Entire place</p>
+                        <p className="text-sm font-medium text-foreground">{propertyDetails?.ownership_level}</p>
                     </div>
                     <div className="space-y-1">
                         <span className="text-sm text-muted-foreground">Bedrooms</span>
                         <div className="flex items-center gap-1.5">
                             <BedDouble className="w-4 h-4 text-muted-foreground" />
-                            <p className="text-sm font-medium text-foreground">2</p>
+                            <p className="text-sm font-medium text-foreground">{propertyDetails?.bedrooms}</p>
                         </div>
                     </div>
                     <div className="space-y-1">
                         <span className="text-sm text-muted-foreground">Bathrooms</span>
                         <div className="flex items-center gap-1.5">
                             <Bath className="w-4 h-4 text-muted-foreground" />
-                            <p className="text-sm font-medium text-foreground">2</p>
+                            <p className="text-sm font-medium text-foreground">{propertyDetails?.bathrooms}</p>
                         </div>
                     </div>
                 </div>
@@ -165,7 +197,9 @@ const OverviewTab = ({
             </div>
 
             <div className="lg:col-span-2 flex justify-end">
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
+                <Button
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                    onClick={handleSaveChanges}>
                     <Save className="w-4 h-4" />
                     Save Changes
                 </Button>

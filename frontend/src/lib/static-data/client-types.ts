@@ -1,3 +1,5 @@
+import { PropertyInfo } from "./request-types";
+
 export interface ExactAnswer {
     id: string;
     question: string;
@@ -21,5 +23,21 @@ export interface FeatureItem {
     details?: string;
     allowDetails?: boolean;
 }
+
+export const PROPERTY_PAYLOAD_TO_API_KEYS: Record<keyof PropertyInfo, string> = {
+    name: 'name',
+    address: 'address',
+    ownershipLevel: 'ownership_level',
+    propertyType: 'property_type',
+    bedrooms: 'bedrooms',
+    bathrooms: 'bathrooms',
+    photo: 'photo',
+    checkinMessage: 'checkin_msg',
+    checkoutMessage: 'checkout_msg',
+    checkinTime: 'checkin_time',
+    checkoutTime: 'checkout_time',
+    checkinReminderHours: 'checkin_reminder_hours',
+    checkoutReminderHours: 'checkout_reminder_hours',
+};
 
 export type TabType = "overview" | "knowledge" | "exact-answers" | "guests";

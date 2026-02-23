@@ -13,7 +13,7 @@ module Api
                 render json: post_format_property(property)
             end
 
-            # GET /api/v1/properties (GET ALL PROPERTIES – list with card summary data)
+            # GET /api/v1/properties (GET ALL PROPERTIES)
             def index
                 host = Host.find_by!(auth_user_id: @auth_user_id)
                 properties = Property.where(host_id: host.id)
@@ -35,10 +35,19 @@ module Api
 
             # GET /api/v1/properties/:id (GET PROPERTY DETAILS)
             def show
-                property = Property.find_by!(id: params[:id])
+                host = Host.find_by!(auth_user_id: @auth_user_id)
+                property = Property.find_by!(id: params[:id], host_id: host.id)
                 active_count = Reservation.where(property_id: property.id).where('? BETWEEN check_in AND check_out', Date.current).count
                 subscription_end = Subscription.where(property_id: property.id).where(cancelled_at: nil).pick(:current_period_end)
                 render json: detail_format_property(property, active_count, subscription_end)
+            end
+
+            # PATCH /api/v1/properties/:id (UPDATE PROPERTY)
+            def update
+                host = Host.find_by!(auth_user_id: @auth_user_id)
+                property = Property.find_by!(id: params[:id], host_id: host.id)
+                property.update!(post_property_params)
+                render json: post_format_property(property)
             end
 
             private
@@ -73,11 +82,19 @@ module Api
                   ownership_level: property.ownership_level,
                   checkin_msg: property.checkin_msg,
                   checkout_msg: property.checkout_msg,
-                  checkin_time: property.checkin_time,
-                  checkout_time: property.checkout_time,
+                  checkin_time: format_time_for_api(property.checkin_time),
+                  checkout_time: format_time_for_api(property.checkout_time),
                   checkin_reminder_hours: property.checkin_reminder_hours,
                   checkout_reminder_hours: property.checkout_reminder_hours
                 }
+            end
+
+            # Normalize time to "HH:mm" so clients get a consistent format (no ISO date wrapper).
+            def format_time_for_api(value)
+                return nil if value.blank?
+                return value if value.is_a?(String) && value.match?(/\A\d{1,2}:\d{2}(:\d{2})?\z/)
+                t = value.is_a?(String) ? Time.zone.parse(value) : value
+                t&.strftime("%H:%M")
             end
 
             def get_format_property(property, active_guests_by_property, subscription_ends_by_property)
@@ -99,6 +116,7 @@ module Api
                     subscription_expires_at: subscription_expires_at&.iso8601
                 )
             end
+
     end
   end
 end

@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ExactAnswer, Guest, FeatureItem } from "@/lib/static-data/client-types";
-import { PropertyInfo, KnowledgeCategoryInfo, PropertyKnowledgeCategoryInfo } from "@/lib/static-data/request-types";
+import { PropertyInfo } from "@/lib/static-data/request-types";
 import { Step1PropertyInfo } from "../components/add-property-steps/Step1PropertyInfo";
 import { Step2PhotoUpload } from "../components/add-property-steps/Step2PhotoUpload";
 import { Step3Knowledge } from "../components/add-property-steps/Step3Knowledge";
@@ -14,7 +14,8 @@ import { Step9Subscription } from "../components/add-property-steps/Step9Subscri
 import { PropertyCreated } from "../components/add-property-steps/PropertyCreated";
 import { defaultAmenities, defaultWhereIsItems, defaultRecommendations, defaultRules } from "@/lib/static-data/defaults";
 import { createProperty } from "@/lib/services/properties";
-import { createKnowledgeCategory, createPropertyKnowledgeCategory, createFeature, createKnowledgeCategoryFeature, createExactAnswer } from "@/lib/services/knowledge";
+import { savePropertyKnowledge, buildPropertyKnowledgePayload } from "@/lib/services/knowledge";
+import { createExactAnswer } from "@/lib/services/exact-answers";
 import { createGuest, createReservation } from "@/lib/services/guests";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
@@ -78,42 +79,9 @@ const AddProperty = () => {
   const [selectedMonths, setSelectedMonths] = useState(1);
   const [activateSubscription, setActivateSubscription] = useState(true);
 
-  const addKnowledgePerCategory = async (
-    categoryName: string,
-    items: FeatureItem[],
-    description: string,
-    propertyId: string
-  ) => {
-    if (items.length === 0 && description === "") return;
-
-    const knowledgeCategoryResponse = await createKnowledgeCategory({ name: categoryName });
-
-    await createPropertyKnowledgeCategory({
-      propertyId: propertyId,
-      knowledgeCategoryId: knowledgeCategoryResponse.id,
-      description: description,
-    });
-
-    for (const item of items) {
-      if (item.enabled) {
-        // CREATE THE FEATURE AND ATTACH TO THE KNOWLEDGE CATEGORY FOR THIS PROPERTY
-        const response = await createFeature({
-          name: item.label,
-        });
-        const knowledgeCategoryFeatureResponse = await createKnowledgeCategoryFeature({
-          propertyId: propertyId,
-          knowledgeCategoryId: knowledgeCategoryResponse.id,
-          featureId: response.id,
-          description: item.details || "",
-        });
-      }
-    }
-  };
-
   const addExactAnswers = async (exactAnswers: ExactAnswer[], propertyId: string) => {
     for (const exactAnswer of exactAnswers) {
-      await createExactAnswer({
-        propertyId: propertyId,
+      await createExactAnswer(propertyId, {
         question: exactAnswer.question,
         answer: exactAnswer.answer,
       });
@@ -143,12 +111,21 @@ const AddProperty = () => {
 
       try {
         const propertyResponse = await createProperty(propertyInfo);
-        const propertyId = propertyResponse.id;
+        const propertyId = String(propertyResponse.id);
 
-        await addKnowledgePerCategory("Amenities", amenities, otherAmenities, propertyId);
-        await addKnowledgePerCategory("WhereIs", whereIsItems, otherWhereIs, propertyId);
-        await addKnowledgePerCategory("Recommendations", recommendations, otherRecommendations, propertyId);
-        await addKnowledgePerCategory("Rules", rules, otherRules, propertyId);
+        await savePropertyKnowledge(
+          propertyId,
+          buildPropertyKnowledgePayload({
+            amenities,
+            otherAmenities,
+            whereIsItems,
+            otherWhereIs,
+            recommendations,
+            otherRecommendations,
+            rules,
+            otherRules,
+          })
+        );
 
         const exactAnswersWithData = exactAnswers.filter(
           (ea) => ea.question.trim() !== "" || ea.answer.trim() !== ""

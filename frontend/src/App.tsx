@@ -1,3 +1,4 @@
+import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -25,6 +26,14 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      <Toaster
+        position="bottom-center"
+        toastOptions={{
+          classNames: {
+            toast: "!bg-card !text-foreground !border !border-border !border-primary !border-2 !rounded-2xl !shadow-soft !font-outfit",
+          },
+        }}
+      />
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -74,6 +74,20 @@ export interface GetPropertiesResponse {
     ai_status: string;
 }
 
+export type UpdatePropertyResponse = CreatePropertyResponse;
+
+export interface GetPropertyKnowledgeCategoriesResponse {
+    description: string;
+    items: { name: string; description: string }[];
+}
+
+export interface GetPropertyKnowledgeResponse {
+    amenities: GetPropertyKnowledgeCategoriesResponse;
+    where_is: GetPropertyKnowledgeCategoriesResponse;
+    recommendations: GetPropertyKnowledgeCategoriesResponse;
+    rules: GetPropertyKnowledgeCategoriesResponse;
+}
+
 export interface GetPropertyDetailsResponse {
     id: string;
     name: string;
