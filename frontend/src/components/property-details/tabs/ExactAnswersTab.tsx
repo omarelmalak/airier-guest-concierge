@@ -11,6 +11,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 
 const ExactAnswersTab = ({ propertyId }: { propertyId: string }) => {
     const queryClient = useQueryClient();
+    const [showAddForm, setShowAddForm] = useState(false);
     const [newQuestion, setNewQuestion] = useState("");
     const [newAnswer, setNewAnswer] = useState("");
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -28,7 +29,14 @@ const ExactAnswersTab = ({ propertyId }: { propertyId: string }) => {
             queryClient.invalidateQueries({ queryKey: ['exact-answers', propertyId] });
             setNewQuestion("");
             setNewAnswer("");
+            setShowAddForm(false);
         }
+    };
+
+    const closeAddForm = () => {
+        setShowAddForm(false);
+        setNewQuestion("");
+        setNewAnswer("");
     };
 
     const removeExactAnswer = async (id: string) => {
@@ -73,11 +81,79 @@ const ExactAnswersTab = ({ propertyId }: { propertyId: string }) => {
 
     return (
         <div className="space-y-6">
-            {/* Existing Answers */}
-            {exactAnswers && exactAnswers.length > 0 && (
-                <div className="bg-card rounded-2xl border border-border p-6 shadow-soft">
-                    <h3 className="text-lg font-semibold mb-4">Saved Answers ({exactAnswers.length})</h3>
-                    <div className="space-y-4">
+            {/* Add Exact Answer Button / Form (same pattern as Guests tab) */}
+            {!showAddForm ? (
+                <Button
+                    onClick={() => setShowAddForm(true)}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                >
+                    <Plus className="w-4 h-4" />
+                    Add Exact Answer
+                </Button>
+            ) : (
+                <div className="bg-card rounded-2xl border border-border p-6 shadow-soft animate-fade-in">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold">Add New Exact Answer</h3>
+                        <button
+                            onClick={closeAddForm}
+                            className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+                            title="Close"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        When guests ask a matching question, the AI will respond with this exact answer.
+                    </p>
+                    <div className="space-y-4 mb-4">
+                        <div>
+                            <Label htmlFor="new-question">Question *</Label>
+                            <Input
+                                id="new-question"
+                                value={newQuestion}
+                                onChange={(e) => setNewQuestion(e.target.value)}
+                                placeholder="e.g., What's the Wi-Fi password?"
+                                className="mt-1.5"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="new-answer">Answer *</Label>
+                            <Textarea
+                                id="new-answer"
+                                value={newAnswer}
+                                onChange={(e) => setNewAnswer(e.target.value)}
+                                placeholder="The exact response the AI will give..."
+                                className="min-h-[80px] mt-1.5 resize-none"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={closeAddForm}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={addExactAnswer}
+                            disabled={!newQuestion || !newAnswer}
+                            className="gap-2"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Add Answer
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Saved Answers List (same card pattern as Guests "Enrolled Guests") */}
+            <div className="bg-card rounded-2xl border border-border shadow-soft overflow-hidden">
+                <div className="p-6 border-b border-border">
+                    <h3 className="text-lg font-semibold">Exact Answers</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        {exactAnswers?.length ?? 0} saved {exactAnswers?.length === 1 ? 'answer' : 'answers'}
+                    </p>
+                </div>
+
+                {exactAnswers && exactAnswers.length > 0 ? (
+                    <div className="p-6 space-y-4">
                         {exactAnswers.map((ea) => (
                             <div
                                 key={ea.id}
@@ -147,50 +223,12 @@ const ExactAnswersTab = ({ propertyId }: { propertyId: string }) => {
                             </div>
                         ))}
                     </div>
-                </div>
-            )}
-
-            {!exactAnswers || exactAnswers.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                    <p>No exact answers configured yet.</p>
-                    <p className="text-sm mt-1">Add your first Q&A pair above.</p>
-                </div>
-            )}
-
-            {/* Add New */}
-            <div className="bg-card rounded-2xl border border-border p-6 shadow-soft">
-                <h3 className="text-lg font-semibold mb-4">Add Exact Answer</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                    When guests ask questions matching the ones below, the AI will respond with the exact answer you provide.
-                </p>
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Question</Label>
-                        <Input
-                            value={newQuestion}
-                            onChange={(e) => setNewQuestion(e.target.value)}
-                            placeholder="e.g., What's the Wi-Fi password?"
-                            className="bg-secondary border-0"
-                        />
+                ) : (
+                    <div className="text-center py-12 text-muted-foreground px-6">
+                        <p>No exact answers configured yet.</p>
+                        <p className="text-sm mt-1">Click &quot;Add Exact Answer&quot; above to get started.</p>
                     </div>
-                    <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Answer</Label>
-                        <Textarea
-                            value={newAnswer}
-                            onChange={(e) => setNewAnswer(e.target.value)}
-                            placeholder="The exact response the AI will give..."
-                            className="min-h-[80px] bg-secondary border-0 resize-none"
-                        />
-                    </div>
-                    <Button
-                        onClick={addExactAnswer}
-                        disabled={!newQuestion || !newAnswer}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Add Answer
-                    </Button>
-                </div>
+                )}
             </div>
         </div>
     );
