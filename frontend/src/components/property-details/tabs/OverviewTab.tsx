@@ -5,12 +5,22 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { getPropertyDetails, updateProperty } from "@/lib/services/properties";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { PropertyInfo, UpdatePropertyInfo } from "@/lib/static-data/request-types";
+import { UpdatePropertyInfo } from "@/lib/static-data/request-types";
 import { toast } from "sonner";
+
+const PROPERTY_TYPES = ["Apartment", "House", "Cabin", "Villa", "Condo", "Studio", "Loft", "Townhouse"] as const;
+const ACCESS_OPTIONS = ["Entire place", "Private room", "Shared room"] as const;
 
 const OverviewTab = ({ propertyId }: { propertyId: string }) => {
     const queryClient = useQueryClient();
@@ -25,6 +35,10 @@ const OverviewTab = ({ propertyId }: { propertyId: string }) => {
     const [checkOutReminderHours, setCheckOutReminderHours] = useState<number | string>("");
     const [checkInMessage, setCheckInMessage] = useState("");
     const [checkOutMessage, setCheckOutMessage] = useState("");
+    const [propertyType, setPropertyType] = useState("");
+    const [ownershipLevel, setOwnershipLevel] = useState("");
+    const [bedrooms, setBedrooms] = useState<string>("");
+    const [bathrooms, setBathrooms] = useState<string>("");
 
     useEffect(() => {
         if (!propertyDetails) return;
@@ -34,16 +48,24 @@ const OverviewTab = ({ propertyId }: { propertyId: string }) => {
         setCheckOutReminderHours(propertyDetails.checkout_reminder_hours ?? "");
         setCheckInMessage(propertyDetails.checkin_msg ?? "");
         setCheckOutMessage(propertyDetails.checkout_msg ?? "");
+        setPropertyType(propertyDetails.property_type ?? "");
+        setOwnershipLevel(propertyDetails.ownership_level ?? "");
+        setBedrooms(propertyDetails.bedrooms != null ? String(propertyDetails.bedrooms) : "");
+        setBathrooms(propertyDetails.bathrooms != null ? String(propertyDetails.bathrooms) : "");
     }, [propertyDetails]);
 
     const handleSaveChanges = async () => {
         const payload: UpdatePropertyInfo = {
-            checkinMessage: checkInMessage,
-            checkoutMessage: checkOutMessage,
-            checkinTime: checkInTime,
-            checkoutTime: checkOutTime,
-            checkinReminderHours: String(checkInReminderHours ?? ""),
-            checkoutReminderHours: String(checkOutReminderHours ?? ""),
+            checkinMessage: checkInMessage || undefined,
+            checkoutMessage: checkOutMessage || undefined,
+            checkinTime: checkInTime || undefined,
+            checkoutTime: checkOutTime || undefined,
+            checkinReminderHours: (checkInReminderHours !== "" && checkInReminderHours != null) ? String(checkInReminderHours) : undefined,
+            checkoutReminderHours: (checkOutReminderHours !== "" && checkOutReminderHours != null) ? String(checkOutReminderHours) : undefined,
+            propertyType: propertyType || undefined,
+            ownershipLevel: ownershipLevel || undefined,
+            bedrooms: bedrooms || undefined,
+            bathrooms: bathrooms || undefined,
         };
         try {
             await updateProperty(propertyId, payload);
@@ -77,27 +99,55 @@ const OverviewTab = ({ propertyId }: { propertyId: string }) => {
                     Property Details
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <span className="text-sm text-muted-foreground">Type</span>
-                        <p className="text-sm font-medium text-foreground">{propertyDetails?.property_type}</p>
+                    <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Type</Label>
+                        <Select value={propertyType} onValueChange={setPropertyType}>
+                            <SelectTrigger className="bg-secondary border-0">
+                                <SelectValue placeholder="Select property type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {PROPERTY_TYPES.map((t) => (
+                                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
-                    <div className="space-y-1">
-                        <span className="text-sm text-muted-foreground">Access</span>
-                        <p className="text-sm font-medium text-foreground">{propertyDetails?.ownership_level}</p>
+                    <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Access</Label>
+                        <Select value={ownershipLevel} onValueChange={setOwnershipLevel}>
+                            <SelectTrigger className="bg-secondary border-0">
+                                <SelectValue placeholder="Select access level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ACCESS_OPTIONS.map((o) => (
+                                    <SelectItem key={o} value={o}>{o}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
-                    <div className="space-y-1">
-                        <span className="text-sm text-muted-foreground">Bedrooms</span>
-                        <div className="flex items-center gap-1.5">
-                            <BedDouble className="w-4 h-4 text-muted-foreground" />
-                            <p className="text-sm font-medium text-foreground">{propertyDetails?.bedrooms}</p>
-                        </div>
+                    <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
+                            <BedDouble className="w-4 h-4" /> Bedrooms
+                        </Label>
+                        <Input
+                            type="number"
+                            min={0}
+                            value={bedrooms}
+                            onChange={(e) => setBedrooms(e.target.value)}
+                            className="bg-secondary border-0"
+                        />
                     </div>
-                    <div className="space-y-1">
-                        <span className="text-sm text-muted-foreground">Bathrooms</span>
-                        <div className="flex items-center gap-1.5">
-                            <Bath className="w-4 h-4 text-muted-foreground" />
-                            <p className="text-sm font-medium text-foreground">{propertyDetails?.bathrooms}</p>
-                        </div>
+                    <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
+                            <Bath className="w-4 h-4" /> Bathrooms
+                        </Label>
+                        <Input
+                            type="number"
+                            min={0}
+                            value={bathrooms}
+                            onChange={(e) => setBathrooms(e.target.value)}
+                            className="bg-secondary border-0"
+                        />
                     </div>
                 </div>
             </div>

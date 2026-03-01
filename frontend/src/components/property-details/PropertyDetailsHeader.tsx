@@ -1,11 +1,50 @@
-import { GetPropertiesResponse } from "@/lib/static-data/response-types";
 import StatusBadge from "../StatusBadge";
 import { Button } from "../ui/button";
-import { Star, Calendar, RotateCcw, Zap, Users } from "lucide-react";
+import { Input } from "../ui/input";
+import { RotateCcw, Zap, Users, Pencil, Check, X } from "lucide-react";
 import { GetPropertyDetailsResponse } from "@/lib/static-data/response-types";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { updateProperty } from "@/lib/services/properties";
+import { toast } from "sonner";
 
 const PropertyDetailsHeader = ({ property, setSubscriptionDialogOpen }: { property: GetPropertyDetailsResponse, setSubscriptionDialogOpen: (open: boolean) => void }) => {
+    const queryClient = useQueryClient();
     const subscriptionActive = property.subscription_expires_at ? new Date(property.subscription_expires_at) > new Date() : false;
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState(property.name);
+    const [editAddress, setEditAddress] = useState(property.address);
+    const [saving, setSaving] = useState(false);
+
+    const startEditing = () => {
+        setEditName(property.name);
+        setEditAddress(property.address);
+        setIsEditing(true);
+    };
+
+    const cancelEditing = () => {
+        setEditName(property.name);
+        setEditAddress(property.address);
+        setIsEditing(false);
+    };
+
+    const saveHeader = async () => {
+        if (editName.trim() === "" || editAddress.trim() === "") {
+            toast.error("Name and address are required");
+            return;
+        }
+        setSaving(true);
+        try {
+            await updateProperty(String(property.id), { name: editName.trim(), address: editAddress.trim() });
+            toast.success("Property updated");
+            await queryClient.invalidateQueries({ queryKey: ["property", String(property.id)] });
+            setIsEditing(false);
+        } catch {
+            toast.error("Failed to update property");
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <div className="rounded-2xl border border-border shadow-card overflow-hidden mb-6">
@@ -26,12 +65,47 @@ const PropertyDetailsHeader = ({ property, setSubscriptionDialogOpen }: { proper
 
                 {/* Light scrim under text only – softens without heavy black */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/55 to-transparent pt-10 pb-5 md:pb-6 px-5 md:px-6">
-                    <h1 className="text-2xl md:text-3xl font-semibold text-white mb-1 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
-                        {property.name}
-                    </h1>
-                    <p className="text-white text-sm md:text-base [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
-                        {property.address}
-                    </p>
+                    {isEditing ? (
+                        <div className="space-y-2">
+                            <Input
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                placeholder="Property name"
+                                className="text-lg md:text-xl font-semibold bg-white/95 text-foreground border-white [text-shadow:none] placeholder:text-muted-foreground"
+                            />
+                            <Input
+                                value={editAddress}
+                                onChange={(e) => setEditAddress(e.target.value)}
+                                placeholder="Address"
+                                className="text-sm md:text-base bg-white/95 text-foreground border-white [text-shadow:none] placeholder:text-muted-foreground"
+                            />
+                            <div className="flex gap-2 mt-2">
+                                <Button size="sm" onClick={saveHeader} disabled={saving} className="gap-1.5">
+                                    <Check className="w-4 h-4" /> Save
+                                </Button>
+                                <Button size="sm" variant="secondary" onClick={cancelEditing} disabled={saving} className="gap-1.5 bg-white/20 text-white border-white/40 hover:bg-white/30">
+                                    <X className="w-4 h-4" /> Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <h1 className="text-2xl md:text-3xl font-semibold text-white mb-1 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
+                                {property.name}
+                            </h1>
+                            <p className="text-white text-sm md:text-base [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
+                                {property.address}
+                            </p>
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                className="mt-2 gap-1.5 bg-white/20 text-white border-white/40 hover:bg-white/30"
+                                onClick={startEditing}
+                            >
+                                <Pencil className="w-4 h-4" /> Edit name & address
+                            </Button>
+                        </>
+                    )}
                 </div>
             </div>
 

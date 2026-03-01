@@ -96,8 +96,8 @@ const AddProperty = () => {
         phone: guest.phone,
       });
 
-      const reservationResponse = await createReservation({
-        propertyId: propertyId,
+      await createReservation({
+        propertyId,
         guestId: guestResponse.id,
         checkIn: new Date(guest.startDate).toISOString(),
         checkOut: new Date(guest.endDate).toISOString(),

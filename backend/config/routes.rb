@@ -11,24 +11,20 @@ Rails.application.routes.draw do
       # Simple hello endpoint
       get "hello", to: "hello#index"
       
-      # Guests endpoints
-      resources :guests, only: [:index, :show, :create]
-      
       # Host endpoints
       resource :hosts, only: [] do
         patch :profile, to: "hosts#complete_profile"
       end
 
+      resources :guests, only: [:index, :show, :create, :update, :destroy]
+
       resources :properties, only: [:create, :index, :show, :update] do
         resource :knowledge, only: [:show, :update], controller: "knowledge"
         resources :exact_answers, only: [:index, :create, :update, :destroy]
+        resources :reservations, only: [:index, :create, :update, :destroy]
       end
-
-      resources :guests, only: [:create]
-
-      resources :reservations, only: [:create]
     end
-  end
+  end 
 
   # Defines the root path route ("/")
   # root "posts#index"

@@ -40,4 +40,15 @@ export const PROPERTY_PAYLOAD_TO_API_KEYS: Record<keyof PropertyInfo, string> = 
     checkoutReminderHours: 'checkout_reminder_hours',
 };
 
+export interface PropertyReservation {
+    id: string;
+    propertyId: string;
+    checkIn: string;
+    checkOut: string;
+    isActive: boolean;
+    guest: Guest;
+}
+
 export type TabType = "overview" | "knowledge" | "exact-answers" | "guests";
+
+export type SortKey = "createdAt" | "checkIn" | "checkOut";

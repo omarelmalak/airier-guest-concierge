@@ -54,4 +54,5 @@ export interface ReservationInfo {
     guestId: string;
     checkIn: string;
     checkOut: string;
+    isActive?: boolean;
 }

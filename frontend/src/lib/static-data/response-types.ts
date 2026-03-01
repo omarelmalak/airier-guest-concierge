@@ -1,3 +1,5 @@
+import { PropertyReservation } from "./client-types";
+
 export interface CreatePropertyResponse {
     id: string;
     host_id: string;
@@ -105,4 +107,8 @@ export interface GetPropertyDetailsResponse {
     checkin_reminder_hours: number;
     checkout_time: string;
     checkout_reminder_hours: number;
+}
+
+export interface GetPropertyReservationsResponse {
+    reservations: PropertyReservation[];
 }
