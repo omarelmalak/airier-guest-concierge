@@ -49,6 +49,12 @@ export interface PropertyReservation {
     guest: Guest;
 }
 
+export interface CurrentGuest {
+    id: string;
+    first_name: string;
+    last_name: string;
+}
+
 export type TabType = "overview" | "knowledge" | "exact-answers" | "guests";
 
 export type SortKey = "createdAt" | "checkIn" | "checkOut";

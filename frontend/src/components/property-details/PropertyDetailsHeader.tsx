@@ -11,6 +11,7 @@ import { toast } from "sonner";
 const PropertyDetailsHeader = ({ property, setSubscriptionDialogOpen }: { property: GetPropertyDetailsResponse, setSubscriptionDialogOpen: (open: boolean) => void }) => {
     const queryClient = useQueryClient();
     const subscriptionActive = property.subscription_expires_at ? new Date(property.subscription_expires_at) > new Date() : false;
+    const hasActiveGuests = property.active_guests_count > 0;
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(property.name);
     const [editAddress, setEditAddress] = useState(property.address);
@@ -59,9 +60,9 @@ const PropertyDetailsHeader = ({ property, setSubscriptionDialogOpen }: { proper
                 {/* Gradient overlay per design-rules: from-black/70 via-black/25 – keeps image visible, supports text */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
 
-                <div className="absolute top-4 right-4">
+                {/* <div className="absolute top-4 right-4">
                     <StatusBadge status={"online"} />
-                </div>
+                </div> */}
 
                 {/* Light scrim under text only – softens without heavy black */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/55 to-transparent pt-10 pb-5 md:pb-6 px-5 md:px-6">
@@ -89,22 +90,22 @@ const PropertyDetailsHeader = ({ property, setSubscriptionDialogOpen }: { proper
                             </div>
                         </div>
                     ) : (
-                        <>
+                        <div className="relative w-full text-left">
                             <h1 className="text-2xl md:text-3xl font-semibold text-white mb-1 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
                                 {property.name}
+                                <button
+                                    type="button"
+                                    onClick={startEditing}
+                                    className="ml-3 p-1.5 rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 focus:text-white"
+                                    title="Edit name & address"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </button>
                             </h1>
                             <p className="text-white text-sm md:text-base [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
                                 {property.address}
                             </p>
-                            <Button
-                                size="sm"
-                                variant="secondary"
-                                className="mt-2 gap-1.5 bg-white/20 text-white border-white/40 hover:bg-white/30"
-                                onClick={startEditing}
-                            >
-                                <Pencil className="w-4 h-4" /> Edit name & address
-                            </Button>
-                        </>
+                        </div>
                     )}
                 </div>
             </div>
@@ -121,19 +122,43 @@ const PropertyDetailsHeader = ({ property, setSubscriptionDialogOpen }: { proper
 
                     <span className="w-px h-5 bg-border" />
 
-                    {/* Subscription */}
+                    {/* Subscription / AI status */}
                     <div className="flex items-center gap-1.5 text-sm">
-                        {subscriptionActive ? (
+                        {hasActiveGuests ? (
                             <>
                                 <span className="w-2 h-2 rounded-full bg-status-online" />
                                 <span className="text-foreground font-medium">Active</span>
-                                <span className="text-muted-foreground">until {property.subscription_expires_at}</span>
+                                {property.subscription_expires_at && (
+                                    <span className="text-muted-foreground">until {property.subscription_expires_at}</span>
+                                )}
                             </>
                         ) : (
                             <>
                                 <span className="w-2 h-2 rounded-full bg-muted-foreground" />
                                 <span className="text-muted-foreground">Inactive</span>
                             </>
+                        )}
+                    </div>
+
+                    <span className="w-px h-5 bg-border" />
+
+                    {/* Guests currently staying */}
+                    <div className="flex flex-wrap items-center gap-1.5 text-sm">
+                        {property.current_guests && property.current_guests.length > 0 ? (
+                            <>
+                                <span className="text-foreground font-medium">
+                                    {property.current_guests.length} staying
+                                </span>
+                                <span className="text-muted-foreground">
+                                    (
+                                    {property.current_guests
+                                        .map((g) => `${g.first_name} ${g.last_name}`)
+                                        .join(", ")}
+                                    )
+                                </span>
+                            </>
+                        ) : (
+                            <span className="text-muted-foreground">No guests currently staying</span>
                         )}
                     </div>
                 </div>
@@ -156,7 +181,7 @@ const PropertyDetailsHeader = ({ property, setSubscriptionDialogOpen }: { proper
                     )}
                 </Button>
             </div>
-        </div>
+        </div >
     );
 };
 

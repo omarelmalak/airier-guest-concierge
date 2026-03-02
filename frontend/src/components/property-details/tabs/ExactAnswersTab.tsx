@@ -8,6 +8,7 @@ import { ExactAnswer } from "@/lib/static-data/client-types";
 import { createExactAnswer, deleteExactAnswer, getExactAnswers, updateExactAnswer } from "@/lib/services/exact-answers";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { toast } from "sonner";
 
 const ExactAnswersTab = ({ propertyId }: { propertyId: string }) => {
     const queryClient = useQueryClient();
@@ -42,6 +43,7 @@ const ExactAnswersTab = ({ propertyId }: { propertyId: string }) => {
     const removeExactAnswer = async (id: string) => {
         await deleteExactAnswer(propertyId, id);
         queryClient.invalidateQueries({ queryKey: ['exact-answers', propertyId] });
+        toast.success("Exact answer removed successfully");
     };
 
     const startEditing = (ea: ExactAnswer) => {

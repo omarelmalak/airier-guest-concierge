@@ -68,7 +68,7 @@ module Api
         raise ActiveRecord::RecordNotFound unless reservation
 
         reservation.destroy!
-        head :no_content
+        render json: { message: "Reservation deleted successfully" }
       end
 
       private

@@ -19,9 +19,9 @@ module Api
                 properties = Property.where(host_id: host.id)
                 property_ids = properties.pluck(:id)
 
-                active_guests_by_property = Reservation
-                    .where(property_id: property_ids)
-                    .where('? BETWEEN check_in AND check_out', Date.current)
+                # Count AI-active guests per property (is_active = true), independent of dates.
+                active_ai_guests_by_property = Reservation
+                    .where(property_id: property_ids, is_active: true)
                     .group(:property_id).count
 
                 subscription_ends_by_property = Subscription
@@ -30,16 +30,32 @@ module Api
                     .pluck(:property_id, :current_period_end)
                     .to_h
 
-                render json: properties.map { |property| get_format_property(property, active_guests_by_property, subscription_ends_by_property) }
+                render json: properties.map { |property| get_format_property(property, active_ai_guests_by_property, subscription_ends_by_property) }
             end
 
             # GET /api/v1/properties/:id (GET PROPERTY DETAILS)
             def show
                 host = Host.find_by!(auth_user_id: @auth_user_id)
                 property = Property.find_by!(id: params[:id], host_id: host.id)
-                active_count = Reservation.where(property_id: property.id).where('? BETWEEN check_in AND check_out', Date.current).count
+
+                # How many guests currently have AI access enabled for this property
+                ai_active_count = Reservation.where(property_id: property.id, is_active: true).count
+
+                # Guests currently residing at the property based on today's date
+                current_guests = Reservation
+                    .where(property_id: property.id)
+                    .where('? BETWEEN check_in AND check_out', Date.current)
+                    .includes(:guest)
+                    .map do |r|
+                        {
+                            id: r.guest.id,
+                            first_name: r.guest.first_name,
+                            last_name: r.guest.last_name
+                        }
+                    end
+
                 subscription_end = Subscription.where(property_id: property.id).where(cancelled_at: nil).pick(:current_period_end)
-                render json: detail_format_property(property, active_count, subscription_end)
+                render json: detail_format_property(property, ai_active_count, subscription_end, current_guests)
             end
 
             # PATCH /api/v1/properties/:id (UPDATE PROPERTY)
@@ -97,23 +113,24 @@ module Api
                 t&.strftime("%H:%M")
             end
 
-            def get_format_property(property, active_guests_by_property, subscription_ends_by_property)
+            def get_format_property(property, active_ai_guests_by_property, subscription_ends_by_property)
                 {
                     id: property.id,
                     name: property.name,
                     address: property.address,
                     photo: property.photo,
-                    active_guests_count: active_guests_by_property[property.id] || 0,
+                    active_guests_count: active_ai_guests_by_property[property.id] || 0,
                     subscription_expires_at: subscription_ends_by_property[property.id]&.iso8601,
                     escalations_count: 0,
                     ai_status: 'active'
                 }
             end
 
-            def detail_format_property(property, active_guests_count, subscription_expires_at)
+            def detail_format_property(property, ai_active_count, subscription_expires_at, current_guests)
                 post_format_property(property).merge(
-                    active_guests_count: active_guests_count || 0,
-                    subscription_expires_at: subscription_expires_at&.iso8601
+                    active_guests_count: ai_active_count || 0,
+                    subscription_expires_at: subscription_expires_at&.iso8601,
+                    current_guests: current_guests
                 )
             end
 

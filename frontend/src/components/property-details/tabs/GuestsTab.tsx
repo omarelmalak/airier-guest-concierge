@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { SortKey } from "@/lib/static-data/client-types";
 
-// Guests Tab Component
 interface GuestsTabProps {
     propertyId: string;
     maxGuests: number;
@@ -53,7 +52,7 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
         queryFn: () => getReservationsForProperty(propertyId),
     });
 
-    const rows = (reservations ?? []).map((r: PropertyReservation) => ({
+    const rows = useMemo(() => (reservations ?? []).map((r: PropertyReservation) => ({
         reservationId: r.id,
         guestId: r.guest.id,
         firstName: r.guest.firstName,
@@ -62,7 +61,7 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
         startDate: r.guest.startDate,
         endDate: r.guest.endDate,
         isActive: r.isActive,
-    }));
+    })), [reservations]);
 
     const sortedRows =
         sortBy === "createdAt"
@@ -92,6 +91,8 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
         });
 
         await queryClient.invalidateQueries({ queryKey: ["reservations", propertyId] });
+        await queryClient.invalidateQueries({ queryKey: ["property", propertyId] });
+        await queryClient.invalidateQueries({ queryKey: ["properties"] });
         setNewGuest({ firstName: "", lastName: "", phone: "", startDate: "", endDate: "" });
         setShowAddForm(false);
     };
@@ -99,6 +100,7 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
     const handleRemoveGuest = async (reservationId: string) => {
         await deleteReservation(propertyId, reservationId);
         await queryClient.invalidateQueries({ queryKey: ["reservations", propertyId] });
+        await queryClient.invalidateQueries({ queryKey: ["property", propertyId] });
         toast.success("Guest removed successfully");
     };
 
@@ -124,6 +126,7 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
         } finally {
             setTogglingId(null);
             await queryClient.invalidateQueries({ queryKey: ["reservations", propertyId] });
+            await queryClient.invalidateQueries({ queryKey: ["property", propertyId] });
         }
     };
 

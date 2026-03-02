@@ -1,4 +1,4 @@
-import { PropertyReservation } from "./client-types";
+import { CurrentGuest, PropertyReservation } from "./client-types";
 
 export interface CreatePropertyResponse {
     id: string;
@@ -107,8 +107,7 @@ export interface GetPropertyDetailsResponse {
     checkin_reminder_hours: number;
     checkout_time: string;
     checkout_reminder_hours: number;
+    current_guests: CurrentGuest[];
 }
 
-export interface GetPropertyReservationsResponse {
-    reservations: PropertyReservation[];
-}
+export type GetPropertyReservationsResponse = PropertyReservation[];

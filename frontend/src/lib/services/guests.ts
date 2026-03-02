@@ -1,5 +1,5 @@
 import { api } from '../api';
-import { CreateGuestResponse, CreateReservationResponse } from '@/lib/static-data/response-types';
+import { CreateGuestResponse, CreateReservationResponse, GetPropertyReservationsResponse } from '@/lib/static-data/response-types';
 import { GuestInfo, ReservationInfo } from '../static-data/request-types';
 import { PropertyReservation } from '@/lib/static-data/client-types';
 
@@ -26,8 +26,8 @@ export const createReservation = async (reservation: ReservationInfo): Promise<C
     return response;
 }
 
-export const getReservationsForProperty = async (propertyId: string): Promise<PropertyReservation[]> => {
-    return api.get<PropertyReservation[]>(`/properties/${propertyId}/reservations`);
+export const getReservationsForProperty = async (propertyId: string): Promise<GetPropertyReservationsResponse> => {
+    return api.get<GetPropertyReservationsResponse>(`/properties/${propertyId}/reservations`);
 };
 
 export const deleteReservation = async (propertyId: string, reservationId: string): Promise<void> => {

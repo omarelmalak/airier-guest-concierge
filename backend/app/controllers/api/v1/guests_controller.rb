@@ -57,7 +57,7 @@ module Api
         end
 
         guest.destroy!
-        head :no_content
+        render json: { message: "Guest deleted successfully" }
       end
 
       private
