@@ -92,9 +92,9 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
 
         await queryClient.invalidateQueries({ queryKey: ["reservations", propertyId] });
         await queryClient.invalidateQueries({ queryKey: ["property", propertyId] });
-        await queryClient.invalidateQueries({ queryKey: ["properties"] });
         setNewGuest({ firstName: "", lastName: "", phone: "", startDate: "", endDate: "" });
         setShowAddForm(false);
+        toast.success("Guest added successfully");
     };
 
     const handleRemoveGuest = async (reservationId: string) => {

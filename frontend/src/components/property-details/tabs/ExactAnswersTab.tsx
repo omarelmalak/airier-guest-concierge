@@ -28,6 +28,7 @@ const ExactAnswersTab = ({ propertyId }: { propertyId: string }) => {
         if (newQuestion && newAnswer) {
             await createExactAnswer(propertyId, { question: newQuestion, answer: newAnswer });
             queryClient.invalidateQueries({ queryKey: ['exact-answers', propertyId] });
+            toast.success("Exact answer removed successfully");
             setNewQuestion("");
             setNewAnswer("");
             setShowAddForm(false);
