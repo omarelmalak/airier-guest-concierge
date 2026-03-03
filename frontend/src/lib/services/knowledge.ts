@@ -1,61 +1,61 @@
-import { supabase } from '../supabase';
 import { api } from '../api';
-import { CreateKnowledgeCategoryResponse, CreatePropertyKnowledgeCategoryResponse, CreateFeatureResponse, CreateKnowledgeCategoryFeatureResponse, CreateExactAnswerResponse } from '@/lib/static-data/response-types';
-import { KnowledgeCategoryInfo, PropertyKnowledgeCategoryInfo, FeatureInfo, KnowledgeCategoryFeatureInfo, ExactAnswerInfo } from '../static-data/request-types';
+import { GetPropertyKnowledgeResponse, GetPropertyKnowledgeCategoriesResponse } from '@/lib/static-data/response-types';
+import { FeatureItem } from '@/lib/static-data/client-types';
+import { defaultAmenities, defaultWhereIsItems, defaultRecommendations, defaultRules } from '@/lib/static-data/defaults';
 
-export const createKnowledgeCategory = async (knowledgeCategory: KnowledgeCategoryInfo): Promise<CreateKnowledgeCategoryResponse> => {
-    const response = await api.post<CreateKnowledgeCategoryResponse>('/knowledge_categories', {
-        knowledge_category: {
-            name: knowledgeCategory.name,
-        },
+function mergeCategoryWithApi(
+    defaults: FeatureItem[],
+    payload: GetPropertyKnowledgeCategoriesResponse
+): FeatureItem[] {
+    const byName = new Map(payload.items.map((i) => [i.name, i.description]));
+    return defaults.map((d) => {
+        const desc = byName.get(d.label);
+        return desc !== undefined
+            ? { ...d, enabled: true, details: desc ?? '' }
+            : { ...d, enabled: false, details: '' };
     });
-
-    return response;
 }
 
-export const createPropertyKnowledgeCategory = async (propertyKnowledgeCategory: PropertyKnowledgeCategoryInfo): Promise<CreatePropertyKnowledgeCategoryResponse> => {
-    const response = await api.post<CreatePropertyKnowledgeCategoryResponse>('/property_knowledge_categories', {
-        property_knowledge_category: {
-            property_id: propertyKnowledgeCategory.propertyId,
-            knowledge_category_id: propertyKnowledgeCategory.knowledgeCategoryId,
-            description: propertyKnowledgeCategory.description,
-        },
-    });
-
-    return response;
+export async function getPropertyKnowledge(propertyId: string): Promise<GetPropertyKnowledgeResponse> {
+    return api.get<GetPropertyKnowledgeResponse>(`/properties/${propertyId}/knowledge`);
 }
 
-export const createFeature = async (feature: FeatureInfo): Promise<CreateFeatureResponse> => {
-    const response = await api.post<CreateFeatureResponse>('/features', {
-        feature: {
-            name: feature.name,
-        },
-    });
-
-    return response;
+export async function savePropertyKnowledge(
+    propertyId: string,
+    payload: GetPropertyKnowledgeResponse
+): Promise<GetPropertyKnowledgeResponse> {
+    return api.put<GetPropertyKnowledgeResponse>(`/properties/${propertyId}/knowledge`, payload);
 }
 
-export const createKnowledgeCategoryFeature = async (knowledgeCategoryFeature: KnowledgeCategoryFeatureInfo): Promise<CreateKnowledgeCategoryFeatureResponse> => {
-    const response = await api.post<CreateKnowledgeCategoryFeatureResponse>('/knowledge_category_features', {
-        knowledge_category_feature: {
-            property_id: knowledgeCategoryFeature.propertyId,
-            knowledge_category_id: knowledgeCategoryFeature.knowledgeCategoryId,
-            feature_id: knowledgeCategoryFeature.featureId,
-            description: knowledgeCategoryFeature.description,
-        },
-    });
-
-    return response;
+export function buildPropertyKnowledgePayload(params: {
+    amenities: FeatureItem[];
+    otherAmenities: string;
+    whereIsItems: FeatureItem[];
+    otherWhereIs: string;
+    recommendations: FeatureItem[];
+    otherRecommendations: string;
+    rules: FeatureItem[];
+    otherRules: string;
+}): GetPropertyKnowledgeResponse {
+    const toItems = (items: FeatureItem[]) =>
+        items.filter((i) => i.enabled).map((i) => ({ name: i.label, description: i.details ?? '' }));
+    return {
+        amenities: { description: params.otherAmenities, items: toItems(params.amenities) },
+        where_is: { description: params.otherWhereIs, items: toItems(params.whereIsItems) },
+        recommendations: { description: params.otherRecommendations, items: toItems(params.recommendations) },
+        rules: { description: params.otherRules, items: toItems(params.rules) },
+    };
 }
 
-export const createExactAnswer = async (exactAnswer: ExactAnswerInfo): Promise<CreateExactAnswerResponse> => {
-    const response = await api.post<CreateExactAnswerResponse>('/exact_answers', {
-        exact_answer: {
-            property_id: exactAnswer.propertyId,
-            question: exactAnswer.question,
-            answer: exactAnswer.answer,
-        },
-    });
-
-    return response;
+export function mapPropertyKnowledgeToAddPropertyShape(data: GetPropertyKnowledgeResponse) {
+    return {
+        amenities: mergeCategoryWithApi(defaultAmenities, data.amenities),
+        otherAmenities: data.amenities.description ?? '',
+        whereIsItems: mergeCategoryWithApi(defaultWhereIsItems, data.where_is),
+        otherWhereIs: data.where_is.description ?? '',
+        recommendations: mergeCategoryWithApi(defaultRecommendations, data.recommendations),
+        otherRecommendations: data.recommendations.description ?? '',
+        rules: mergeCategoryWithApi(defaultRules, data.rules),
+        otherRules: data.rules.description ?? '',
+    };
 }

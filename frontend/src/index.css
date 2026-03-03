@@ -228,3 +228,15 @@
 .animate-success-pulse {
   animation: success-pulse 2s ease-in-out infinite;
 }
+
+[data-sonner-toast][data-type="success"] [data-icon],
+[data-sonner-toast][data-type="success"] [data-icon] svg {
+  color: hsl(var(--primary));
+  fill: currentColor;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon],
+[data-sonner-toast][data-type="error"] [data-icon] svg {
+  color: hsl(var(--primary));
+  fill: currentColor;
+}

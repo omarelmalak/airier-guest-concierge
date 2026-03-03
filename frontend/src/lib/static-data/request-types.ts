@@ -8,7 +8,13 @@ export interface PropertyInfo {
     photo: string;
     checkinMessage: string;
     checkoutMessage: string;
+    checkinTime: string;
+    checkoutTime: string;
+    checkinReminderHours: string;
+    checkoutReminderHours: string;
 }
+
+export type UpdatePropertyInfo = Partial<PropertyInfo>;
 
 export interface KnowledgeCategoryInfo {
     name: string;
@@ -48,4 +54,5 @@ export interface ReservationInfo {
     guestId: string;
     checkIn: string;
     checkOut: string;
+    isActive?: boolean;
 }

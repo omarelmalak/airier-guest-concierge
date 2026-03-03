@@ -3,7 +3,7 @@ import { UtensilsCrossed, ShoppingCart, Stethoscope, Bus, Moon, Theater } from "
 import { cn } from "@/lib/utils/common";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-import { updateDetails } from "@/lib/utils/knowledge-utils";
+import { updateDetailsAndEnabled } from "@/lib/utils/knowledge-utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
@@ -25,7 +25,7 @@ export const LocalRecommendationsSection = ({
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
     const handleUpdateDetails = (id: string, details: string) => {
-        updateDetails(id, details, recommendations, setRecommendations);
+        updateDetailsAndEnabled(id, details, recommendations, setRecommendations);
     };
 
     return (
@@ -62,11 +62,6 @@ export const LocalRecommendationsSection = ({
                             )}>
                                 {category.label}
                             </span>
-                            {hasContent && (
-                                <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                    Added
-                                </span>
-                            )}
                             {isExpanded ? (
                                 <ChevronUp className="w-4 h-4 text-muted-foreground" />
                             ) : (

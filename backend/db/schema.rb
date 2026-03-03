@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 0) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_08_180000) do
   create_schema "extensions"
 
   # These are extensions that must be enabled in order to support this database
@@ -58,7 +58,6 @@ ActiveRecord::Schema[8.1].define(version: 0) do
     t.text "first_name", null: false
     t.text "last_name"
     t.text "phone", null: false
-    t.uuid "property_id", null: false
   end
 
   create_table "public.hosts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -94,7 +93,11 @@ ActiveRecord::Schema[8.1].define(version: 0) do
     t.integer "bathrooms"
     t.integer "bedrooms"
     t.text "checkin_msg"
+    t.float "checkin_reminder_hours", limit: 24
+    t.time "checkin_time"
     t.text "checkout_msg"
+    t.float "checkout_reminder_hours", limit: 24
+    t.time "checkout_time"
     t.timestamptz "created_at", default: -> { "now()" }
     t.uuid "host_id", null: false
     t.text "name", null: false
@@ -143,7 +146,6 @@ ActiveRecord::Schema[8.1].define(version: 0) do
   add_foreign_key "public.auto_messages", "public.texts", name: "auto_messages_text_id_fkey", on_delete: :cascade
   add_foreign_key "public.escalations", "public.conversations", name: "escalations_conversation_fk", on_delete: :cascade
   add_foreign_key "public.exact_answers", "public.properties", name: "exactanswers_properties_fk", on_delete: :cascade
-  add_foreign_key "public.guests", "public.properties", name: "guests_property_id_fkey", on_delete: :cascade
   add_foreign_key "public.hosts", "public.auth.users", column: "auth_user_id", name: "hosts_auth_user_fk", on_delete: :cascade
   add_foreign_key "public.knowledge_category_features", "public.features", name: "kcf_feature_fk", on_delete: :cascade
   add_foreign_key "public.knowledge_category_features", "public.knowledge_categories", name: "kcf_category_fk", on_delete: :cascade

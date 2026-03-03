@@ -2,7 +2,7 @@ import { getSession } from "./auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
+type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 async function request<T>(
     path: string,
@@ -32,6 +32,8 @@ export const api = {
     get: <T>(path: string) => request<T>(path, "GET"),
     post: <T>(path: string, body: unknown) =>
         request<T>(path, "POST", body),
+    put: <T>(path: string, body: unknown) =>
+        request<T>(path, "PUT", body),
     patch: <T>(path: string, body: unknown) =>
         request<T>(path, "PATCH", body),
     delete: <T>(path: string) => request<T>(path, "DELETE"),
