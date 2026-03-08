@@ -74,6 +74,10 @@
     @apply border-border;
   }
 
+  html {
+    /* Lenis handles smooth scrolling */
+  }
+
   body {
     @apply bg-background text-foreground font-outfit antialiased;
     letter-spacing: -0.04em;
@@ -289,4 +293,29 @@
   50% {
     transform: scale(0.92) translateY(-12px);
   }
+}
+
+@keyframes never-sleeps-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.never-sleeps-track {
+  animation: never-sleeps-scroll 4s linear infinite;
+  animation-play-state: paused;
+  will-change: transform;
+}
+
+.never-sleeps-wrapper:hover .never-sleeps-track {
+  animation-play-state: running;
+}
+
+.never-sleeps-item {
+  flex: 0 0 auto;
+  padding-right: 1rem;
 }
