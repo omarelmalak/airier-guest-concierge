@@ -23,6 +23,8 @@ Rails.application.routes.draw do
         resources :exact_answers, only: [:index, :create, :update, :destroy]
         resources :reservations, only: [:index, :create, :update, :destroy]
       end
+
+      resources :messages, only: [:create]
     end
   end 
 
