@@ -7,7 +7,8 @@ A full-stack application for managing guest concierge services, built with React
 ```
 airier-guest-concierge/
 ├── frontend/          # React + TypeScript + Vite frontend
-└── backend/           # Ruby on Rails API backend
+├── backend/           # Ruby on Rails API backend
+└── worker/            # Flask + Celery + Twilio SMS worker
 ```
 
 ## Prerequisites
@@ -20,6 +21,10 @@ airier-guest-concierge/
 - **Ruby** 3.3.1 - [Install with rbenv](https://github.com/rbenv/rbenv#installation) or [rvm](https://rvm.io/)
 - **PostgreSQL** - [Install PostgreSQL](https://www.postgresql.org/download/)
 - **Bundler** - `gem install bundler`
+
+### Worker Requirements
+- **Python** 3.10+ (for Flask, Celery, Twilio client)
+- **RabbitMQ** (Celery broker) - e.g. `brew install rabbitmq` then `brew services start rabbitmq`, or run via Docker
 
 ## Frontend Setup
 
@@ -76,6 +81,40 @@ The backend API will be available at `http://localhost:3000`.
 - `rails db:seed` - Seed the database
 - `bundle exec rspec` - Run tests
 
+## Worker (Flask + Celery + Twilio SMS)
+
+Internal Python service: Flask receives HTTP from Rails and enqueues Celery tasks; Celery consumes from RabbitMQ and calls Twilio.
+
+### Worker Setup
+
+1. Copy `worker/.env.example` to `worker/.env` and set:
+   - `RABBITMQ_URL` – RabbitMQ broker URL (e.g. `amqp://guest:guest@localhost:5672//`)
+   - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`
+2. Install dependencies via the Makefile:
+
+   ```bash
+   cd worker
+   make install
+   ```
+
+3. Start RabbitMQ (e.g. `brew services start rabbitmq` or via Docker).
+
+### Run worker (Flask + Celery together)
+
+From the `worker` directory:
+
+```bash
+cd worker
+make dev
+```
+
+This will:
+
+- Create/activate `.venv` if needed
+- Load environment variables from `.env`
+- Start **Flask** on port `5000` (`FLASK_APP=app.flask_app flask run --port 5000`)
+- Start **Celery** worker (`celery -A app.celery_app worker -l info`)
+
 ## Environment Variables
 
 ### Backend
@@ -84,6 +123,7 @@ Create a `.env` file in the `backend/` directory:
 # DATABASE_URL=postgresql://postgres:{password}@db.qpzjdbthcmcihmejezos.supabase.co:5432/postgres
 # DATABASE_PASSWORD=password
 # SUPABASE_JWT_SECRET=secret
+# WORKER_API_URL=http://127.0.0.1:5000
 ```
 
 ### Frontend
@@ -92,6 +132,15 @@ Create a `.env` file in the `frontend/` directory if needed:
 # VITE_SUPABASE_URL=https://qpzjdbthcmcihmejezos.supabase.co
 # VITE_SUPABASE_ANON_KEY=anon_key
 # VITE_API_BASE_URL=http://localhost:3000/api/v1
+```
+
+### Worker
+Create a `.env` file in the `worker/` directory:
+```env
+RABBITMQ_URL=amqp://guest:guest@localhost:5672//
+TWILIO_ACCOUNT_SID=...
+TWILIO_AUTH_TOKEN=...
+TWILIO_FROM_NUMBER=+1...
 ```
 
 ## Troubleshooting
