@@ -506,6 +506,11 @@
   resolved "https://registry.npmjs.org/@floating-ui/utils/-/utils-0.2.10.tgz"
   integrity sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==
 
+"@fontsource/instrument-serif@^5.1.0":
+  version "5.2.8"
+  resolved "https://registry.npmjs.org/@fontsource/instrument-serif/-/instrument-serif-5.2.8.tgz"
+  integrity sha512-s+bkz+syj2rO00Rmq9g0P+PwuLig33DR1xDR8pTWmovH1pUjwnncrFk++q9mmOex8fUQ7oW80gPpPDaw7V1MMw==
+
 "@fontsource/outfit@^5.2.8":
   version "5.2.8"
   resolved "https://registry.npmjs.org/@fontsource/outfit/-/outfit-5.2.8.tgz"

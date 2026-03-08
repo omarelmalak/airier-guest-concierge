@@ -1,855 +1,715 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import LandingNav from "@/components/LandingNav";
 import airierLogo from "@/assets/airier-logo.png";
-import { 
-  MessageSquare, 
-  Clock, 
-  Zap, 
-  Shield, 
-  Users, 
-  BarChart3,
-  ArrowRight,
-  Check,
-  Sparkles,
-  Home,
-  Brain,
-  UserPlus,
-  Send,
-  CheckCircle2,
-  Building,
-  BookOpen,
-  UserCheck,
-  Timer,
-  Star,
-  Wrench,
-  Calendar
-} from "lucide-react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ArrowRight, Check, Home, BookOpen, UserCheck, Send, Wifi, MapPin, ShieldCheck, Coffee, Sparkles } from "lucide-react";
+import PropertyShowcase from "@/components/landing/PropertyShowcase";
 
-// SMS-style questions that appear on scroll
-const guestQuestions = [
-  { text: "What's the WiFi password?", x: 8, y: 10 },
-  { text: "How do I turn on the AC?", x: 72, y: 5 },
-  { text: "Where's the gym?", x: 15, y: 35 },
-  { text: "What time is checkout?", x: 60, y: 28 },
-  { text: "Is there parking?", x: 5, y: 58 },
-  { text: "How does the smart lock work?", x: 65, y: 50 },
-  { text: "Are pets allowed?", x: 28, y: 18 },
-  { text: "What's the check-in code?", x: 78, y: 70 },
-  { text: "Is there a coffee maker?", x: 10, y: 78 },
-  { text: "Where are extra towels?", x: 55, y: 75 },
-  { text: "How do I use the TV?", x: 82, y: 35 },
-  { text: "Any restaurant recommendations?", x: 35, y: 48 },
+gsap.registerPlugin(ScrollTrigger);
+
+// ─── Data ────────────────────────────────────────────────────────────────────
+
+const heroMessages = [
+  { from: "ai", text: "Hi Alice! 🏡 Welcome to Bedford Cabin. Check-in is at 3 PM — the lockbox code is 4821. Let me know when you arrive!" },
+  { from: "guest", text: "Thanks! Just got here. What's the WiFi password?" },
+  { from: "ai", text: "Great, welcome! The network is CozyStay_5G and the password is Welcome2025! 📶" },
+  { from: "guest", text: "Perfect. Where can I park?" },
+  { from: "ai", text: "You have spot #24 in the underground garage. Your key fob opens the gate. 🅿️" },
 ];
 
-// Key features with checkmarks
-const keyFeatures = [
-  "Automated check-in instructions",
-  "Instant check-out reminders",
-  "24/7 guest support",
-  "Property-specific knowledge"
+const conversationPairs = [
+  { q: "What's the WiFi password?", a: "Network: CozyStay_5G · Password: Welcome2025!" },
+  { q: "Where's the first aid kit?", a: "In the hallway closet, top shelf, right side." },
+  { q: "How do I use the thermostat?", a: "Turn the dial right for warmer. Currently set to 21°C." },
+  { q: "What time is checkout?", a: "Checkout is at 11:00 AM. Leave keys on the counter." },
+  { q: "Is there parking?", a: "Yes — spot #24 in the underground garage. Fob is on your keychain." },
+  { q: "Any restaurant recs nearby?", a: "Tony's Trattoria, 5 min walk. Try the truffle pasta." },
 ];
 
-const features = [
-  {
-    icon: MessageSquare,
-    title: "24/7 Guest Support",
-    description: "Your AI assistant answers guest questions instantly, any time of day or night."
-  },
-  {
-    icon: Clock,
-    title: "Save 10+ Hours Weekly",
-    description: "Automate repetitive questions about check-in, WiFi, amenities, and more."
-  },
-  {
-    icon: Zap,
-    title: "Instant Responses",
-    description: "No more delayed replies. Guests get answers in seconds, not hours."
-  },
-  {
-    icon: Shield,
-    title: "Accurate Information",
-    description: "AI is trained on your specific property details. No hallucinations or guesses."
-  },
-  {
-    icon: Users,
-    title: "Multiple Properties",
-    description: "Manage all your listings from one dashboard with property-specific AI agents."
-  },
-  {
-    icon: BarChart3,
-    title: "Conversation Analytics",
-    description: "See what guests ask most and improve your listings based on real data."
-  }
-];
-
-// End-to-end flow steps
 const flowSteps = [
   {
     id: "add-property",
-    icon: Building,
+    icon: Home,
+    label: "Step 1",
     title: "Add your property",
-    description: "Enter property details, photos, and address"
+    desc: "Enter the basics — name, address, type, and a photo.",
   },
   {
     id: "knowledge",
     icon: BookOpen,
-    title: "Train the AI",
-    description: "Add WiFi, house rules, amenities, local tips"
+    label: "Step 2",
+    title: "Teach the AI",
+    desc: "WiFi, house rules, amenities, local recommendations, exact Q&A.",
   },
   {
     id: "add-guest",
     icon: UserCheck,
+    label: "Step 3",
     title: "Add a guest",
-    description: "Enter guest details before their arrival"
+    desc: "Enter their phone number and reservation dates.",
   },
   {
     id: "guest-text",
     icon: Send,
-    title: "Guest receives text",
-    description: "Instant AI support at their fingertips"
-  }
+    label: "Step 4",
+    title: "Guest texts in",
+    desc: "They get instant, accurate answers from your AI agent.",
+  },
 ];
 
-// Value propositions
-const valueProps = [
-  {
-    icon: Timer,
-    title: "Less than 10 minutes",
-    description: "From sign-up to your first AI-powered guest conversation"
-  },
-  {
-    icon: Star,
-    title: "More 5-star reviews",
-    description: "Hosts report increased guest satisfaction with instant support"
-  },
-  {
-    icon: Wrench,
-    title: "Zero technical experience",
-    description: "If you can send a text, you can set up airier"
-  },
-  {
-    icon: Calendar,
-    title: "Need help? Book a demo",
-    description: "Our team will walk you through everything",
-    isDemo: true
-  }
+const featureItems = [
+  { title: "24/7 availability", desc: "Guests get instant answers at 3 AM or 3 PM. No delays." },
+  { title: "Property-specific", desc: "Trained on your exact property. No generic responses." },
+  { title: "SMS-native", desc: "Works via text message. No app downloads for guests." },
+  { title: "Multi-property", desc: "Each listing gets its own dedicated AI agent." },
+  { title: "Smart escalation", desc: "If the AI doesn't know, it gives the guest your number automatically." },
+  { title: "10-minute setup", desc: "From zero to live in under 10 minutes. Really." },
 ];
+
+const pricingFeatures = [
+  "Unlimited AI conversations",
+  "Up to 3 simultaneous guests",
+  "Custom knowledge base",
+  "Smart escalation to host",
+  "Email support",
+  "Cancel anytime",
+];
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 const Index = () => {
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [showAirierResponse, setShowAirierResponse] = useState(false);
-  const [activeFlowStep, setActiveFlowStep] = useState(-1);
-  const [pathProgress, setPathProgress] = useState(0);
-  const [valuePropsVisible, setValuePropsVisible] = useState<number[]>([]);
-  const smsContainerRef = useRef<HTMLDivElement>(null);
-  const flowRef = useRef<HTMLDivElement>(null);
-  const valueRef = useRef<HTMLDivElement>(null);
-  const [visibleQuestions, setVisibleQuestions] = useState<number[]>([]);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const marqueeRef = useRef<HTMLDivElement>(null);
+  const convRef = useRef<HTMLDivElement>(null);
+  const flowSectionRef = useRef<HTMLDivElement>(null);
+  const featuresRef = useRef<HTMLDivElement>(null);
+  const pricingRef = useRef<HTMLDivElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
+  const [activeStep, setActiveStep] = useState(0);
 
-  // SMS-style questions that will appear scattered
-const guestQuestions = [
-  { text: "What's the WiFi password?", delay: 0, x: 5, y: 15 },
-  { text: "How do I turn on the AC?", delay: 0.2, x: 65, y: 8 },
-  { text: "Where's the gym?", delay: 0.4, x: 20, y: 45 },
-  { text: "What time is checkout?", delay: 0.6, x: 55, y: 35 },
-  { text: "Is there parking?", delay: 0.8, x: 8, y: 70 },
-  { text: "How does the smart lock work?", delay: 1.0, x: 60, y: 60 },
-  { text: "Are pets allowed?", delay: 1.2, x: 35, y: 25 },
-  { text: "What's the check-in code?", delay: 1.4, x: 75, y: 75 },
-  { text: "Is there a coffee maker?", delay: 1.6, x: 15, y: 85 },
-  { text: "Where are extra towels?", delay: 1.8, x: 50, y: 85 },
-  { text: "How do I use the TV?", delay: 2.0, x: 80, y: 45 },
-  { text: "Any restaurant recommendations?", delay: 2.2, x: 25, y: 55 },
-];
-
-  // Sticky scroll effect for SMS questions
+  // Hero entrance
   useEffect(() => {
-    const handleScroll = () => {
-      if (!smsContainerRef.current) return;
-      
-      const rect = smsContainerRef.current.getBoundingClientRect();
-      const sectionHeight = smsContainerRef.current.offsetHeight;
-      const viewportHeight = window.innerHeight;
-      
-      // Calculate how far through the section we've scrolled
-      const scrolledPast = viewportHeight - rect.top;
-      const totalScrollable = sectionHeight + viewportHeight;
-      const progress = Math.max(0, Math.min(1, scrolledPast / totalScrollable));
-      
-      setScrollProgress(progress);
-      
-      // Show airier response when we're 70% through
-      if (progress > 0.6) {
-        setShowAirierResponse(true);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tl.from(".hero-eyebrow", { opacity: 0, y: 30, duration: 0.8 })
+        .from(".hero-title-line", { opacity: 0, y: 60, duration: 0.9, stagger: 0.12 }, "-=0.5")
+        .from(".hero-sub", { opacity: 0, y: 20, duration: 0.7 }, "-=0.4")
+        .from(".hero-cta-btn", { opacity: 0, y: 15, duration: 0.6, stagger: 0.1 }, "-=0.3")
+        // Phone slides up from below
+        .from(".hero-phone", { opacity: 0, y: 80, duration: 1.2, ease: "power2.out" }, "-=0.8")
+        // Messages appear one by one with a typing feel
+        .from(".hero-msg", { opacity: 0, y: 20, scale: 0.95, stagger: 0.4, duration: 0.5, ease: "back.out(1.5)" }, "+=0.3")
+        // Typing indicator appears last
+        .from(".hero-typing", { opacity: 0, scale: 0.8, duration: 0.4, ease: "back.out(2)" }, "+=0.2");
+    }, heroRef);
+    return () => ctx.revert();
   }, []);
 
-  // Flow section - ball animation synced with step reveals
+  // Marquee
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            // Start the slow path animation
-            let progress = 0;
-            const duration = 6000; // 6 seconds total
-            const stepInterval = duration / 4; // Each step takes 1.5s
-            const startTime = Date.now();
-            
-            const animate = () => {
-              const elapsed = Date.now() - startTime;
-              progress = Math.min(1, elapsed / duration);
-              setPathProgress(progress);
-              
-              // Reveal steps as ball reaches them
-              const currentStep = Math.floor(progress * 4);
-              if (currentStep > activeFlowStep) {
-                setActiveFlowStep(currentStep);
-              }
-              
-              if (progress < 1) {
-                requestAnimationFrame(animate);
-              }
-            };
-            
-            requestAnimationFrame(animate);
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-
-    if (flowRef.current) {
-      observer.observe(flowRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [activeFlowStep]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            // Start revealing questions one by one
-            guestQuestions.forEach((_, index) => {
-              setTimeout(() => {
-                setVisibleQuestions(prev => [...new Set([...prev, index])]);
-              }, index * 200);
-            });
-          }
-        });
-      },
-      { threshold: 0.2 }
-    );
-
-    if (smsContainerRef.current) {
-      observer.observe(smsContainerRef.current);
-    }
-
-    return () => observer.disconnect();
+    if (!marqueeRef.current) return;
+    const track = marqueeRef.current.querySelector(".marquee-track");
+    if (!track) return;
+    const ctx = gsap.context(() => {
+      gsap.to(track, { xPercent: -50, duration: 30, ease: "none", repeat: -1 });
+    }, marqueeRef);
+    return () => ctx.revert();
   }, []);
 
-  // Value props sequential reveal
+  // Conversation cards stagger
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            valueProps.forEach((_, index) => {
-              setTimeout(() => {
-                setValuePropsVisible(prev => [...new Set([...prev, index])]);
-              }, index * 400);
-            });
-          }
-        });
-      },
-      { threshold: 0.2 }
-    );
-
-    if (valueRef.current) {
-      observer.observe(valueRef.current);
-    }
-
-    return () => observer.disconnect();
+    const ctx = gsap.context(() => {
+      gsap.from(".conv-card", {
+        opacity: 0, y: 60, stagger: 0.15, duration: 0.8, ease: "power2.out",
+        scrollTrigger: { trigger: convRef.current, start: "top 75%" },
+      });
+    }, convRef);
+    return () => ctx.revert();
   }, []);
 
-  const [flowVisible, setFlowVisible] = useState(true);
-
+  // Flow section — GSAP scroll-pinned, step by step
   useEffect(() => {
-    if (!flowVisible) return;
-    
-    const interval = setInterval(() => {
-      setActiveFlowStep((prev) => (prev + 1) % flowSteps.length);
-    }, 3000);
+    if (!flowSectionRef.current) return;
+    const ctx = gsap.context(() => {
+      // Pin the section
+      ScrollTrigger.create({
+        trigger: flowSectionRef.current,
+        start: "top top",
+        end: "+=250%",
+        pin: true,
+        pinSpacing: true,
+        onUpdate: (self) => {
+          const progress = self.progress;
+          const step = Math.min(Math.floor(progress * flowSteps.length), flowSteps.length - 1);
+          setActiveStep(step);
+        },
+      });
+    }, flowSectionRef);
+    return () => ctx.revert();
+  }, []);
 
-    return () => clearInterval(interval);
-  }, [flowVisible]);
+  // Features
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from(".feat-item", {
+        opacity: 0, y: 40, stagger: 0.08, duration: 0.6, ease: "power2.out",
+        scrollTrigger: { trigger: featuresRef.current, start: "top 75%" },
+      });
+    }, featuresRef);
+    return () => ctx.revert();
+  }, []);
+
+  // Pricing
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from(".pricing-card", {
+        opacity: 0, y: 50, scale: 0.97, duration: 0.9, ease: "power2.out",
+        scrollTrigger: { trigger: pricingRef.current, start: "top 75%" },
+      });
+    }, pricingRef);
+    return () => ctx.revert();
+  }, []);
+
+  // Final CTA
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from(".final-cta-text", {
+        opacity: 0, y: 40, duration: 0.8, ease: "power2.out",
+        scrollTrigger: { trigger: ctaRef.current, start: "top 80%" },
+      });
+    }, ctaRef);
+    return () => ctx.revert();
+  }, []);
+
+  // ─── Mock UI cards for each step ─────────────────────────────────────────
+
+  const renderFlowCard = (stepIndex: number) => {
+    const isActive = activeStep === stepIndex;
+
+    switch (stepIndex) {
+      case 0:
+        return (
+          <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+            <div className="text-[11px] uppercase tracking-widest text-muted-foreground/60 font-medium">Property Info</div>
+            <div className="space-y-2.5">
+              <div className="bg-muted/60 rounded-xl px-4 py-3">
+                <span className="text-[11px] text-muted-foreground/50 block mb-0.5">Name</span>
+                <span className="text-sm text-foreground font-medium">Bedford Cabin</span>
+              </div>
+              <div className="bg-muted/60 rounded-xl px-4 py-3">
+                <span className="text-[11px] text-muted-foreground/50 block mb-0.5">Address</span>
+                <span className="text-sm text-foreground font-medium">181 Bedford Rd, Toronto, ON</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-muted/60 rounded-xl px-4 py-3">
+                  <span className="text-[11px] text-muted-foreground/50 block mb-0.5">Type</span>
+                  <span className="text-sm text-foreground font-medium">Cabin</span>
+                </div>
+                <div className="bg-muted/60 rounded-xl px-4 py-3">
+                  <span className="text-[11px] text-muted-foreground/50 block mb-0.5">Bedrooms</span>
+                  <span className="text-sm text-foreground font-medium">2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 1:
+        return (
+          <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+            <div className="text-[11px] uppercase tracking-widest text-muted-foreground/60 font-medium">Knowledge Base</div>
+            <div className="space-y-2">
+              {[
+                { icon: Wifi, label: "WiFi", value: "CozyStay_5G / Welcome2025!" },
+                { icon: MapPin, label: "Parking", value: "Spot #24, underground garage" },
+                { icon: ShieldCheck, label: "Rules", value: "Quiet hours 10 PM – 8 AM" },
+                { icon: Coffee, label: "Local tips", value: "Tony's Trattoria, 5 min walk" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-start gap-3 bg-muted/60 rounded-xl px-4 py-3">
+                  <item.icon className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-[11px] text-muted-foreground/50 block">{item.label}</span>
+                    <span className="text-sm text-foreground">{item.value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 2:
+        return (
+          <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+            <div className="text-[11px] uppercase tracking-widest text-muted-foreground/60 font-medium">Guest Management</div>
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-3 bg-muted/60 rounded-xl px-4 py-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-semibold text-primary">AJ</span>
+                </div>
+                <div className="flex-1">
+                  <span className="text-sm text-foreground font-medium block">Alice Johnson</span>
+                  <span className="text-xs text-muted-foreground">Jul 26 – Jul 30 · +1 416-555-0123</span>
+                </div>
+                <div className="w-2 h-2 rounded-full bg-status-online" />
+              </div>
+              <div className="flex items-center gap-3 bg-muted/60 rounded-xl px-4 py-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-semibold text-primary">MD</span>
+                </div>
+                <div className="flex-1">
+                  <span className="text-sm text-foreground font-medium block">Mark Davidson</span>
+                  <span className="text-xs text-muted-foreground">Jul 22 – Jul 25 · +1 416-555-0456</span>
+                </div>
+                <div className="w-2 h-2 rounded-full bg-status-online" />
+              </div>
+              <div className="h-12 border-2 border-dashed border-border rounded-xl flex items-center justify-center">
+                <span className="text-xs text-muted-foreground">+ Add guest</span>
+              </div>
+            </div>
+          </div>
+        );
+      case 3:
+        return (
+          <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+            <div className="text-[11px] uppercase tracking-widest text-muted-foreground/60 font-medium">SMS Conversation</div>
+            <div className="space-y-2.5 max-w-sm">
+              <div className="flex justify-start">
+                <div className="bg-primary/10 text-foreground rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[80%]">
+                  <p className="text-[11px] text-primary font-medium mb-0.5">Automated · Check-in</p>
+                  <p className="text-sm">Hi! Check-in is at 3 PM. Lockbox code: 4821 🏡</p>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <div className="bg-muted/80 rounded-2xl rounded-tr-md px-4 py-2.5 max-w-[80%]">
+                  <p className="text-sm text-foreground">What's the WiFi password?</p>
+                </div>
+              </div>
+              <div className="flex justify-start">
+                <div className="bg-foreground text-background rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[80%]">
+                  <p className="text-sm">Network: CozyStay_5G · Password: Welcome2025! 📶</p>
+                </div>
+              </div>
+              <div className="flex justify-start">
+                <div className="bg-primary/10 text-foreground rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[80%]">
+                  <p className="text-[11px] text-primary font-medium mb-0.5">Automated · Check-out</p>
+                  <p className="text-sm">Checkout is at 11 AM. Leave keys on the counter. Thanks for staying! 🙏</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <LandingNav />
-      
-      {/* Hero Section */}
-      <section className="pt-32 pb-16 px-6 relative overflow-hidden">
-        {/* Background decorations */}
-        <div className="absolute top-40 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute top-60 right-20 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
-        
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6 animate-fade-in">
-              <Sparkles className="w-4 h-4" />
-              AI-Powered SMS Agent for Rentals
-            </div>
-            
-            <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight animate-fade-in" style={{ animationDelay: "0.1s" }}>
-              The short-term rental host that{" "}
-              <span className="text-primary relative">
-                never sleeps
-                <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
-                  <path 
-                    d="M2 10C50 3 100 3 150 6C200 9 250 5 298 8" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth="3" 
-                    strokeLinecap="round"
-                    className="animate-draw"
-                  />
-                </svg>
-              </span>
-            </h1>
-            
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: "0.2s" }}>
-              Deploy an AI text agent for your guests. ZERO technical experience required.
-            </p>
 
-            {/* Key feature checkmarks */}
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-10 animate-fade-in" style={{ animationDelay: "0.25s" }}>
-              {keyFeatures.map((feature) => (
-                <div key={feature} className="flex items-center gap-2 text-muted-foreground">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                  <span className="text-sm">{feature}</span>
-                </div>
-              ))}
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: "0.3s" }}>
-              <Link to="/auth?mode=signup">
-                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 h-14 px-8 text-lg group">
-                  Start Free Trial
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <a href="#how-it-works">
-                <Button size="lg" variant="outline" className="h-14 px-8 text-lg">
-                  See How It Works
-                </Button>
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          HERO — Live demo with animated SMS conversation
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section ref={heroRef} className="min-h-screen flex items-center px-6 relative pt-20 grain-overlay">
 
-      <section ref={smsContainerRef} className="py-20 px-6 relative overflow-hidden min-h-[600px]">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/30 to-background" />
-          
-        <div className="max-w-6xl mx-auto relative">
-            <div className="text-center mb-8 relative z-10">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Sound familiar?
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-                Your guests have endless questions. Answering them shouldn't be your full-time job.
+        <div className="relative z-10 max-w-7xl mx-auto w-full">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+
+            {/* Left — Copy */}
+            <div className="lg:pl-6">
+              <p className="hero-eyebrow text-sm md:text-base text-primary font-medium tracking-wide uppercase mb-6">
+                AI guest concierge
               </p>
-          </div>
-
-          {/* Scattered SMS bubbles */}
-          <div className="relative h-[450px] md:h-[500px]">
-            {guestQuestions.map((question, index) => (
-              <div
-                key={index}
-                className={`absolute transition-all duration-700 ${
-                  visibleQuestions.includes(index) 
-                    ? "opacity-100 translate-y-0" 
-                    : "opacity-0 translate-y-8"
-                }`}
-                style={{
-                  left: `${question.x}%`,
-                  top: `${question.y}%`,
-                  transform: `translate(-50%, -50%) ${visibleQuestions.includes(index) ? 'rotate(0deg)' : 'rotate(-5deg)'}`,
-                  transitionDelay: `${question.delay}s`
-                }}
-              >
-                <div className="bg-muted/80 backdrop-blur-sm border border-border rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-card max-w-[200px] md:max-w-[240px]">
-                  <p className="text-sm text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
-                    {question.text}
-                  </p>
-                </div>
+              <h1 className="text-[clamp(2.5rem,5.5vw,5rem)] leading-[0.95] text-foreground mb-6">
+                <span className="hero-title-line block font-bold">The host that</span>
+                <span className="hero-title-line block font-display text-primary italic">never sleeps.</span>
+              </h1>
+              <p className="hero-sub text-lg md:text-xl text-muted-foreground max-w-md mb-10 leading-relaxed">
+                Deploy an AI text agent that answers your guests instantly — trained on your property, available 24/7.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link to="/auth?mode=signup" className="hero-cta-btn">
+                  <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-8 text-base font-medium transition-all duration-300 group">
+                    Start free trial
+                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                  </Button>
+                </Link>
+                <a href="#how" className="hero-cta-btn">
+                  <Button variant="ghost" className="rounded-xl h-14 px-8 text-base text-muted-foreground hover:text-foreground bg-foreground/[0.04] hover:bg-foreground/[0.08] transition-all duration-300">
+                    See how it works
+                  </Button>
+                </a>
               </div>
-            ))}
+            </div>
 
-            {/* Central airier response */}
-            <div 
-              className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-1000 ${
-                visibleQuestions.length >= 8 ? "opacity-100 scale-100" : "opacity-0 scale-90"
-              }`}
-              style={{ transitionDelay: "2.5s" }}
-            >
-              <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-6 py-4 shadow-elevated max-w-[280px] md:max-w-[320px]">
-                <div className="flex items-center gap-2 mb-2">
-                  <img src={airierLogo} alt="airier" className="h-4 brightness-0 invert" />
-                  <span className="text-xs opacity-80">airier handles it all</span>
+            {/* Right — Live SMS Demo */}
+            <div className="hero-phone hidden lg:block">
+              <div className="relative mx-auto animate-[float_6s_ease-in-out_infinite]" style={{ maxWidth: 340, transform: 'scale(0.92)' }}>
+                {/* Phone frame */}
+                <div className="bg-foreground rounded-[2.5rem] p-3 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]">
+                  {/* Notch */}
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 w-28 h-6 bg-foreground rounded-b-2xl z-20" />
+
+                  {/* Screen */}
+                  <div className="bg-background rounded-[2rem] overflow-hidden">
+                    {/* Status bar */}
+                    <div className="flex items-center justify-between px-6 pt-4 pb-2">
+                      <span className="text-[11px] text-muted-foreground font-medium">9:41</span>
+                      <div className="flex items-center gap-1">
+                        <div className="w-4 h-2 border border-muted-foreground/40 rounded-sm relative">
+                          <div className="absolute inset-0.5 bg-foreground rounded-[1px]" style={{ width: '70%' }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Chat header */}
+                    <div className="flex items-center gap-3 px-5 py-3 border-b border-border">
+                      <div className="w-9 h-9 bg-primary flex items-center justify-center shadow-sm" style={{ borderRadius: '22%' }}>
+                        <span className="text-xs font-bold text-primary-foreground tracking-tight">BC</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground leading-tight">Bedford Cabin</p>
+                        <p className="text-[11px] text-status-online font-medium">AI Agent · Online</p>
+                      </div>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="px-4 py-4 space-y-3 min-h-[380px]">
+                      {heroMessages.map((msg, i) => (
+                        <div
+                          key={i}
+                          className={`hero-msg flex ${msg.from === "ai" ? "justify-start" : "justify-end"}`}
+                        >
+                          <div className={`max-w-[80%] px-4 py-2.5 text-[13px] leading-relaxed ${msg.from === "ai"
+                            ? "bg-primary text-primary-foreground rounded-2xl rounded-tl-md"
+                            : "bg-muted/80 text-foreground rounded-2xl rounded-tr-md"
+                            }`}>
+                            {msg.text}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Typing indicator */}
+                      <div className="hero-typing flex justify-start">
+                        <div className="bg-primary/80 rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-primary-foreground/60 rounded-full animate-[bounce_1.4s_ease-in-out_infinite]" />
+                          <span className="w-1.5 h-1.5 bg-primary-foreground/60 rounded-full animate-[bounce_1.4s_ease-in-out_0.2s_infinite]" />
+                          <span className="w-1.5 h-1.5 bg-primary-foreground/60 rounded-full animate-[bounce_1.4s_ease-in-out_0.4s_infinite]" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Input bar */}
+                    <div className="px-4 pb-6 pt-2 border-t border-border">
+                      <div className="bg-muted/50 rounded-full px-4 py-2.5 flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground/50">Message...</span>
+                        <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+                          <ArrowRight className="w-3.5 h-3.5 text-primary-foreground -rotate-45" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm">
-                  I've got this. Every question, any time, instantly answered.
-                </p>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* CTA below scattered messages */}
-          <div 
-            className={`text-center mt-8 transition-all duration-700 ${
-              visibleQuestions.length >= 10 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-            style={{ transitionDelay: "3s" }}
-          >
-            <Link to="/auth?mode=signup">
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                Let airier handle it
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </Link>
+        {/* Scroll indicator */}
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-muted-foreground/40">
+          <div className="w-px h-8 bg-border overflow-hidden">
+            <div className="w-full h-full bg-foreground/30 animate-[slideDown_2s_ease-in-out_infinite]" />
           </div>
         </div>
       </section>
 
-      {/* How It Works - End-to-End Flow with Dotted Path */}
-      <section id="how-it-works" ref={flowRef} className="py-24 px-6 bg-muted/20">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Up and running in minutes
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              A complete flow from setup to your guest's first text
-            </p>
-          </div>
-
-          {/* Desktop Flow - Horizontal with dotted path */}
-          <div className="hidden lg:block relative">
-            {/* Dotted path SVG */}
-            <svg 
-              className="absolute top-24 left-0 w-full h-32 overflow-visible"
-              viewBox="0 0 1000 120"
-              preserveAspectRatio="none"
-            >
-              <path
-                d="M 60 60 Q 200 20, 310 60 T 560 60 T 810 60 T 940 60"
-                fill="none"
-                stroke="hsl(var(--border))"
-                strokeWidth="2"
-                strokeDasharray="8 8"
-                className={`transition-all duration-1000 ${flowVisible ? "opacity-100" : "opacity-0"}`}
-              />
-              {/* Animated dot traveling along path */}
-              <circle 
-                r="6" 
-                fill="hsl(var(--primary))"
-                className={`transition-opacity duration-500 ${flowVisible ? "opacity-100" : "opacity-0"}`}
-              >
-                <animateMotion
-                  dur="4s"
-                  repeatCount="indefinite"
-                  path="M 60 60 Q 200 20, 310 60 T 560 60 T 810 60 T 940 60"
-                />
-              </circle>
-            </svg>
-
-            {/* Flow steps */}
-            <div className="grid grid-cols-4 gap-8 relative z-10">
-              {flowSteps.map((step, index) => (
-                <div 
-                  key={step.id}
-                  className={`flex flex-col items-center transition-all duration-500 ${
-                    flowVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                  }`}
-                  style={{ transitionDelay: `${index * 0.15}s` }}
-                >
-                  {/* Step number and icon */}
-                  <div 
-                    className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 ${
-                      activeFlowStep === index 
-                        ? "bg-primary text-primary-foreground scale-110 shadow-elevated" 
-                        : "bg-card border border-border text-muted-foreground"
-                    }`}
-                  >
-                    <step.icon className="w-7 h-7" />
-                  </div>
-                  
-                  {/* Step label */}
-                  <div className="text-center">
-                    <span className="text-xs font-medium text-primary mb-1 block">Step {index + 1}</span>
-                    <h3 className={`font-semibold mb-1 transition-colors ${
-                      activeFlowStep === index ? "text-foreground" : "text-muted-foreground"
-                    }`}>
-                      {step.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{step.description}</p>
-                  </div>
-                </div>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          MARQUEE
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section ref={marqueeRef} className="py-6 border-y border-border overflow-hidden">
+        <div className="marquee-track flex items-center whitespace-nowrap">
+          {[...Array(2)].map((_, setIdx) => (
+            <div key={setIdx} className="flex items-center">
+              {[
+                "WiFi passwords", "Check-in instructions", "House rules", "Local recommendations",
+                "Parking info", "Appliance guides", "Emergency contacts", "Checkout reminders",
+                "Restaurant tips", "Transit directions", "Pet policies", "Pool hours",
+              ].map((item, i, arr) => (
+                <span key={`${setIdx}-${item}`} className="inline-flex items-center">
+                  <span className="text-sm text-muted-foreground/50 font-medium tracking-wide px-6">
+                    {item}
+                  </span>
+                  <span className="w-1 h-1 rounded-full bg-primary/30 flex-shrink-0" />
+                </span>
               ))}
             </div>
+          ))}
+        </div>
+      </section>
 
-            {/* Demo cards showing each step */}
-            <div className="mt-16 grid grid-cols-4 gap-6">
-              {/* Add Property Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
-                activeFlowStep === 0 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
-              }`}>
-                <div className="text-xs text-muted-foreground mb-2">Dashboard</div>
-                <div className="bg-muted rounded-lg p-3 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
-                      <Home className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="h-2 w-20 bg-foreground/20 rounded" />
-                      <div className="h-1.5 w-14 bg-foreground/10 rounded mt-1" />
-                    </div>
-                  </div>
-                  <div className="h-16 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg flex items-center justify-center">
-                    <span className="text-xs text-primary font-medium">+ Add Property</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Knowledge Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
-                activeFlowStep === 1 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
-              }`}>
-                <div className="text-xs text-muted-foreground mb-2">Knowledge Base</div>
-                <div className="bg-muted rounded-lg p-3 space-y-2">
-                  <div className="flex gap-2">
-                    <div className="flex-1 h-8 bg-background rounded px-2 flex items-center">
-                      <span className="text-xs text-muted-foreground">WiFi: BeachHouse_Guest</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1 h-8 bg-background rounded px-2 flex items-center">
-                      <span className="text-xs text-muted-foreground">Checkout: 11:00 AM</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1 h-8 bg-background rounded px-2 flex items-center">
-                      <span className="text-xs text-muted-foreground">Parking: Spot #24</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Add Guest Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
-                activeFlowStep === 2 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
-              }`}>
-                <div className="text-xs text-muted-foreground mb-2">Guest Management</div>
-                <div className="bg-muted rounded-lg p-3 space-y-2">
-                  <div className="flex items-center gap-2 p-2 bg-background rounded">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-xs font-medium text-primary">JD</span>
-                    </div>
-                    <div>
-                      <div className="text-xs font-medium">John Doe</div>
-                      <div className="text-xs text-muted-foreground">Jan 15 - Jan 18</div>
-                    </div>
-                  </div>
-                  <div className="h-10 border-2 border-dashed border-primary/30 rounded flex items-center justify-center">
-                    <span className="text-xs text-primary">+ Add Guest</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Guest Text Card */}
-              <div className={`bg-card rounded-xl border border-border p-4 transition-all duration-500 ${
-                activeFlowStep === 3 ? "ring-2 ring-primary shadow-elevated" : "opacity-60"
-              }`}>
-                <div className="text-xs text-muted-foreground mb-2">SMS Conversation</div>
-                <div className="bg-muted rounded-lg p-3 space-y-2">
-                  <div className="bg-background rounded-xl rounded-tl-sm p-2 max-w-[85%]">
-                    <p className="text-xs">What's the WiFi?</p>
-                  </div>
-                  <div className="bg-primary text-primary-foreground rounded-xl rounded-tr-sm p-2 max-w-[85%] ml-auto">
-                    <p className="text-xs">BeachHouse_Guest, password: SunsetViews2024 🏠</p>
-                  </div>
-                  <div className="bg-background rounded-xl rounded-tl-sm p-2 max-w-[85%]">
-                    <p className="text-xs">Thanks! 🙏</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          CONVERSATION DEMO
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section id="conversations" ref={convRef} className="py-20 px-6 grain-overlay">
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="max-w-2xl mb-10">
+            <p className="text-sm text-primary font-medium tracking-wide uppercase mb-4">Real conversations</p>
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground leading-tight mb-6">
+              Your guests ask.<br /><span className="font-display italic text-muted-foreground">Airier answers.</span>
+            </h2>
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              Every response is trained on your specific property details. No hallucinations. No generic answers.
+            </p>
           </div>
-
-          {/* Mobile Flow - Vertical */}
-          <div className="lg:hidden space-y-6">
-            {flowSteps.map((step, index) => (
-              <div 
-                key={step.id}
-                className={`relative pl-16 transition-all duration-500 ${
-                  flowVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
-                }`}
-                style={{ transitionDelay: `${index * 0.15}s` }}
-              >
-                {/* Vertical line */}
-                {index < flowSteps.length - 1 && (
-                  <div className="absolute left-7 top-14 w-0.5 h-full bg-border" style={{ backgroundImage: "repeating-linear-gradient(to bottom, hsl(var(--border)) 0, hsl(var(--border)) 4px, transparent 4px, transparent 8px)" }} />
-                )}
-                
-                {/* Step icon */}
-                <div className={`absolute left-0 w-14 h-14 rounded-xl flex items-center justify-center transition-all ${
-                  activeFlowStep === index 
-                    ? "bg-primary text-primary-foreground shadow-elevated" 
-                    : "bg-card border border-border text-muted-foreground"
-                }`}>
-                  <step.icon className="w-6 h-6" />
-                </div>
-                
-                {/* Content */}
-                <div className="bg-card rounded-xl border border-border p-4">
-                  <span className="text-xs font-medium text-primary">Step {index + 1}</span>
-                  <h3 className="font-semibold text-foreground">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground">{step.description}</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {conversationPairs.map((pair, i) => (
+              <div key={i} className="conv-card group">
+                <div className="bg-card rounded-2xl border border-border p-6 h-full hover-tilt hover:shadow-elevated">
+                  <div className="mb-5">
+                    <span className="text-[11px] uppercase tracking-widest text-muted-foreground/60 font-medium">Guest asks</span>
+                    <p className="text-foreground font-medium mt-1.5 leading-snug">{pair.q}</p>
+                  </div>
+                  <div className="h-px bg-border mb-5 w-12 group-hover:w-full transition-all duration-700" />
+                  <div>
+                    <span className="text-[11px] uppercase tracking-widest text-primary/70 font-medium">Airier responds</span>
+                    <p className="text-muted-foreground text-sm mt-1.5 leading-relaxed">{pair.a}</p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-
-          {/* Two ways to connect */}
-          <div className="mt-16 bg-card rounded-2xl border border-border p-6 md:p-8">
-            <h3 className="text-lg font-semibold text-foreground mb-4 text-center">Two ways to connect guests</h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-xl">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <UserPlus className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground mb-1">Pre-add guests</h4>
-                  <p className="text-sm text-muted-foreground">Enter guest details before their stay. They'll receive a welcome text automatically.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-xl">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <MessageSquare className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground mb-1">Self-connect</h4>
-                  <p className="text-sm text-muted-foreground">Share a phone number or QR code. Guests text in themselves when they need help.</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* Value Propositions Section */}
-      <section ref={valueRef} className="py-20 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {valueProps.map((prop, index) => (
-              <div
-                key={prop.title}
-                className={`relative p-6 rounded-2xl border transition-all duration-700 ${
-                  valuePropsVisible.includes(index) 
-                    ? "opacity-100 translate-y-0 border-primary/20 bg-card shadow-card" 
-                    : "opacity-0 translate-y-8 border-transparent"
-                } ${prop.isDemo ? "bg-primary/5" : ""}`}
-                style={{ transitionDelay: `${index * 0.1}s` }}
-              >
-                {/* Animated entrance effect */}
-                <div className={`absolute inset-0 rounded-2xl bg-primary/10 transition-transform duration-500 ${
-                  valuePropsVisible.includes(index) ? "scale-0" : "scale-100"
-                }`} style={{ transitionDelay: `${index * 0.1 + 0.3}s` }} />
-                
+      {/* ═══════════════════════════════════════════════════════════════════════
+          PROPERTY SHOWCASE — Scroll-driven knowledge category highlights
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <PropertyShowcase />
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          HOW IT WORKS — Scroll-pinned interactive flow with app UI previews
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section id="how" ref={flowSectionRef} data-nav-dark className="min-h-screen bg-foreground text-background relative overflow-hidden grain-overlay">
+        <div className="h-screen flex items-center">
+          <div className="max-w-7xl mx-auto px-6 md:px-10 w-full">
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+
+              {/* Left: steps list */}
+              <div>
+                <p className="text-sm text-primary-light font-medium tracking-wide uppercase mb-6">
+                  How it works
+                </p>
+                <h2 className="text-3xl md:text-5xl font-bold leading-tight mb-12">
+                  Four steps to<br />
+                  <span className="font-display italic text-background/50">autopilot.</span>
+                </h2>
+
+                <div className="space-y-2">
+                  {flowSteps.map((step, i) => {
+                    const isActive = activeStep === i;
+                    const isPast = activeStep > i;
+                    return (
+                      <div
+                        key={step.id}
+                        className={`flex items-start gap-5 p-5 rounded-2xl transition-all duration-700 ease-out ${isActive
+                          ? "bg-background/10"
+                          : "bg-transparent"
+                          }`}
+                      >
+                        {/* Step icon */}
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-500 ${isActive
+                          ? "bg-primary text-primary-foreground scale-110"
+                          : isPast
+                            ? "bg-background/20 text-background/60"
+                            : "bg-background/5 text-background/30"
+                          }`}>
+                          {isPast ? (
+                            <Check className="w-5 h-5" />
+                          ) : (
+                            <step.icon className="w-5 h-5" />
+                          )}
+                        </div>
+
+                        <div className="flex-1">
+                          <span className={`text-[11px] uppercase tracking-widest font-medium transition-colors duration-500 ${isActive ? "text-primary-light" : "text-background/30"
+                            }`}>
+                            {step.label}
+                          </span>
+                          <h3 className={`text-lg font-semibold mt-0.5 transition-colors duration-500 ${isActive ? "text-background" : isPast ? "text-background/50" : "text-background/30"
+                            }`}>
+                            {step.title}
+                          </h3>
+                          <p className={`text-sm mt-1 transition-all duration-500 overflow-hidden ${isActive
+                            ? "text-background/60 max-h-20 opacity-100"
+                            : "text-background/20 max-h-0 opacity-0"
+                            }`}>
+                            {step.desc}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Progress bar */}
+                <div className="mt-8 h-1 bg-background/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${((activeStep + 1) / flowSteps.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Right: animated app preview card */}
+              <div className="hidden lg:block relative">
                 <div className="relative">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-                    prop.isDemo ? "bg-primary text-primary-foreground" : "bg-primary/10"
-                  }`}>
-                    <prop.icon className={`w-6 h-6 ${prop.isDemo ? "" : "text-primary"}`} />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-2">{prop.title}</h3>
-                  <p className="text-sm text-muted-foreground">{prop.description}</p>
-                  
-                  {prop.isDemo && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-4 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                    >
-                      Schedule Demo
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+                  {/* Glow behind card */}
+                  <div className="absolute -inset-8 bg-primary/10 rounded-3xl blur-3xl opacity-40" />
 
-      {/* Features Section */}
-      <section id="features" className="py-20 px-6 bg-muted/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Everything you need to automate guest support
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Focus on growing your business while AI handles the repetitive questions.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <Card 
-                key={feature.title}
-                className="border-border bg-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1 animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <CardContent className="p-6">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-      
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Simple, transparent pricing
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Pay per property. No hidden fees. Cancel anytime.
-            </p>
-          </div>
-          
-          <Card className="border-border bg-card overflow-hidden">
-            <CardContent className="p-0">
-              <div className="grid md:grid-cols-2">
-                <div className="p-8 md:p-12">
-                  <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mb-4">
-                    Per Property
-                  </div>
-                  <div className="flex items-baseline gap-1 mb-4">
-                    <span className="text-5xl font-bold text-foreground">$29</span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-                  <p className="text-muted-foreground mb-8">
-                    Everything you need to automate guest communication for one property.
-                  </p>
-                  <ul className="space-y-3 mb-8">
-                    {[
-                      "Unlimited AI conversations",
-                      "Up to 3 simultaneous guests",
-                      "Custom knowledge base",
-                      "Conversation history",
-                      "Analytics dashboard",
-                      "Email support"
-                    ].map((item) => (
-                      <li key={item} className="flex items-center gap-3 text-foreground">
-                        <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link to="/auth?mode=signup">
-                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                      Start 14-Day Free Trial
-                    </Button>
-                  </Link>
-                </div>
-                <div className="bg-gradient-to-br from-primary to-primary-light p-8 md:p-12 text-primary-foreground flex flex-col justify-center">
-                  <h3 className="text-2xl font-bold mb-4">Managing multiple properties?</h3>
-                  <p className="text-primary-foreground/80 mb-6">
-                    Add unlimited properties to your account. Each property gets its own AI agent with custom knowledge.
-                  </p>
-                  <div className="space-y-3">
-                    {["Bulk discounts available", "Priority support", "Custom integrations"].map((item) => (
-                      <div key={item} className="flex items-center gap-2">
-                        <Check className="w-4 h-4" />
-                        <span>{item}</span>
+                  {/* Card container with cross-fade */}
+                  <div className="relative">
+                    {flowSteps.map((_, i) => (
+                      <div
+                        key={i}
+                        className="transition-all duration-700 ease-out"
+                        style={{
+                          position: i === 0 ? "relative" : "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          opacity: activeStep === i ? 1 : 0,
+                          transform: activeStep === i
+                            ? "translateY(0) scale(1)"
+                            : activeStep > i
+                              ? "translateY(-20px) scale(0.97)"
+                              : "translateY(20px) scale(0.97)",
+                          pointerEvents: activeStep === i ? "auto" : "none",
+                        }}
+                      >
+                        {renderFlowCard(i)}
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </section>
-      
-      {/* CTA Section */}
-      <section className="py-20 px-6 bg-muted/30">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-            Ready to stop answering the same questions?
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          FEATURES
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section id="features" ref={featuresRef} className="py-32 px-6 grain-overlay">
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="max-w-2xl mb-20">
+            <p className="text-sm text-primary font-medium tracking-wide uppercase mb-4">Features</p>
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground leading-tight">
+              Everything you need.<br /><span className="font-display italic text-muted-foreground">Nothing you don't.</span>
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+            {featureItems.map((feat, i) => (
+              <div key={feat.title} className="feat-item group relative">
+                <span className="absolute -top-2 right-0 text-[80px] font-bold text-foreground/[0.03] leading-none select-none pointer-events-none font-display">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="h-px bg-border mb-6 w-8 group-hover:w-16 group-hover:bg-primary transition-all duration-500" />
+                <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors duration-300">{feat.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{feat.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          PRICING
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section id="pricing" ref={pricingRef} className="py-32 px-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-sm text-primary font-medium tracking-wide uppercase mb-4">Pricing</p>
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground">Simple and <span className="font-display italic">transparent.</span></h2>
+          </div>
+
+          <div className="pricing-card bg-card rounded-3xl border border-border overflow-hidden transition-all duration-500 hover:border-primary/30 hover:shadow-[0_0_40px_-12px_hsla(var(--primary),0.15)]">
+            <div className="p-10 md:p-14">
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
+                <div>
+                  <span className="text-sm text-muted-foreground">Per property, per month</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-6xl md:text-7xl font-bold text-foreground">$29</span>
+                  </div>
+                </div>
+                <Link to="/auth?mode=signup">
+                  <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-12 px-8 text-base font-medium transition-all duration-300">
+                    Start 14-day free trial
+                  </Button>
+                </Link>
+              </div>
+              <div className="h-px bg-border mb-10" />
+              <div className="grid sm:grid-cols-2 gap-4">
+                {pricingFeatures.map((feat) => (
+                  <div key={feat} className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-foreground/5 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-3 h-3 text-foreground" />
+                    </div>
+                    <span className="text-sm text-foreground/70">{feat}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-muted/50 px-10 md:px-14 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <p className="text-sm text-muted-foreground">
+                Managing 5+ properties? <span className="text-foreground font-medium">Let's talk about bulk pricing.</span>
+              </p>
+              <Button variant="ghost" className="text-sm text-foreground underline underline-offset-4 hover:bg-transparent p-0 h-auto">
+                Contact us
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          FINAL CTA
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section ref={ctaRef} className="py-40 px-6 relative grain-overlay">
+        {/* Decorative radial glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-[120px] pointer-events-none" />
+        <div className="max-w-4xl mx-auto text-center final-cta-text relative z-10">
+          <h2 className="text-4xl md:text-6xl font-bold text-foreground leading-tight mb-8">
+            Stop answering the<br /><span className="font-display italic">same questions.</span>
           </h2>
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join hundreds of hosts who've automated their guest communication with airier.
+          <p className="text-lg text-muted-foreground mb-10 max-w-lg mx-auto">
+            Your guests deserve instant answers. You deserve your time back.
           </p>
           <Link to="/auth?mode=signup">
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 h-14 px-8 text-lg group">
-              Get Started for Free
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-10 text-base font-medium transition-all duration-300 group">
+              Get started for free
+              <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
           </Link>
         </div>
       </section>
-      
-      {/* Footer */}
-      <footer className="border-t border-border py-12 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2">
-            <img src={airierLogo} alt="airier" className="h-6" />
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          FOOTER
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <footer className="py-8 px-8 md:px-12 border-t border-border">
+        <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-xs text-muted-foreground/40">© 2026 airier. All rights reserved.</p>
+          <div className="flex items-center gap-8 text-xs text-muted-foreground/40">
+            {["Privacy", "Terms", "Contact"].map((label) => (
+              <a key={label} href="#" className="relative hover:text-foreground transition-colors duration-300 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-px after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
+                {label}
+              </a>
+            ))}
           </div>
-          <div className="flex items-center gap-8 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="hover:text-foreground transition-colors">Contact</a>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            © 2024 airier. All rights reserved.
-          </p>
         </div>
       </footer>
-      
-      <style>{`
-        @keyframes draw {
-          from {
-            stroke-dashoffset: 300;
-          }
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
-        .animate-draw {
-          stroke-dasharray: 300;
-          stroke-dashoffset: 300;
-          animation: draw 1s ease-out 0.5s forwards;
-        }
-      `}</style>
     </div>
   );
 };
