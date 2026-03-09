@@ -323,7 +323,20 @@ const Index = () => {
               </p>
               <h1 className="text-[clamp(2.5rem,5.5vw,5rem)] leading-[0.95] text-foreground mb-6">
                 <span className="hero-title-line block font-bold">The host that</span>
-                <span className="hero-title-line block font-display text-primary italic">never sleeps.</span>
+                <span className="never-sleeps-wrapper hero-title-line block font-display text-primary italic relative w-fit overflow-hidden cursor-default">
+                  <span className="sr-only">never sleeps.</span>
+                  <span className="invisible block" aria-hidden="true">never sleeps.</span>
+                  <span className="absolute inset-0 overflow-hidden" aria-hidden="true">
+                    <span className="never-sleeps-track inline-flex whitespace-nowrap">
+                      <span className="never-sleeps-item">never sleeps.</span>
+                      <span className="never-sleeps-item">never stops.</span>
+                      <span className="never-sleeps-item">never rests.</span>
+                      <span className="never-sleeps-item">never sleeps.</span>
+                      <span className="never-sleeps-item">never stops.</span>
+                      <span className="never-sleeps-item">never rests.</span>
+                    </span>
+                  </span>
+                </span>
               </h1>
               <p className="hero-sub text-lg md:text-xl text-muted-foreground max-w-md mb-10 leading-relaxed">
                 Deploy an AI text agent that answers your guests instantly — trained on your property, available 24/7.
