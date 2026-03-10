@@ -10,6 +10,7 @@ export interface CreatePropertyResponse {
     address: string;
     photo: string;
     ownership_level: string;
+    timezone: string;
     checkin_msg: string;
     checkout_msg: string;
     checkin_time: string;
@@ -74,6 +75,7 @@ export interface GetPropertiesResponse {
     subscription_expires_at: string;
     escalations_count: number;
     ai_status: string;
+    timezone: string;
 }
 
 export type UpdatePropertyResponse = CreatePropertyResponse;
@@ -107,6 +109,7 @@ export interface GetPropertyDetailsResponse {
     checkin_reminder_hours: number;
     checkout_time: string;
     checkout_reminder_hours: number;
+    timezone: string;
     current_guests: CurrentGuest[];
 }
 
