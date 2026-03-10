@@ -17,20 +17,25 @@ module Api
         property = Property.where(host_id: host.id).find_by!(id: params[:property_id])
         guest = Guest.find_by!(id: reservation_params[:guest_id])
 
-        attrs = {
-          property: property,
-          guest: guest,
-          check_in: Date.parse(reservation_params[:check_in]),
-          check_out: Date.parse(reservation_params[:check_out])
-        }
-        # Default to false when is_active is not provided
-        if reservation_params.key?(:is_active)
-          attrs[:is_active] = ActiveModel::Type::Boolean.new.cast(reservation_params[:is_active])
-        else
-          attrs[:is_active] = false
-        end
+        reservation = nil
 
-        reservation = Reservation.create!(attrs)
+        Reservation.transaction do
+          attrs = {
+            property: property,
+            guest: guest,
+            check_in: Date.parse(reservation_params[:check_in]),
+            check_out: Date.parse(reservation_params[:check_out])
+          }
+          # Default to false when is_active is not provided
+          if reservation_params.key?(:is_active)
+            attrs[:is_active] = ActiveModel::Type::Boolean.new.cast(reservation_params[:is_active])
+          else
+            attrs[:is_active] = false
+          end
+
+          reservation = Reservation.create!(attrs)
+          schedule_auto_messages_for_reservation!(reservation, property)
+        end
 
         render json: format_reservation(reservation)
       end
@@ -75,6 +80,58 @@ module Api
 
       def reservation_params
         params.require(:reservation).permit(:guest_id, :check_in, :check_out, :is_active)
+      end
+
+      def schedule_auto_messages_for_reservation!(reservation, property)
+        timezone_name = property.respond_to?(:timezone) ? property.timezone : nil
+        return unless timezone_name.present?
+
+        tz = ActiveSupport::TimeZone[timezone_name]
+        return unless tz
+
+        # Check-in auto message
+        if property.checkin_time.present?
+          checkin_local = tz.local(
+            reservation.check_in.year,
+            reservation.check_in.month,
+            reservation.check_in.day,
+            property.checkin_time.hour,
+            property.checkin_time.min,
+            property.checkin_time.sec
+          )
+
+          checkin_utc = checkin_local.utc
+          reminder_hours = property.checkin_reminder_hours || 0
+          send_at_checkin = checkin_utc - reminder_hours.hours
+
+          AutoMessage.create!(
+            reservation: reservation,
+            kind: "checkin",
+            send_at: send_at_checkin
+          )
+        end
+
+        # Check-out auto message
+        if property.checkout_time.present?
+          checkout_local = tz.local(
+            reservation.check_out.year,
+            reservation.check_out.month,
+            reservation.check_out.day,
+            property.checkout_time.hour,
+            property.checkout_time.min,
+            property.checkout_time.sec
+          )
+
+          checkout_utc = checkout_local.utc
+          reminder_hours = property.checkout_reminder_hours || 0
+          send_at_checkout = checkout_utc - reminder_hours.hours
+
+          AutoMessage.create!(
+            reservation: reservation,
+            kind: "checkout",
+            send_at: send_at_checkout
+          )
+        end
       end
 
       def format_reservation(reservation)
