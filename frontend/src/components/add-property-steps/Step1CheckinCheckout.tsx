@@ -50,7 +50,7 @@ export const Step1CheckinCheckout = ({ propertyInfo, setPropertyInfo }: Step1Che
             max={24}
             value={propertyInfo.checkinReminderHours}
             onChange={(e) =>
-              setPropertyInfo({ ...propertyInfo, checkinReminderHours: parseInt(e.target.value, 10) || 0 })
+              setPropertyInfo({ ...propertyInfo, checkinReminderHours: e.target.value })
             }
             className="mt-1.5"
           />
@@ -64,7 +64,7 @@ export const Step1CheckinCheckout = ({ propertyInfo, setPropertyInfo }: Step1Che
             max={24}
             value={propertyInfo.checkoutReminderHours}
             onChange={(e) =>
-              setPropertyInfo({ ...propertyInfo, checkoutReminderHours: parseInt(e.target.value, 10) || 0 })
+              setPropertyInfo({ ...propertyInfo, checkoutReminderHours: e.target.value })
             }
             className="mt-1.5"
           />
