@@ -160,7 +160,14 @@ const OverviewTab = ({ propertyId }: { propertyId: string }) => {
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Check-in Time</Label>
+                        <Label className="text-sm text-muted-foreground">
+                            Check-in Time
+                            {propertyDetails?.timezone && (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                    ({propertyDetails.timezone})
+                                </span>
+                            )}
+                        </Label>
                         <Input
                             type="time"
                             value={checkInTime}
@@ -169,7 +176,14 @@ const OverviewTab = ({ propertyId }: { propertyId: string }) => {
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Check-out Time</Label>
+                        <Label className="text-sm text-muted-foreground">
+                            Check-out Time
+                            {propertyDetails?.timezone && (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                    ({propertyDetails.timezone})
+                                </span>
+                            )}
+                        </Label>
                         <Input
                             type="time"
                             value={checkOutTime}

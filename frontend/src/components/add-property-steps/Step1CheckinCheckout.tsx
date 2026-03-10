@@ -18,7 +18,14 @@ export const Step1CheckinCheckout = ({ propertyInfo, setPropertyInfo }: Step1Che
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
-          <Label htmlFor="checkinTime" className="text-sm text-muted-foreground">Check-in time</Label>
+          <Label htmlFor="checkinTime" className="text-sm text-muted-foreground">
+            Check-in time
+            {propertyInfo.timezone && (
+              <span className="ml-1 text-xs text-muted-foreground">
+                ({propertyInfo.timezone})
+              </span>
+            )}
+          </Label>
           <Input
             id="checkinTime"
             type="time"
@@ -30,7 +37,14 @@ export const Step1CheckinCheckout = ({ propertyInfo, setPropertyInfo }: Step1Che
           />
         </div>
         <div>
-          <Label htmlFor="checkoutTime" className="text-sm text-muted-foreground">Check-out time</Label>
+          <Label htmlFor="checkoutTime" className="text-sm text-muted-foreground">
+            Check-out time
+            {propertyInfo.timezone && (
+              <span className="ml-1 text-xs text-muted-foreground">
+                ({propertyInfo.timezone})
+              </span>
+            )}
+          </Label>
           <Input
             id="checkoutTime"
             type="time"
@@ -50,7 +64,7 @@ export const Step1CheckinCheckout = ({ propertyInfo, setPropertyInfo }: Step1Che
             max={24}
             value={propertyInfo.checkinReminderHours}
             onChange={(e) =>
-              setPropertyInfo({ ...propertyInfo, checkinReminderHours: parseInt(e.target.value, 10) || 0 })
+              setPropertyInfo({ ...propertyInfo, checkinReminderHours: e.target.value })
             }
             className="mt-1.5"
           />
@@ -64,7 +78,7 @@ export const Step1CheckinCheckout = ({ propertyInfo, setPropertyInfo }: Step1Che
             max={24}
             value={propertyInfo.checkoutReminderHours}
             onChange={(e) =>
-              setPropertyInfo({ ...propertyInfo, checkoutReminderHours: parseInt(e.target.value, 10) || 0 })
+              setPropertyInfo({ ...propertyInfo, checkoutReminderHours: e.target.value })
             }
             className="mt-1.5"
           />

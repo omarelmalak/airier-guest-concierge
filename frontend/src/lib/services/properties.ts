@@ -45,6 +45,7 @@ export const createProperty = async (property: PropertyInfo): Promise<CreateProp
             checkout_time: property.checkoutTime,
             checkin_reminder_hours: property.checkinReminderHours,
             checkout_reminder_hours: property.checkoutReminderHours,
+            timezone: property.timezone,
         }
     });
 

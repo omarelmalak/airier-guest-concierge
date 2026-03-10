@@ -27,6 +27,7 @@ export interface FeatureItem {
 export const PROPERTY_PAYLOAD_TO_API_KEYS: Record<keyof PropertyInfo, string> = {
     name: 'name',
     address: 'address',
+    timezone: 'timezone',
     ownershipLevel: 'ownership_level',
     propertyType: 'property_type',
     bedrooms: 'bedrooms',

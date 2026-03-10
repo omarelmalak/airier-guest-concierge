@@ -1,6 +1,7 @@
 export interface PropertyInfo {
     name: string;
     address: string;
+    timezone: string;
     ownershipLevel: string;
     propertyType: string;
     bedrooms: string;

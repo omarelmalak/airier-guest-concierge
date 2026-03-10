@@ -14,29 +14,26 @@ const PropertyDetailsHeader = ({ property, setSubscriptionDialogOpen }: { proper
     const hasActiveGuests = property.active_guests_count > 0;
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(property.name);
-    const [editAddress, setEditAddress] = useState(property.address);
     const [saving, setSaving] = useState(false);
 
     const startEditing = () => {
         setEditName(property.name);
-        setEditAddress(property.address);
         setIsEditing(true);
     };
 
     const cancelEditing = () => {
         setEditName(property.name);
-        setEditAddress(property.address);
         setIsEditing(false);
     };
 
     const saveHeader = async () => {
-        if (editName.trim() === "" || editAddress.trim() === "") {
-            toast.error("Name and address are required");
+        if (editName.trim() === "") {
+            toast.error("Name is required");
             return;
         }
         setSaving(true);
         try {
-            await updateProperty(String(property.id), { name: editName.trim(), address: editAddress.trim() });
+            await updateProperty(String(property.id), { name: editName.trim() });
             toast.success("Property updated");
             await queryClient.invalidateQueries({ queryKey: ["property", String(property.id)] });
             setIsEditing(false);
@@ -73,12 +70,6 @@ const PropertyDetailsHeader = ({ property, setSubscriptionDialogOpen }: { proper
                                 onChange={(e) => setEditName(e.target.value)}
                                 placeholder="Property name"
                                 className="text-lg md:text-xl font-semibold bg-white/95 text-foreground border-white [text-shadow:none] placeholder:text-muted-foreground"
-                            />
-                            <Input
-                                value={editAddress}
-                                onChange={(e) => setEditAddress(e.target.value)}
-                                placeholder="Address"
-                                className="text-sm md:text-base bg-white/95 text-foreground border-white [text-shadow:none] placeholder:text-muted-foreground"
                             />
                             <div className="flex gap-2 mt-2">
                                 <Button size="sm" onClick={saveHeader} disabled={saving} className="gap-1.5">

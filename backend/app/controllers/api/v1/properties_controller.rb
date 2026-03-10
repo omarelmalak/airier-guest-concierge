@@ -7,7 +7,7 @@ module Api
                 host = Host.find_by!(auth_user_id: @auth_user_id)
 
                 property = Property.create!(
-                    post_property_params.merge(host_id: host.id)
+                    create_property_params.merge(host_id: host.id)
                 )
 
                 render json: post_format_property(property)
@@ -62,13 +62,17 @@ module Api
             def update
                 host = Host.find_by!(auth_user_id: @auth_user_id)
                 property = Property.find_by!(id: params[:id], host_id: host.id)
-                property.update!(post_property_params)
+
+                # Intentionally disallow changing the address after creation.
+                # Hosts should create a new property if the address changes.
+                property.update!(update_property_params)
+
                 render json: post_format_property(property)
             end
 
             private
 
-            def post_property_params
+            def create_property_params
                 params.require(:property).permit(
                     :name,
                     :property_type,
@@ -82,7 +86,26 @@ module Api
                     :checkin_time,
                     :checkout_time,
                     :checkin_reminder_hours,
-                    :checkout_reminder_hours
+                    :checkout_reminder_hours,
+                    :timezone
+                  )
+            end
+
+            def update_property_params
+                params.require(:property).permit(
+                    :name,
+                    :property_type,
+                    :bedrooms,
+                    :bathrooms,
+                    :photo,
+                    :ownership_level,
+                    :checkin_msg,
+                    :checkout_msg,
+                    :checkin_time,
+                    :checkout_time,
+                    :checkin_reminder_hours,
+                    :checkout_reminder_hours,
+                    :timezone
                   )
             end
             
@@ -101,7 +124,8 @@ module Api
                   checkin_time: format_time_for_api(property.checkin_time),
                   checkout_time: format_time_for_api(property.checkout_time),
                   checkin_reminder_hours: property.checkin_reminder_hours,
-                  checkout_reminder_hours: property.checkout_reminder_hours
+                  checkout_reminder_hours: property.checkout_reminder_hours,
+                  timezone: property.timezone
                 }
             end
 
@@ -122,7 +146,8 @@ module Api
                     active_guests_count: active_ai_guests_by_property[property.id] || 0,
                     subscription_expires_at: subscription_ends_by_property[property.id]&.iso8601,
                     escalations_count: 0,
-                    ai_status: 'active'
+                    ai_status: 'active',
+                    timezone: property.timezone
                 }
             end
 

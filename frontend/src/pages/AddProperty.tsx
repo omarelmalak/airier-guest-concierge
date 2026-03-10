@@ -46,6 +46,7 @@ const AddProperty = () => {
   const [propertyInfo, setPropertyInfo] = useState<PropertyInfo>({
     name: "",
     address: "",
+    timezone: "",
     ownershipLevel: "",
     propertyType: "",
     bedrooms: "",
@@ -213,7 +214,12 @@ const AddProperty = () => {
     setGuests(guests.map((g) => (g.id === id ? { ...g, [field]: value } : g)));
   };
 
-  const isStep1Valid = propertyInfo.name && propertyInfo.address && propertyInfo.ownershipLevel && propertyInfo.propertyType;
+  const isStep1Valid =
+    propertyInfo.name &&
+    propertyInfo.address &&
+    propertyInfo.timezone &&
+    propertyInfo.ownershipLevel &&
+    propertyInfo.propertyType;
 
   const handleFinish = () => {
     navigate("/");
