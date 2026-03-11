@@ -25,6 +25,9 @@ Rails.application.routes.draw do
       end
 
       resources :messages, only: [:create]
+
+      post "time/to_utc", to: "time#to_utc"
+      post "time/today", to: "time#today"
     end
   end 
 

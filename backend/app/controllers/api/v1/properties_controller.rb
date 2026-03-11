@@ -41,18 +41,46 @@ module Api
                 # How many guests currently have AI access enabled for this property
                 ai_active_count = Reservation.where(property_id: property.id, is_active: true).count
 
-                # Guests currently residing at the property based on today's date
-                current_guests = Reservation
-                    .where(property_id: property.id)
-                    .where('? BETWEEN check_in AND check_out', Date.current)
-                    .includes(:guest)
-                    .map do |r|
-                        {
-                            id: r.guest.id,
-                            first_name: r.guest.first_name,
-                            last_name: r.guest.last_name
-                        }
-                    end
+                # Guests currently staying (mirror GuestsTab "in-progress" logic).
+                tz_name = property.respond_to?(:timezone) ? property.timezone : nil
+                tz = tz_name.present? ? ActiveSupport::TimeZone[tz_name] : nil
+                now_utc = Time.current.utc
+
+                reservations = Reservation.where(property_id: property.id).includes(:guest)
+                current_guests = reservations.filter_map do |r|
+                    is_in_progress =
+                        if tz && property.checkin_time.present? && property.checkout_time.present?
+                            check_in_at_utc = tz.local(
+                                r.check_in.year,
+                                r.check_in.month,
+                                r.check_in.day,
+                                property.checkin_time.hour,
+                                property.checkin_time.min,
+                                property.checkin_time.sec
+                            ).utc
+
+                            check_out_at_utc = tz.local(
+                                r.check_out.year,
+                                r.check_out.month,
+                                r.check_out.day,
+                                property.checkout_time.hour,
+                                property.checkout_time.min,
+                                property.checkout_time.sec
+                            ).utc
+
+                            now_utc >= check_in_at_utc && now_utc < check_out_at_utc
+                        else
+                            Date.current >= r.check_in && Date.current < r.check_out
+                        end
+
+                    next unless is_in_progress
+
+                    {
+                        id: r.guest.id,
+                        first_name: r.guest.first_name,
+                        last_name: r.guest.last_name
+                    }
+                end
 
                 subscription_end = Subscription.where(property_id: property.id).where(cancelled_at: nil).pick(:current_period_end)
                 render json: detail_format_property(property, ai_active_count, subscription_end, current_guests)

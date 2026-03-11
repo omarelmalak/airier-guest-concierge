@@ -48,6 +48,8 @@ export interface PropertyReservation {
     checkOut: string;
     isActive: boolean;
     createdAt?: string;
+    checkInAtUtc?: string;
+    checkOutAtUtc?: string;
     guest: Guest;
 }
 

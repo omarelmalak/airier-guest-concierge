@@ -7,7 +7,7 @@ module Api
         property = Property.where(host_id: host.id).find_by!(id: params[:property_id])
 
         reservations = Reservation.where(property_id: property.id).includes(:guest).order(:created_at)
-        render json: reservations.map { |r| format_reservation_with_guest(r) }
+        render json: reservations.map { |r| format_reservation_with_guest(r, property) }
       end
 
       # POST /api/v1/properties/:property_id/reservations (CREATE RESERVATION)
@@ -153,7 +153,34 @@ module Api
         }
       end
 
-      def format_reservation_with_guest(reservation)
+      def format_reservation_with_guest(reservation, property)
+        timezone_name = property.respond_to?(:timezone) ? property.timezone : nil
+        tz = timezone_name.present? ? ActiveSupport::TimeZone[timezone_name] : nil
+
+        check_in_at_utc =
+          if tz && property.checkin_time.present?
+            tz.local(
+              reservation.check_in.year,
+              reservation.check_in.month,
+              reservation.check_in.day,
+              property.checkin_time.hour,
+              property.checkin_time.min,
+              property.checkin_time.sec
+            ).utc.iso8601
+          end
+
+        check_out_at_utc =
+          if tz && property.checkout_time.present?
+            tz.local(
+              reservation.check_out.year,
+              reservation.check_out.month,
+              reservation.check_out.day,
+              property.checkout_time.hour,
+              property.checkout_time.min,
+              property.checkout_time.sec
+            ).utc.iso8601
+          end
+
         {
           id: reservation.id,
           propertyId: reservation.property_id,
@@ -161,6 +188,8 @@ module Api
           checkOut: reservation.check_out,
           isActive: reservation.is_active,
           createdAt: reservation.created_at&.iso8601,
+          checkInAtUtc: check_in_at_utc,
+          checkOutAtUtc: check_out_at_utc,
           guest: {
             id: reservation.guest.id,
             firstName: reservation.guest.first_name,
