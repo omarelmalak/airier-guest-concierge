@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Trash2 } from "lucide-react";
+import { Trash2, Circle, CheckCircle } from "lucide-react";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { createGuest, createReservation, getReservationsForProperty, deleteReservation, updateReservation } from "@/lib/services/guests";
 import { PropertyReservation } from "@/lib/static-data/client-types";
@@ -19,6 +19,20 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { SortKey } from "@/lib/static-data/client-types";
+
+type ReservationStatus = "upcoming" | "in-progress" | "past";
+
+function getReservationStatus(startDate: string, endDate: string): ReservationStatus {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+    if (end < today) return "past";
+    if (start > today) return "upcoming";
+    return "in-progress";
+}
 
 interface GuestsTabProps {
     propertyId: string;
@@ -287,9 +301,33 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {sortedRows.map((guest) => (
-                                <TableRow key={guest.reservationId}>
-                                    <TableCell className="font-medium">{`${guest.firstName} ${guest.lastName}`}</TableCell>
+                            {sortedRows.map((guest) => {
+                                const status = getReservationStatus(guest.startDate, guest.endDate);
+                                const rowBorderClass =
+                                    status === "in-progress"
+                                        ? "border-l-4 border-l-status-online"
+                                        : status === "past"
+                                          ? "border-l-4 border-l-border bg-muted/30"
+                                          : "";
+                                return (
+                                <TableRow key={guest.reservationId} className={rowBorderClass}>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                            <span>{`${guest.firstName} ${guest.lastName}`}</span>
+                                            {status === "in-progress" && (
+                                                <span className="inline-flex items-center gap-1 text-xs font-medium text-status-online">
+                                                    <Circle className="w-2.5 h-2.5 fill-current" />
+                                                    In progress
+                                                </span>
+                                            )}
+                                            {status === "past" && (
+                                                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                                    <CheckCircle className="w-3.5 h-3.5" />
+                                                    Past
+                                                </span>
+                                            )}
+                                        </div>
+                                    </TableCell>
                                     <TableCell className="text-muted-foreground">{guest.phone}</TableCell>
                                     <TableCell>{guest.startDate}</TableCell>
                                     <TableCell>{guest.endDate}</TableCell>
@@ -314,7 +352,8 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
                                         </button>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            );
+                            })}
                         </TableBody>
                     </Table>
                 ) : (

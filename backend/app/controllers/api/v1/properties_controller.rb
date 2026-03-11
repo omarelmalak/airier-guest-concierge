@@ -63,11 +63,49 @@ module Api
                 host = Host.find_by!(auth_user_id: @auth_user_id)
                 property = Property.find_by!(id: params[:id], host_id: host.id)
 
-                # Intentionally disallow changing the address after creation.
-                # Hosts should create a new property if the address changes.
-                property.update!(update_property_params)
+                warning_messages = []
 
-                render json: post_format_property(property)
+                Property.transaction do
+                    # Intentionally disallow changing the address after creation.
+                    # Hosts should create a new property if the address changes.
+                    property.update!(update_property_params)
+
+                    checkin_changed = property.saved_change_to_checkin_time? ||
+                                     property.saved_change_to_checkin_reminder_hours? ||
+                                     property.saved_change_to_checkin_msg?
+                    checkout_changed = property.saved_change_to_checkout_time? ||
+                                      property.saved_change_to_checkout_reminder_hours? ||
+                                      property.saved_change_to_checkout_msg?
+
+                    # Find guests whose check-in/check-out message was already sent (text_id present).
+                    if checkin_changed
+                        guest_names = guests_with_already_sent_message_for_property(property, "checkin")
+                        if guest_names.any?
+                            warning_messages << "Your current guest(s), #{guest_names.join(', ')}, will not receive the changes as the check-in message has already been sent."
+                        end
+                    end
+                    if checkout_changed
+                        guest_names = guests_with_already_sent_message_for_property(property, "checkout")
+                        if guest_names.any?
+                            warning_messages << "Your current guest(s), #{guest_names.join(', ')}, will not receive the changes as the check-out message has already been sent."
+                        end
+                    end
+
+                    # Keep auto_messages in sync when check-in/check-out config changes (only unsent ones).
+                    if property.saved_change_to_checkin_time? ||
+                       property.saved_change_to_checkin_reminder_hours? ||
+                       property.saved_change_to_checkin_msg? ||
+                       property.saved_change_to_checkout_time? ||
+                       property.saved_change_to_checkout_reminder_hours? ||
+                       property.saved_change_to_checkout_msg? ||
+                       property.saved_change_to_timezone?
+                      reschedule_auto_messages_for_property!(property)
+                    end
+                end
+
+                response = post_format_property(property)
+                response[:warning] = warning_messages.join(" ") if warning_messages.any?
+                render json: response
             end
 
             private
@@ -157,6 +195,36 @@ module Api
                     subscription_expires_at: subscription_expires_at&.iso8601,
                     current_guests: current_guests
                 )
+            end
+
+            # Returns guest full names for auto_messages that were already sent (text_id present)
+            # for this property and the given kind (checkin/checkout), for current/future reservations.
+            def guests_with_already_sent_message_for_property(property, kind)
+                AutoMessage
+                    .joins(reservation: :guest)
+                    .where(reservations: { property_id: property.id })
+                    .where(kind: kind)
+                    .where.not(text_id: nil)
+                    .where("reservations.check_in >= ?", Date.current)
+                    .map { |am| [am.reservation.guest.first_name, am.reservation.guest.last_name].compact.join(" ").strip }
+                    .uniq
+            end
+
+            def reschedule_auto_messages_for_property!(property)
+                # Only touch current/future reservations.
+                reservations = Reservation.where(property_id: property.id)
+                                          .where("check_in >= ?", Date.current)
+
+                reservations.find_each do |reservation|
+                    # Only remove unsent auto_messages so we don't lose records of already-sent messages.
+                    reservation.auto_messages.where(text_id: nil).destroy_all
+
+                    Api::V1::ReservationsController.new.send(
+                        :schedule_auto_messages_for_reservation!,
+                        reservation,
+                        property
+                    )
+                end
             end
 
     end

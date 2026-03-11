@@ -68,8 +68,11 @@ const OverviewTab = ({ propertyId }: { propertyId: string }) => {
             bathrooms: bathrooms || undefined,
         };
         try {
-            await updateProperty(propertyId, payload);
+            const response = await updateProperty(propertyId, payload);
             toast.success('Changes saved successfully');
+            if (response.warning) {
+                toast.info(response.warning, { duration: 8000 });
+            }
             await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
         } catch {
             toast.error('Failed to save changes');

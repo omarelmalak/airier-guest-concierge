@@ -59,7 +59,10 @@ module Api
           update_attrs[:is_active] = ActiveModel::Type::Boolean.new.cast(reservation_params[:is_active])
         end
 
-        reservation.update!(update_attrs) if update_attrs.any?
+        Reservation.transaction do
+          reservation.update!(update_attrs) if update_attrs.any?
+          reschedule_auto_messages_for_reservation!(reservation, property) if update_attrs.key?(:check_in) || update_attrs.key?(:check_out)
+        end
 
         render json: format_reservation(reservation)
       end
@@ -89,8 +92,8 @@ module Api
         tz = ActiveSupport::TimeZone[timezone_name]
         return unless tz
 
-        # Check-in auto message
-        if property.checkin_time.present?
+        # Check-in auto message (only if none exists for this kind, e.g. when one was already sent)
+        if property.checkin_time.present? && !reservation.auto_messages.exists?(kind: "checkin")
           checkin_local = tz.local(
             reservation.check_in.year,
             reservation.check_in.month,
@@ -111,8 +114,8 @@ module Api
           )
         end
 
-        # Check-out auto message
-        if property.checkout_time.present?
+        # Check-out auto message (only if none exists for this kind)
+        if property.checkout_time.present? && !reservation.auto_messages.exists?(kind: "checkout")
           checkout_local = tz.local(
             reservation.check_out.year,
             reservation.check_out.month,
@@ -132,6 +135,11 @@ module Api
             send_at: send_at_checkout
           )
         end
+      end
+
+      def reschedule_auto_messages_for_reservation!(reservation, property)
+        reservation.auto_messages.delete_all
+        schedule_auto_messages_for_reservation!(reservation, property)
       end
 
       def format_reservation(reservation)
