@@ -49,20 +49,11 @@ module Api
         raise ActiveRecord::RecordNotFound unless reservation
 
         update_attrs = {}
-        if reservation_params[:check_in].present?
-          update_attrs[:check_in] = Date.parse(reservation_params[:check_in])
-        end
-        if reservation_params[:check_out].present?
-          update_attrs[:check_out] = Date.parse(reservation_params[:check_out])
-        end
         if reservation_params.key?(:is_active)
           update_attrs[:is_active] = ActiveModel::Type::Boolean.new.cast(reservation_params[:is_active])
         end
 
-        Reservation.transaction do
-          reservation.update!(update_attrs) if update_attrs.any?
-          reschedule_auto_messages_for_reservation!(reservation, property) if update_attrs.key?(:check_in) || update_attrs.key?(:check_out)
-        end
+        reservation.update!(update_attrs) if update_attrs.any?
 
         render json: format_reservation(reservation)
       end
@@ -82,7 +73,7 @@ module Api
       private
 
       def reservation_params
-        params.require(:reservation).permit(:guest_id, :check_in, :check_out, :is_active)
+        params.require(:reservation).permit(:guest_id, :is_active)
       end
 
       def schedule_auto_messages_for_reservation!(reservation, property)
@@ -92,7 +83,7 @@ module Api
         tz = ActiveSupport::TimeZone[timezone_name]
         return unless tz
 
-        # Check-in auto message (only if none exists for this kind, e.g. when one was already sent)
+        # Check-in auto message (create if missing)
         if property.checkin_time.present? && !reservation.auto_messages.exists?(kind: "checkin")
           checkin_local = tz.local(
             reservation.check_in.year,
@@ -114,7 +105,7 @@ module Api
           )
         end
 
-        # Check-out auto message (only if none exists for this kind)
+        # Check-out auto message (create if missing)
         if property.checkout_time.present? && !reservation.auto_messages.exists?(kind: "checkout")
           checkout_local = tz.local(
             reservation.check_out.year,
@@ -135,11 +126,6 @@ module Api
             send_at: send_at_checkout
           )
         end
-      end
-
-      def reschedule_auto_messages_for_reservation!(reservation, property)
-        reservation.auto_messages.delete_all
-        schedule_auto_messages_for_reservation!(reservation, property)
       end
 
       def format_reservation(reservation)

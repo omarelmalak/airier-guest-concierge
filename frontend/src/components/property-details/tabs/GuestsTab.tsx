@@ -10,7 +10,7 @@ import { Trash2, Circle, CheckCircle, ArrowUp, ArrowDown } from "lucide-react";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { createGuest, createReservation, getReservationsForProperty, deleteReservation, updateReservation } from "@/lib/services/guests";
 import { getPropertyDetails } from "@/lib/services/properties";
-import { todayInTimezone } from "@/lib/services/time";
+import { todayInTimezone, toUtc } from "@/lib/services/time";
 import { PropertyReservation } from "@/lib/static-data/client-types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils/common";
@@ -230,9 +230,35 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
         checkIn.setHours(0, 0, 0, 0);
         checkOut.setHours(0, 0, 0, 0);
 
-        if (checkIn <= today) {
-            toast.error("Check-in date must be after today.");
+        if (checkIn < today) {
+            toast.error("Check-in date can’t be in the past.");
             return;
+        }
+
+        // Allow check-in today only if the property's check-in time is still in the future.
+        if (checkIn.getTime() === today.getTime()) {
+            const tz = propertyDetails?.timezone;
+            const checkinTime = propertyDetails?.checkin_time;
+            if (!tz || !checkinTime) {
+                toast.error("To check in today, please set the property's timezone and check-in time.");
+                return;
+            }
+
+            try {
+                const { utc } = await toUtc({
+                    timezone: tz,
+                    date: tzToday?.date ?? newGuest.startDate,
+                    time: checkinTime,
+                });
+                const checkInAtUtcMs = Date.parse(utc);
+                if (!Number.isNaN(checkInAtUtcMs) && checkInAtUtcMs <= Date.now()) {
+                    toast.error("Check-in time for today has already passed.");
+                    return;
+                }
+            } catch {
+                toast.error("Unable to validate check-in time for today.");
+                return;
+            }
         }
 
         const minCheckout = new Date(checkIn);

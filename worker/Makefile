@@ -24,7 +24,13 @@ run-celery:
 	set -a && . $(ENV_FILE) && set +a && \
 	celery -A app.celery_app worker -l info
 
+run-beat:
+	test -d $(VENV_DIR) || $(PYTHON) -m venv $(VENV_DIR)
+	. $(VENV_BIN)/activate && \
+	set -a && . $(ENV_FILE) && set +a && \
+	celery -A app.celery_app beat -l info
+
 # Run Flask and Celery together (local dev / simple VM)
 dev:
-	make -j 2 run-flask run-celery
+	make -j 3 run-flask run-celery run-beat
 

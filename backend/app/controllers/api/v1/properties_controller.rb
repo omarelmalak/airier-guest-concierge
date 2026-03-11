@@ -120,6 +120,8 @@ module Api
                     end
 
                     # Keep auto_messages in sync when check-in/check-out config changes (only unsent ones).
+                    puts "checking if we need to reschedule auto messages for property #{property.id}"
+
                     if property.saved_change_to_checkin_time? ||
                        property.saved_change_to_checkin_reminder_hours? ||
                        property.saved_change_to_checkin_msg? ||
@@ -127,6 +129,7 @@ module Api
                        property.saved_change_to_checkout_reminder_hours? ||
                        property.saved_change_to_checkout_msg? ||
                        property.saved_change_to_timezone?
+                      puts "rescheduling auto messages for property #{property.id}"
                       reschedule_auto_messages_for_property!(property)
                     end
                 end
@@ -226,32 +229,74 @@ module Api
             end
 
             # Returns guest full names for auto_messages that were already sent (text_id present)
-            # for this property and the given kind (checkin/checkout), for current/future reservations.
+            # for this property and the given kind (checkin/checkout).
             def guests_with_already_sent_message_for_property(property, kind)
                 AutoMessage
                     .joins(reservation: :guest)
                     .where(reservations: { property_id: property.id })
                     .where(kind: kind)
                     .where.not(text_id: nil)
-                    .where("reservations.check_in >= ?", Date.current)
                     .map { |am| [am.reservation.guest.first_name, am.reservation.guest.last_name].compact.join(" ").strip }
                     .uniq
             end
 
             def reschedule_auto_messages_for_property!(property)
-                # Only touch current/future reservations.
-                reservations = Reservation.where(property_id: property.id)
-                                          .where("check_in >= ?", Date.current)
+                # Only touch reservations that still have at least one unsent auto_message (text_id is NULL).
+                reservations = Reservation
+                               .joins(:auto_messages)
+                               .where(property_id: property.id)
+                               .where(auto_messages: { text_id: nil })
+                               .distinct
+
+                tz_name = property.respond_to?(:timezone) ? property.timezone : nil
+                tz = tz_name.present? ? ActiveSupport::TimeZone[tz_name] : nil
+                return unless tz
 
                 reservations.find_each do |reservation|
-                    # Only remove unsent auto_messages so we don't lose records of already-sent messages.
-                    reservation.auto_messages.where(text_id: nil).destroy_all
+                    update_unsent_auto_message_for_reservation!(reservation, property, tz, "checkin")
+                    update_unsent_auto_message_for_reservation!(reservation, property, tz, "checkout")
+                end
+            end
 
-                    Api::V1::ReservationsController.new.send(
-                        :schedule_auto_messages_for_reservation!,
-                        reservation,
-                        property
-                    )
+            def update_unsent_auto_message_for_reservation!(reservation, property, tz, kind)
+                time_value =
+                    if kind == "checkin"
+                        property.checkin_time
+                    else
+                        property.checkout_time
+                    end
+                return unless time_value.present?
+
+                date_value = kind == "checkin" ? reservation.check_in : reservation.check_out
+
+                local = tz.local(
+                    date_value.year,
+                    date_value.month,
+                    date_value.day,
+                    time_value.hour,
+                    time_value.min,
+                    time_value.sec
+                )
+
+                reminder_hours =
+                    if kind == "checkin"
+                        property.checkin_reminder_hours || 0
+                    else
+                        property.checkout_reminder_hours || 0
+                    end
+
+                send_at = local.utc - reminder_hours.hours
+
+                # If the message already got sent (text_id present), don't change it.
+                if reservation.auto_messages.exists?(kind: kind) && !reservation.auto_messages.exists?(kind: kind, text_id: nil)
+                    return
+                end
+
+                unsent = reservation.auto_messages.find_by(kind: kind, text_id: nil)
+                if unsent
+                    unsent.update!(send_at: send_at)
+                else
+                    AutoMessage.create!(reservation: reservation, kind: kind, send_at: send_at)
                 end
             end
 
