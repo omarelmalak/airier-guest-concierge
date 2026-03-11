@@ -160,6 +160,7 @@ module Api
           checkIn: reservation.check_in,
           checkOut: reservation.check_out,
           isActive: reservation.is_active,
+          createdAt: reservation.created_at&.iso8601,
           guest: {
             id: reservation.guest.id,
             firstName: reservation.guest.first_name,

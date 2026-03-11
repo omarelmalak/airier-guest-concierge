@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
@@ -6,19 +6,49 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Circle, CheckCircle } from "lucide-react";
+import { Trash2, Circle, CheckCircle, ArrowUp, ArrowDown } from "lucide-react";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { createGuest, createReservation, getReservationsForProperty, deleteReservation, updateReservation } from "@/lib/services/guests";
 import { PropertyReservation } from "@/lib/static-data/client-types";
 import { toast } from "sonner";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { SortKey } from "@/lib/static-data/client-types";
+import { cn } from "@/lib/utils/common";
+
+type SortColumn = "createdAt" | "checkIn" | "checkOut";
+type SortDirection = "asc" | "desc";
+
+function SortableHead({
+    label,
+    active,
+    direction,
+    onClick,
+}: {
+    label: string;
+    active: boolean;
+    direction: SortDirection;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={cn(
+                "inline-flex items-center gap-1.5 hover:text-foreground transition-colors",
+                active ? "text-foreground" : "text-muted-foreground"
+            )}
+        >
+            {label}
+            {active ? (
+                direction === "asc" ? (
+                    <ArrowUp className="w-3.5 h-3.5" />
+                ) : (
+                    <ArrowDown className="w-3.5 h-3.5" />
+                )
+            ) : (
+                <ArrowUp className="w-3.5 h-3.5 text-muted-foreground/50" aria-hidden />
+            )}
+        </button>
+    );
+}
 
 type ReservationStatus = "upcoming" | "in-progress" | "past";
 
@@ -59,7 +89,8 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
     });
 
     const [togglingId, setTogglingId] = useState<string | null>(null);
-    const [sortBy, setSortBy] = useState<SortKey>("createdAt");
+    const [sortColumn, setSortColumn] = useState<SortColumn>("createdAt");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
     const { data: reservations, isLoading, error } = useQuery({
         queryKey: ["reservations", propertyId],
@@ -75,16 +106,40 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
         startDate: r.guest.startDate,
         endDate: r.guest.endDate,
         isActive: r.isActive,
+        createdAt: r.createdAt ?? null,
     })), [reservations]);
 
-    const sortedRows =
-        sortBy === "createdAt"
-            ? rows
-            : [...rows].sort((a, b) => {
-                const aDate = sortBy === "checkIn" ? new Date(a.startDate) : new Date(a.endDate);
-                const bDate = sortBy === "checkIn" ? new Date(b.startDate) : new Date(b.endDate);
-                return aDate.getTime() - bDate.getTime();
-            });
+    const sortedRows = useMemo(() => {
+        const sorted = [...rows];
+        const mult = sortDirection === "asc" ? 1 : -1;
+        sorted.sort((a, b) => {
+            if (sortColumn === "createdAt") {
+                const aT = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return mult * (aT - bT);
+            }
+            if (sortColumn === "checkIn") {
+                return mult * (new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+            }
+            return mult * (new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
+        });
+        return sorted;
+    }, [rows, sortColumn, sortDirection]);
+
+    const handleSort = (column: SortColumn) => {
+        if (sortColumn === column) {
+            setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+        } else {
+            setSortColumn(column);
+            setSortDirection("asc");
+        }
+    };
+
+    const formatCreatedAt = (iso: string | null) => {
+        if (!iso) return "—";
+        const d = new Date(iso);
+        return d.toLocaleDateString(undefined, { dateStyle: "medium" });
+    };
 
     const activeCount = rows.filter((g) => g.isActive).length;
 
@@ -266,26 +321,11 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
 
             {/* Guests Table */}
             <div className="bg-card rounded-2xl border border-border shadow-soft overflow-hidden">
-                <div className="p-6 border-b border-border flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h3 className="text-lg font-semibold">Enrolled Guests</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            {activeCount} of {maxGuests} guest slots active
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                        <span className="text-muted-foreground">Sort by</span>
-                        <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortKey)}>
-                            <SelectTrigger className="h-8 w-40 bg-secondary border-0">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="createdAt">Created (default)</SelectItem>
-                                <SelectItem value="checkIn">Check-in date</SelectItem>
-                                <SelectItem value="checkOut">Check-out date</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="p-6 border-b border-border">
+                    <h3 className="text-lg font-semibold">Enrolled Guests</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        {activeCount} of {maxGuests} guest slots active
+                    </p>
                 </div>
 
                 {sortedRows.length > 0 ? (
@@ -294,8 +334,30 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
                             <TableRow className="hover:bg-transparent">
                                 <TableHead className="font-semibold">Full Name</TableHead>
                                 <TableHead className="font-semibold">Phone</TableHead>
-                                <TableHead className="font-semibold">Check-in</TableHead>
-                                <TableHead className="font-semibold">Check-out</TableHead>
+                                <TableHead className="font-semibold">
+                                    <SortableHead
+                                        label="Check-in"
+                                        active={sortColumn === "checkIn"}
+                                        direction={sortDirection}
+                                        onClick={() => handleSort("checkIn")}
+                                    />
+                                </TableHead>
+                                <TableHead className="font-semibold">
+                                    <SortableHead
+                                        label="Check-out"
+                                        active={sortColumn === "checkOut"}
+                                        direction={sortDirection}
+                                        onClick={() => handleSort("checkOut")}
+                                    />
+                                </TableHead>
+                                <TableHead className="font-semibold">
+                                    <SortableHead
+                                        label="Created at"
+                                        active={sortColumn === "createdAt"}
+                                        direction={sortDirection}
+                                        onClick={() => handleSort("createdAt")}
+                                    />
+                                </TableHead>
                                 <TableHead className="font-semibold text-right">AI Access</TableHead>
                                 <TableHead className="w-12"></TableHead>
                             </TableRow>
@@ -331,6 +393,7 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
                                     <TableCell className="text-muted-foreground">{guest.phone}</TableCell>
                                     <TableCell>{guest.startDate}</TableCell>
                                     <TableCell>{guest.endDate}</TableCell>
+                                    <TableCell className="text-muted-foreground">{formatCreatedAt(guest.createdAt)}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <span className="text-sm text-muted-foreground">
