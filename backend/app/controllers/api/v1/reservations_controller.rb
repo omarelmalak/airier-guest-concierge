@@ -6,7 +6,7 @@ module Api
         host = Host.find_by!(auth_user_id: @auth_user_id)
         property = Property.where(host_id: host.id).find_by!(id: params[:property_id])
 
-        reservations = Reservation.where(property_id: property.id).includes(:guest).order(:created_at)
+        reservations = Reservation.where(property_id: property.id).includes(:guest, :auto_messages).order(:created_at)
         render json: reservations.map { |r| format_reservation_with_guest(r, property) }
       end
 
@@ -73,7 +73,8 @@ module Api
       private
 
       def reservation_params
-        params.require(:reservation).permit(:guest_id, :is_active)
+        params.require(:reservation)
+        .permit(:guest_id, :check_in, :check_out, :is_active)
       end
 
       def schedule_auto_messages_for_reservation!(reservation, property)
@@ -142,6 +143,9 @@ module Api
       def format_reservation_with_guest(reservation, property)
         timezone_name = property.respond_to?(:timezone) ? property.timezone : nil
         tz = timezone_name.present? ? ActiveSupport::TimeZone[timezone_name] : nil
+        checkin_sent = reservation.auto_messages.where(kind: "checkin").where.not(text_id: nil).exists?
+        checkout_sent = reservation.auto_messages.where(kind: "checkout").where.not(text_id: nil).exists?
+        status = reservation.status_for_property(property)
 
         check_in_at_utc =
           if tz && property.checkin_time.present?
@@ -176,6 +180,9 @@ module Api
           createdAt: reservation.created_at&.iso8601,
           checkInAtUtc: check_in_at_utc,
           checkOutAtUtc: check_out_at_utc,
+          status: status,
+          checkInMessageSent: checkin_sent,
+          checkOutMessageSent: checkout_sent,
           guest: {
             id: reservation.guest.id,
             firstName: reservation.guest.first_name,

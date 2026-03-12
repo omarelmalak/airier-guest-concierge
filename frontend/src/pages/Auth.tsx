@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Mail, Lock, User, Phone } from "lucide-react";
 import airierLogo from "@/assets/airier-logo.png";
 import { signUp, signIn } from "@/lib/auth";
+import { isValidTwilioPhone } from "@/lib/utils/phone";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -17,6 +18,7 @@ const Auth = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [error, setError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -27,9 +29,17 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setPhoneError("");
     setLoading(true);
 
     try {
+      if (isSignUp && phone.trim()) {
+        if (!isValidTwilioPhone(phone)) {
+          setPhoneError("Phone must be in international format, e.g. +15551234567.");
+          setLoading(false);
+          return;
+        }
+      }
       if (isSignUp) {
         await signUp(email, password, firstName, lastName, phone);
       } else {
@@ -119,9 +129,14 @@ const Auth = () => {
                           placeholder="+1 (555) 123-4567"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          className="pl-10"
+                          className={`pl-10 ${phoneError ? "border-destructive focus-visible:ring-destructive" : ""}`}
                         />
                       </div>
+                      {phoneError && (
+                        <div className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">
+                          {phoneError}
+                        </div>
+                      )}
                     </div>
                   </>
                 )}

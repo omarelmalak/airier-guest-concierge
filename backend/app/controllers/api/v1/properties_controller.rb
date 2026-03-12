@@ -48,32 +48,7 @@ module Api
 
                 reservations = Reservation.where(property_id: property.id).includes(:guest)
                 current_guests = reservations.filter_map do |r|
-                    is_in_progress =
-                        if tz && property.checkin_time.present? && property.checkout_time.present?
-                            check_in_at_utc = tz.local(
-                                r.check_in.year,
-                                r.check_in.month,
-                                r.check_in.day,
-                                property.checkin_time.hour,
-                                property.checkin_time.min,
-                                property.checkin_time.sec
-                            ).utc
-
-                            check_out_at_utc = tz.local(
-                                r.check_out.year,
-                                r.check_out.month,
-                                r.check_out.day,
-                                property.checkout_time.hour,
-                                property.checkout_time.min,
-                                property.checkout_time.sec
-                            ).utc
-
-                            now_utc >= check_in_at_utc && now_utc < check_out_at_utc
-                        else
-                            Date.current >= r.check_in && Date.current < r.check_out
-                        end
-
-                    next unless is_in_progress
+                    next unless in_progress_for_property?(r, property, tz, now_utc)
 
                     {
                         id: r.guest.id,
@@ -109,13 +84,13 @@ module Api
                     if checkin_changed
                         guest_names = guests_with_already_sent_message_for_property(property, "checkin")
                         if guest_names.any?
-                            warning_messages << "Your current guest(s), #{guest_names.join(', ')}, will not receive the changes as the check-in message has already been sent."
+                            warning_messages << "Your current guest(s) (#{guest_names.join(', ')}), will not receive the changes as the check-in message has already been sent."
                         end
                     end
                     if checkout_changed
                         guest_names = guests_with_already_sent_message_for_property(property, "checkout")
                         if guest_names.any?
-                            warning_messages << "Your current guest(s), #{guest_names.join(', ')}, will not receive the changes as the check-out message has already been sent."
+                            warning_messages << "Your current guest(s) (#{guest_names.join(', ')}), will not receive the changes as the check-out message has already been sent."
                         end
                     end
 
@@ -229,13 +204,21 @@ module Api
             end
 
             # Returns guest full names for auto_messages that were already sent (text_id present)
-            # for this property and the given kind (checkin/checkout).
+            # for this property and the given kind (checkin/checkout), but ONLY if the guest is
+            # currently staying (mirrors the in-progress logic: now between check-in/out with
+            # property timezone + times).
             def guests_with_already_sent_message_for_property(property, kind)
+                tz_name = property.respond_to?(:timezone) ? property.timezone : nil
+                tz = tz_name.present? ? ActiveSupport::TimeZone[tz_name] : nil
+                now_utc = Time.current.utc
+
                 AutoMessage
                     .joins(reservation: :guest)
                     .where(reservations: { property_id: property.id })
                     .where(kind: kind)
                     .where.not(text_id: nil)
+                    .includes(:reservation, :reservation => :guest)
+                    .select { |am| am.reservation && in_progress_for_property?(am.reservation, property, tz, now_utc) }
                     .map { |am| [am.reservation.guest.first_name, am.reservation.guest.last_name].compact.join(" ").strip }
                     .uniq
             end
@@ -256,6 +239,12 @@ module Api
                     update_unsent_auto_message_for_reservation!(reservation, property, tz, "checkin")
                     update_unsent_auto_message_for_reservation!(reservation, property, tz, "checkout")
                 end
+            end
+
+            def in_progress_for_property?(reservation, property, tz = nil, now_utc = nil)
+                tz ||= (property.respond_to?(:timezone) ? ActiveSupport::TimeZone[property.timezone] : nil)
+                now_utc ||= Time.current.utc
+                reservation.status_for_property(property, tz: tz, now_utc: now_utc) == "in-progress"
             end
 
             def update_unsent_auto_message_for_reservation!(reservation, property, tz, kind)

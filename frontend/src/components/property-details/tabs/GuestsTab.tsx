@@ -5,12 +5,24 @@ import { Plus, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "@/components/ui/table";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Circle, CheckCircle, ArrowUp, ArrowDown } from "lucide-react";
+import { Trash2, Circle, CheckCircle, ArrowUp, ArrowDown, Check } from "lucide-react";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { createGuest, createReservation, getReservationsForProperty, deleteReservation, updateReservation } from "@/lib/services/guests";
 import { getPropertyDetails } from "@/lib/services/properties";
 import { todayInTimezone, toUtc } from "@/lib/services/time";
+import { isValidTwilioPhone } from "@/lib/utils/phone";
 import { PropertyReservation } from "@/lib/static-data/client-types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils/common";
@@ -54,34 +66,6 @@ function SortableHead({
 
 type ReservationStatus = "upcoming" | "in-progress" | "past";
 
-function getReservationStatus(args: {
-    startDate: string;
-    endDate: string;
-    checkInAtUtc?: string | null;
-    checkOutAtUtc?: string | null;
-}): ReservationStatus {
-    const { startDate, endDate, checkInAtUtc, checkOutAtUtc } = args;
-    if (checkInAtUtc && checkOutAtUtc) {
-        const now = Date.now();
-        const checkInMs = Date.parse(checkInAtUtc);
-        const checkOutMs = Date.parse(checkOutAtUtc);
-        if (!Number.isNaN(checkInMs) && !Number.isNaN(checkOutMs)) {
-            if (now >= checkOutMs) return "past";
-            if (now < checkInMs) return "upcoming";
-            return "in-progress";
-        }
-    }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setHours(0, 0, 0, 0);
-    if (end < today) return "past";
-    if (start > today) return "upcoming";
-    return "in-progress";
-}
-
 interface GuestsTabProps {
     propertyId: string;
     maxGuests: number;
@@ -110,10 +94,13 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
     const [sortColumn, setSortColumn] = useState<SortColumn>("createdAt");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const lastDebugPrintedFor = useRef<string | null>(null);
+    const [guestPhoneError, setGuestPhoneError] = useState("");
 
     const { data: reservations, isLoading, error } = useQuery({
         queryKey: ["reservations", propertyId],
         queryFn: () => getReservationsForProperty(propertyId),
+        refetchInterval: 10000,
+        refetchIntervalInBackground: false,
     });
 
     const { data: propertyDetails } = useQuery({
@@ -149,6 +136,9 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
         createdAt: r.createdAt ?? null,
         checkInAtUtc: r.checkInAtUtc ?? null,
         checkOutAtUtc: r.checkOutAtUtc ?? null,
+        checkInMessageSent: r.checkInMessageSent ?? false,
+        checkOutMessageSent: r.checkOutMessageSent ?? false,
+        status: (r.status ?? "upcoming") as ReservationStatus,
     })), [reservations]);
 
     useEffect(() => {
@@ -212,6 +202,11 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
 
     const handleAddGuest = async () => {
         if (!newGuest.firstName || !newGuest.phone) return;
+        setGuestPhoneError("");
+        if (!isValidTwilioPhone(newGuest.phone)) {
+            setGuestPhoneError("Phone must be in international format, e.g. +15551234567.");
+            return;
+        }
         if (!newGuest.startDate || !newGuest.endDate) {
             toast.error("Please select a check-in and check-out date.");
             return;
@@ -391,11 +386,19 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
                             <Input
                                 id="guestPhone"
                                 type="tel"
-                                placeholder="e.g., +1 234 567 8900"
+                                placeholder="e.g., +15551234567"
                                 value={newGuest.phone}
                                 onChange={(e) => setNewGuest({ ...newGuest, phone: e.target.value })}
-                                className="mt-1.5"
+                                className={cn(
+                                    "mt-1.5",
+                                    guestPhoneError && "border-destructive focus-visible:ring-destructive"
+                                )}
                             />
+                            {guestPhoneError && (
+                                <div className="text-sm text-destructive bg-destructive/10 p-2 rounded-md mt-1">
+                                    {guestPhoneError}
+                                </div>
+                            )}
                         </div>
                         <div>
                             <Label htmlFor="startDate">Check-in Date</Label>
@@ -500,18 +503,15 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
                                         onClick={() => handleSort("createdAt")}
                                     />
                                 </TableHead>
+                                <TableHead className="font-semibold text-center">Check-in message sent</TableHead>
+                                <TableHead className="font-semibold text-center">Check-out message sent</TableHead>
                                 <TableHead className="font-semibold text-right">AI Access</TableHead>
                                 <TableHead className="w-12"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {sortedRows.map((guest) => {
-                                const status = getReservationStatus({
-                                    startDate: guest.startDate,
-                                    endDate: guest.endDate,
-                                    checkInAtUtc: guest.checkInAtUtc,
-                                    checkOutAtUtc: guest.checkOutAtUtc,
-                                });
+                                const status = guest.status;
                                 const rowBorderClass =
                                     status === "in-progress"
                                         ? "border-l-4 border-l-status-online"
@@ -541,6 +541,34 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
                                         <TableCell>{formatDate(guest.startDate)}</TableCell>
                                         <TableCell>{formatDate(guest.endDate)}</TableCell>
                                         <TableCell className="text-muted-foreground">{formatDate(guest.createdAt)}</TableCell>
+                                        <TableCell className="text-center">
+                                            <span
+                                                className={cn(
+                                                    "inline-flex h-5 w-5 items-center justify-center rounded-[4px] border-[2.5px] mx-auto",
+                                                    guest.checkInMessageSent
+                                                        ? "border-primary bg-primary/10"
+                                                        : "border-muted-foreground/70"
+                                                )}
+                                            >
+                                                {guest.checkInMessageSent && (
+                                                    <Check className="w-3.5 h-3.5 text-primary" strokeWidth={3.2} />
+                                                )}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <span
+                                                className={cn(
+                                                    "inline-flex h-5 w-5 items-center justify-center rounded-[4px] border-[2.5px] mx-auto",
+                                                    guest.checkOutMessageSent
+                                                        ? "border-primary bg-primary/10"
+                                                        : "border-muted-foreground/70"
+                                                )}
+                                            >
+                                                {guest.checkOutMessageSent && (
+                                                    <Check className="w-3.5 h-3.5 text-primary" strokeWidth={3.2} />
+                                                )}
+                                            </span>
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <span className="text-sm text-muted-foreground">
@@ -554,12 +582,34 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <button
-                                                onClick={() => handleRemoveGuest(guest.reservationId)}
-                                                className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <button
+                                                        className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Remove guest?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This will remove this reservation and stop any future
+                                                            automated messages for this guest.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            onClick={async () => {
+                                                                await handleRemoveGuest(guest.reservationId);
+                                                            }}
+                                                        >
+                                                            Yes, remove guest
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </TableCell>
                                     </TableRow>
                                 );
