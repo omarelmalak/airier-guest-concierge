@@ -121,6 +121,7 @@ def send_auto_message(self, auto_message_id: str):
                       g.phone AS guest_phone,
                       p.checkin_msg,
                       p.checkout_msg
+                      r.is_active as is_active
                     FROM auto_messages am
                     JOIN reservations r ON r.id = am.reservation_id
                     JOIN guests g ON g.id = r.guest_id
@@ -134,7 +135,9 @@ def send_auto_message(self, auto_message_id: str):
                     return {"status": "not_found"}
                 if am["text_id"]:
                     return {"status": "already_sent"}
-
+                if am["is_active"] == False:
+                    return {"status": "reservation_not_active"}
+                    
                 # Ensure we only send when due (or slightly late); prevent early sends.
                 if am["send_at"] and am["send_at"] > now:
                     return {"status": "too_early"}
