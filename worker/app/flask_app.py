@@ -2,7 +2,7 @@ import os
 from flask import Flask, request, jsonify
 from psycopg2.extras import RealDictCursor
 from app.tasks import send_sms, _get_db_conn
-from datetime import datetime
+from datetime import datetime, timezone
 
 app = Flask(__name__)
 
@@ -24,7 +24,7 @@ def receive_sms():
     from_ = request.form.get("From", "").strip()
     body = request.form.get("Body", "").strip()
     provider_sid = request.form.get("MessageSid", "").strip()
-    received_at = datetime.now()
+    received_at = datetime.now(timezone.utc)
     if not from_:
         return jsonify({"error": "from is required"}), 422
     if not body:
@@ -34,34 +34,52 @@ def receive_sms():
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """
-                SELECT c.id as conversation_id, r.is_active as is_active
+                SELECT
+                  r.id AS reservation_id,
+                  r.is_active AS is_active,
+                  c.id AS conversation_id
                 FROM reservations r
                 JOIN guests g ON g.id = r.guest_id
                 JOIN properties p ON p.id = r.property_id
-                JOIN conversations c ON c.reservation_id = r.id
+                LEFT JOIN conversations c ON c.reservation_id = r.id
                 WHERE g.phone = %s
-                AND now() AT TIME ZONE 'UTC' >= (
+                  AND now() AT TIME ZONE 'UTC' >= (
                     (r.check_in::timestamp + p.checkin_time) AT TIME ZONE p.timezone
-                ) AT TIME ZONE 'UTC'
-                AND now() AT TIME ZONE 'UTC' < (
+                  ) AT TIME ZONE 'UTC'
+                  AND now() AT TIME ZONE 'UTC' < (
                     (r.check_out::timestamp + p.checkout_time) AT TIME ZONE p.timezone
-                ) AT TIME ZONE 'UTC'
+                  ) AT TIME ZONE 'UTC'
                 ORDER BY r.check_in DESC
                 LIMIT 1;
                 """,
-                (from_,)
+                (from_,),
             )
             row = cur.fetchone()
-            conversation_id = row["conversation_id"]
-            is_active = row["is_active"]
-            if not is_active:
+
+            if not row:
+                return jsonify({"error": "no active reservation for this guest"}), 404
+
+            if not row["is_active"]:
                 return jsonify({"error": "reservation is not active"}), 400
+
+            conversation_id = row["conversation_id"]
+            if not conversation_id:
+                cur.execute(
+                    """
+                    INSERT INTO conversations (reservation_id)
+                    VALUES (%s)
+                    RETURNING id
+                    """,
+                    (row["reservation_id"],),
+                )
+                conversation_id = cur.fetchone()["id"]
 
             cur.execute(
                 """
-                INSERT INTO texts (conversation_id, provider_sid, content, role, sent_at) VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO texts (conversation_id, provider_sid, content, role, sent_at)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
-                (conversation_id, provider_sid, body, "guest", received_at)
+                (conversation_id, provider_sid, body, "guest", received_at),
             )
 
     return jsonify({"status": "accepted"}), 200
