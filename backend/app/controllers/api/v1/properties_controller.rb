@@ -41,18 +41,21 @@ module Api
                 # How many guests currently have AI access enabled for this property
                 ai_active_count = Reservation.where(property_id: property.id, is_active: true).count
 
-                # Guests currently residing at the property based on today's date
-                current_guests = Reservation
-                    .where(property_id: property.id)
-                    .where('? BETWEEN check_in AND check_out', Date.current)
-                    .includes(:guest)
-                    .map do |r|
-                        {
-                            id: r.guest.id,
-                            first_name: r.guest.first_name,
-                            last_name: r.guest.last_name
-                        }
-                    end
+                # Guests currently staying (mirror GuestsTab "in-progress" logic).
+                tz_name = property.respond_to?(:timezone) ? property.timezone : nil
+                tz = tz_name.present? ? ActiveSupport::TimeZone[tz_name] : nil
+                now_utc = Time.current.utc
+
+                reservations = Reservation.where(property_id: property.id).includes(:guest)
+                current_guests = reservations.filter_map do |r|
+                    next unless in_progress_for_property?(r, property, tz, now_utc)
+
+                    {
+                        id: r.guest.id,
+                        first_name: r.guest.first_name,
+                        last_name: r.guest.last_name
+                    }
+                end
 
                 subscription_end = Subscription.where(property_id: property.id).where(cancelled_at: nil).pick(:current_period_end)
                 render json: detail_format_property(property, ai_active_count, subscription_end, current_guests)
@@ -63,11 +66,52 @@ module Api
                 host = Host.find_by!(auth_user_id: @auth_user_id)
                 property = Property.find_by!(id: params[:id], host_id: host.id)
 
-                # Intentionally disallow changing the address after creation.
-                # Hosts should create a new property if the address changes.
-                property.update!(update_property_params)
+                warning_messages = []
 
-                render json: post_format_property(property)
+                Property.transaction do
+                    # Intentionally disallow changing the address after creation.
+                    # Hosts should create a new property if the address changes.
+                    property.update!(update_property_params)
+
+                    checkin_changed = property.saved_change_to_checkin_time? ||
+                                     property.saved_change_to_checkin_reminder_hours? ||
+                                     property.saved_change_to_checkin_msg?
+                    checkout_changed = property.saved_change_to_checkout_time? ||
+                                      property.saved_change_to_checkout_reminder_hours? ||
+                                      property.saved_change_to_checkout_msg?
+
+                    # Find guests whose check-in/check-out message was already sent (text_id present).
+                    if checkin_changed
+                        guest_names = guests_with_already_sent_message_for_property(property, "checkin")
+                        if guest_names.any?
+                            warning_messages << "Your current guest(s) (#{guest_names.join(', ')}), will not receive the changes as the check-in message has already been sent."
+                        end
+                    end
+                    if checkout_changed
+                        guest_names = guests_with_already_sent_message_for_property(property, "checkout")
+                        if guest_names.any?
+                            warning_messages << "Your current guest(s) (#{guest_names.join(', ')}), will not receive the changes as the check-out message has already been sent."
+                        end
+                    end
+
+                    # Keep auto_messages in sync when check-in/check-out config changes (only unsent ones).
+                    puts "checking if we need to reschedule auto messages for property #{property.id}"
+
+                    if property.saved_change_to_checkin_time? ||
+                       property.saved_change_to_checkin_reminder_hours? ||
+                       property.saved_change_to_checkin_msg? ||
+                       property.saved_change_to_checkout_time? ||
+                       property.saved_change_to_checkout_reminder_hours? ||
+                       property.saved_change_to_checkout_msg? ||
+                       property.saved_change_to_timezone?
+                      puts "rescheduling auto messages for property #{property.id}"
+                      reschedule_auto_messages_for_property!(property)
+                    end
+                end
+
+                response = post_format_property(property)
+                response[:warning] = warning_messages.join(" ") if warning_messages.any?
+                render json: response
             end
 
             private
@@ -157,6 +201,92 @@ module Api
                     subscription_expires_at: subscription_expires_at&.iso8601,
                     current_guests: current_guests
                 )
+            end
+
+            # Returns guest full names for auto_messages that were already sent (text_id present)
+            # for this property and the given kind (checkin/checkout), but ONLY if the guest is
+            # currently staying (mirrors the in-progress logic: now between check-in/out with
+            # property timezone + times).
+            def guests_with_already_sent_message_for_property(property, kind)
+                tz_name = property.respond_to?(:timezone) ? property.timezone : nil
+                tz = tz_name.present? ? ActiveSupport::TimeZone[tz_name] : nil
+                now_utc = Time.current.utc
+
+                AutoMessage
+                    .joins(reservation: :guest)
+                    .where(reservations: { property_id: property.id })
+                    .where(kind: kind)
+                    .where.not(text_id: nil)
+                    .includes(:reservation, :reservation => :guest)
+                    .select { |am| am.reservation && in_progress_for_property?(am.reservation, property, tz, now_utc) }
+                    .map { |am| [am.reservation.guest.first_name, am.reservation.guest.last_name].compact.join(" ").strip }
+                    .uniq
+            end
+
+            def reschedule_auto_messages_for_property!(property)
+                # Only touch reservations that still have at least one unsent auto_message (text_id is NULL).
+                reservations = Reservation
+                               .joins(:auto_messages)
+                               .where(property_id: property.id)
+                               .where(auto_messages: { text_id: nil })
+                               .distinct
+
+                tz_name = property.respond_to?(:timezone) ? property.timezone : nil
+                tz = tz_name.present? ? ActiveSupport::TimeZone[tz_name] : nil
+                return unless tz
+
+                reservations.find_each do |reservation|
+                    update_unsent_auto_message_for_reservation!(reservation, property, tz, "checkin")
+                    update_unsent_auto_message_for_reservation!(reservation, property, tz, "checkout")
+                end
+            end
+
+            def in_progress_for_property?(reservation, property, tz = nil, now_utc = nil)
+                tz ||= (property.respond_to?(:timezone) ? ActiveSupport::TimeZone[property.timezone] : nil)
+                now_utc ||= Time.current.utc
+                reservation.status_for_property(property, tz: tz, now_utc: now_utc) == "in-progress"
+            end
+
+            def update_unsent_auto_message_for_reservation!(reservation, property, tz, kind)
+                time_value =
+                    if kind == "checkin"
+                        property.checkin_time
+                    else
+                        property.checkout_time
+                    end
+                return unless time_value.present?
+
+                date_value = kind == "checkin" ? reservation.check_in : reservation.check_out
+
+                local = tz.local(
+                    date_value.year,
+                    date_value.month,
+                    date_value.day,
+                    time_value.hour,
+                    time_value.min,
+                    time_value.sec
+                )
+
+                reminder_hours =
+                    if kind == "checkin"
+                        property.checkin_reminder_hours || 0
+                    else
+                        property.checkout_reminder_hours || 0
+                    end
+
+                send_at = local.utc - reminder_hours.hours
+
+                # If the message already got sent (text_id present), don't change it.
+                if reservation.auto_messages.exists?(kind: kind) && !reservation.auto_messages.exists?(kind: kind, text_id: nil)
+                    return
+                end
+
+                unsent = reservation.auto_messages.find_by(kind: kind, text_id: nil)
+                if unsent
+                    unsent.update!(send_at: send_at)
+                else
+                    AutoMessage.create!(reservation: reservation, kind: kind, send_at: send_at)
+                end
             end
 
     end

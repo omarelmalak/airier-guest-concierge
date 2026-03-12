@@ -78,7 +78,7 @@ export interface GetPropertiesResponse {
     timezone: string;
 }
 
-export type UpdatePropertyResponse = CreatePropertyResponse;
+export type UpdatePropertyResponse = CreatePropertyResponse & { warning?: string };
 
 export interface GetPropertyKnowledgeCategoriesResponse {
     description: string;

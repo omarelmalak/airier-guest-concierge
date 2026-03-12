@@ -47,6 +47,12 @@ export interface PropertyReservation {
     checkIn: string;
     checkOut: string;
     isActive: boolean;
+    createdAt?: string;
+    checkInAtUtc?: string;
+    checkOutAtUtc?: string;
+    checkInMessageSent?: boolean;
+    checkOutMessageSent?: boolean;
+    status?: "upcoming" | "in-progress" | "past";
     guest: Guest;
 }
 
