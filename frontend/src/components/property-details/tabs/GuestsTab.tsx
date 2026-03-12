@@ -497,7 +497,7 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
                                 </TableHead>
                                 <TableHead className="font-semibold">
                                     <SortableHead
-                                        label="Created at"
+                                        label="Created on"
                                         active={sortColumn === "createdAt"}
                                         direction={sortDirection}
                                         onClick={() => handleSort("createdAt")}
