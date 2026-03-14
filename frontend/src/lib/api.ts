@@ -28,6 +28,20 @@ async function request<T>(
     return res.json();
 }
 
+async function requestPublic<T>(path: string, method: "POST", body: unknown): Promise<T> {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+        throw new Error(data?.error || res.statusText);
+    }
+    return data as T;
+}
+
 export const api = {
     get: <T>(path: string) => request<T>(path, "GET"),
     post: <T>(path: string, body: unknown) =>
@@ -37,4 +51,6 @@ export const api = {
     patch: <T>(path: string, body: unknown) =>
         request<T>(path, "PATCH", body),
     delete: <T>(path: string) => request<T>(path, "DELETE"),
+    postPublic: <T>(path: string, body: unknown) =>
+        requestPublic<T>(path, "POST", body),
 };
