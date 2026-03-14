@@ -150,28 +150,19 @@ def send_auto_message(self, auto_message_id: str):
                 message = twilio_send_sms(to, body)
                 logger.info("Sent auto_message %s to %s (sid=%s)", auto_message_id, to, message.sid)
 
-                # Ensure we have a conversation for this reservation.
-                if am["kind"] == "checkin":
+                cur.execute(
+                    "SELECT id FROM conversations WHERE reservation_id = %s",
+                    (am["reservation_id"],),
+                )
+                row = cur.fetchone()
+                if row:
+                    conversation_id = row["id"]
+                else:
                     cur.execute(
                         "INSERT INTO conversations (reservation_id) VALUES (%s) RETURNING id",
                         (am["reservation_id"],),
                     )
                     conversation_id = cur.fetchone()["id"]
-                else:
-                    cur.execute(
-                        "SELECT id FROM conversations WHERE reservation_id = %s",
-                        (am["reservation_id"],),
-                    )
-                    row = cur.fetchone()
-                    if row:
-                        conversation_id = row["id"]
-                    else:
-                        # Fallback: create a new conversation if one does not exist.
-                        cur.execute(
-                            "INSERT INTO conversations (reservation_id) VALUES (%s) RETURNING id",
-                            (am["reservation_id"],),
-                        )
-                        conversation_id = cur.fetchone()["id"]
 
                 sent_at = message.date_sent or message.date_created
 
