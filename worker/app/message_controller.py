@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
+from app.exceptions import ServiceError
 from app.services.twilio import send_sms as twilio_send_sms
 from app.services.reasoner import generate_response
 from app.services.message_processor import process_incoming_message, send_outgoing_message
@@ -15,14 +16,19 @@ class MessageController:
         self.database = Database()
         
     def receive_sms(self, from_: str, body: str, provider_sid: str, received_at: datetime):
-        incoming_text_id = process_incoming_message(from_, body, provider_sid, received_at)
+        with self.database.get_conn() as conn:
+            conn.autocommit = False
+            incoming_text_id = process_incoming_message(from_, body, provider_sid, received_at, conn=conn)
 
-        response = generate_response(incoming_text_id)
+            response = generate_response(incoming_text_id)
 
-        conversation_id = self.conversation_database.get_conversation_id_by_text_id(incoming_text_id)
+            conversation_id = self.conversation_database.get_conversation_id_by_text_id(
+                incoming_text_id, conn=conn
+            )
 
-        outgoing_text_id = send_outgoing_message(conversation_id, from_, response)
+            outgoing_text_id = send_outgoing_message(conversation_id, from_, response, conn=conn)
 
+            conn.commit()
         return outgoing_text_id
 
     def send_auto_message(self, auto_message_id: str):
@@ -42,40 +48,45 @@ class MessageController:
             auto_message = self.auto_message_database.get_auto_message_by_id(auto_message_id, conn=conn)
 
             validation_result = self._validate_auto_message(auto_message, auto_message_id, now)
-            if validation_result["status"] != "valid":
-                return validation_result
 
             to = validation_result["to"]
             body = validation_result["body"]
 
-            conversation_id = self.conversation_database.get_conversation_id_by_reservation_id(auto_message["reservation_id"], conn=conn)
+            conversation_id = self.conversation_database.get_conversation_id_by_reservation_id(
+                auto_message["reservation_id"], conn=conn
+            )
             if not conversation_id:
-                conversation_id = self.conversation_database.create_conversation(auto_message["reservation_id"], conn=conn)
+                conversation_id = self.conversation_database.create_conversation(
+                    auto_message["reservation_id"], conn=conn
+                )
 
             outgoing_text_id = send_outgoing_message(conversation_id, to, body, conn=conn)
             print("Sent auto_message %s to %s (text_id=%s)" % (auto_message_id, to, outgoing_text_id))
 
-            updated = self.auto_message_database.update_auto_message_text_id(auto_message_id, outgoing_text_id, conn=conn)
+            updated = self.auto_message_database.update_auto_message_text_id(
+                auto_message_id, outgoing_text_id, conn=conn
+            )
             if not updated:
                 print("Failed to update auto_message %s with text_id=%s" % (auto_message_id, outgoing_text_id))
-                return {"status": "update_failed"}
+                raise ServiceError("failed to update auto_message with text_id", 500)
 
+            conn.commit()
             return {"status": "sent"}
 
     def _validate_auto_message(self, auto_message: dict, auto_message_id: str, now: datetime):
         if not auto_message:
-            return {"status": "not_found"}
+            raise ServiceError("auto_message not found", 404)
         if auto_message.get("text_id"):
-            return {"status": "already_sent"}
+            raise ServiceError("auto_message already sent", 409)
         if auto_message.get("is_active") is False:
-            return {"status": "reservation_not_active"}
+            raise ServiceError("reservation not active", 400)
 
         if auto_message.get("send_at") and auto_message["send_at"] > now:
-            return {"status": "too_early"}
+            raise ServiceError("auto_message not yet due", 400)
 
         to = (auto_message.get("guest_phone") or "").strip()
         if not to:
-            raise ValueError("Guest phone missing")
+            raise ServiceError("guest phone missing", 400)
 
         if auto_message.get("kind") == "checkin":
             body = (auto_message.get("checkin_msg") or "").strip()
@@ -83,10 +94,10 @@ class MessageController:
             body = (auto_message.get("checkout_msg") or "").strip()
         else:
             print("auto_message %s has unsupported kind=%s; skipping" % (auto_message_id, auto_message.get("kind")))
-            return {"status": "unsupported_kind"}
+            raise ServiceError("unsupported auto_message kind", 400)
 
         if not body:
             print("auto_message %s has empty body; skipping" % (auto_message_id,))
-            return {"status": "empty_body"}
+            raise ServiceError("auto_message has empty body", 400)
 
         return {"status": "valid", "to": to, "body": body}

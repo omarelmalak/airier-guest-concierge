@@ -1,33 +1,36 @@
+from app.exceptions import ServiceError
 from app.services.database.reservation import ReservationDatabase
 from app.services.database.conversation import ConversationDatabase
 from app.services.database.text import TextDatabase
 from app.services.twilio import send_sms as twilio_send_sms
-from flask import jsonify
+
 
 reservation_database = ReservationDatabase()
 conversation_database = ConversationDatabase()
 text_database = TextDatabase()
 
-def process_incoming_message(from_, body, provider_sid, received_at):
+
+def process_incoming_message(from_, body, provider_sid, received_at, *, conn=None):
+    """Returns the new guest text_id on success. Raises ServiceError on validation/not-found."""
     print("[process_incoming_message] From=%r Body=%r MessageSid=%r" % (from_, body, provider_sid))
-    
+
     if not from_:
         print("[process_incoming_message] Reject: missing From")
-        return jsonify({"error": "from is required"}), 422
+        raise ServiceError("from is required", 422)
     if not body:
         print("[process_incoming_message] Reject: missing Body")
-        return jsonify({"error": "body is required"}), 422
+        raise ServiceError("body is required", 422)
 
-    reservation = reservation_database.get_active_reservation_by_phone(from_)
+    reservation = reservation_database.get_active_reservation_by_phone(from_, conn=conn)
     if not reservation:
         print("[process_incoming_message] No reservation with AI active for phone=%r" % (from_,))
-        return {"error": "no active reservation for this guest"}, 404
+        raise ServiceError("no active reservation for this guest", 404)
 
-    conversation_id = reservation["conversation_id"]
+    conversation_id = reservation.get("conversation_id")
     if not conversation_id:
-        conversation_id = conversation_database.create_conversation(reservation["reservation_id"])
+        conversation_id = conversation_database.create_conversation(reservation["reservation_id"], conn=conn)
 
-    text_id = text_database.store_text(conversation_id, provider_sid, body, "guest", received_at)
+    text_id = text_database.store_text(conversation_id, provider_sid, body, "guest", received_at, conn=conn)
     print("[process_incoming_message] Inserted guest text into conversation_id=%s" % (conversation_id,))
 
     return text_id

@@ -3,7 +3,9 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from celery.utils.log import get_task_logger
+
 from app.celery_app import app
+from app.exceptions import ServiceError
 from app.message_controller import MessageController
 from app.services.database.auto_message import AutoMessageDatabase
 from app.services.twilio import TwilioRestException, send_sms as twilio_send_sms
@@ -69,6 +71,9 @@ def send_auto_message(self, auto_message_id: str):
         result = message_controller.send_auto_message(auto_message_id)
         logger.info("[send_auto_message] Done for %s" % (auto_message_id,))
         return result
+    except ServiceError as e:
+        logger.error("[send_auto_message] Error for %s: %s" % (auto_message_id, e.message))
+        return {"status": "error", "error": e.message, "status_code": e.status_code}
     except TwilioRestException as exc:
         status = getattr(exc, "status", None)
         logger.error("[send_auto_message] Twilio error for %s: %s" % (auto_message_id, exc))

@@ -1,6 +1,7 @@
 import os
 from flask import Flask, Blueprint, request, jsonify
 from datetime import datetime, timezone
+from app.exceptions import ServiceError
 from app.message_controller import MessageController
 
 app = Flask(__name__)
@@ -16,11 +17,16 @@ def receive_sms():
     received_at = datetime.now(timezone.utc)
     message_controller = MessageController()
 
-    try:   
-        text_id = message_controller.receive_sms(from_, body, provider_sid, received_at)
-        
+    try:
+        message_controller.receive_sms(from_, body, provider_sid, received_at)
         print("[receive_sms] Done, returning 200")
         return jsonify({"status": "accepted"}), 200
+    except ServiceError as e:
+        print("[receive_sms] Error: %s" % (e.message,))
+        return jsonify({"error": e.message}), e.status_code
     except Exception as e:
         print("[receive_sms] Error: %s" % (e,))
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+app.register_blueprint(bp)
