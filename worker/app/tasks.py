@@ -23,7 +23,7 @@ def _get_db_conn():
 def send_sms(self, to: str, body: str):
     try:
         message = twilio_send_sms(to, body)
-        logger.info("Sent SMS to %s (sid=%s)", to, message.sid)
+        print("Sent SMS to %s (sid=%s)", to, message.sid)
         return {"status": "sent", "to": to, "sid": message.sid}
     except TwilioRestException as exc:
         # Don't retry permanent/client errors (e.g. invalid number, permission issues)
@@ -49,8 +49,8 @@ def poll_due_auto_messages(self):
     """
     now = datetime.now(timezone.utc)
     window_start = now - timedelta(minutes=1)
-    logger.info(f"window_start: {window_start}")
-    logger.info(f"now: {now}")
+    print(f"window_start: {window_start}")
+    print(f"now: {now}")
     try:
         with _get_db_conn() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -71,10 +71,10 @@ def poll_due_auto_messages(self):
         for row in rows:
             send_auto_message.delay(row["id"])
 
-        logger.info("Polled auto_messages window [%s, %s], enqueued=%d", window_start, now, len(rows))
+        print("Polled auto_messages window [%s, %s], enqueued=%d" % (window_start, now, len(rows)))
         return {"enqueued": len(rows)}
     except Exception as exc:  # noqa: BLE001
-        logger.exception("poll_due_auto_messages failed")
+        print("poll_due_auto_messages failed")
         raise self.retry(exc=exc)
 
 
@@ -96,7 +96,7 @@ def send_auto_message(self, auto_message_id: str):
                 cur.execute("SELECT pg_try_advisory_lock(%s) AS locked", (lock_key,))
                 locked = cur.fetchone()["locked"]
                 if not locked:
-                    logger.info("auto_message %s locked by another worker; skipping", auto_message_id)
+                    print("auto_message %s locked by another worker; skipping" % (auto_message_id,))
                     return {"status": "locked"}
 
                 cur.execute(
@@ -140,15 +140,15 @@ def send_auto_message(self, auto_message_id: str):
                 elif am["kind"] == "checkout":
                     body = (am["checkout_msg"] or "").strip()
                 else:
-                    logger.info("auto_message %s has unsupported kind=%s; skipping", auto_message_id, am["kind"])
+                    print("auto_message %s has unsupported kind=%s; skipping" % (auto_message_id, am["kind"]))
                     return {"status": "unsupported_kind"}
 
                 if not body:
-                    logger.info("auto_message %s has empty body; skipping", auto_message_id)
+                    print("auto_message %s has empty body; skipping" % (auto_message_id,))
                     return {"status": "empty_body"}
 
                 message = twilio_send_sms(to, body)
-                logger.info("Sent auto_message %s to %s (sid=%s)", auto_message_id, to, message.sid)
+                print("Sent auto_message %s to %s (sid=%s)" % (auto_message_id, to, message.sid))
 
                 cur.execute(
                     "SELECT id FROM conversations WHERE reservation_id = %s",
@@ -181,10 +181,10 @@ def send_auto_message(self, auto_message_id: str):
                 return {"status": "sent", "sid": message.sid, "text_id": str(text_id)}
     except TwilioRestException as exc:
         status = getattr(exc, "status", None)
-        logger.error("Twilio error sending auto_message %s: %s", auto_message_id, exc)
+        print("Twilio error sending auto_message %s: %s" % (auto_message_id, exc))
         if status is not None and 400 <= status < 500:
             raise
         raise self.retry(exc=exc)
     except Exception as exc:  # noqa: BLE001
-        logger.exception("send_auto_message failed for %s", auto_message_id)
+        print("send_auto_message failed for %s" % (auto_message_id,))
         raise self.retry(exc=exc)
