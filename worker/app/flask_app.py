@@ -92,8 +92,20 @@ def receive_sms():
             print("[receive_sms] Inserted guest text into conversation_id=%s" % (conversation_id,))
 
             print("[receive_sms] Sending reply SMS to %s" % (from_,))
-            message = twilio_send_sms(from_, "I can reply to your message!")
+            body = "I can reply to your message!"
+            message = twilio_send_sms(from_, body)
+            sent_at = message.date_sent or message.date_created
             print("[receive_sms] Sent reply sid=%s" % (message.sid,))
+
+            cur.execute(
+                """
+                INSERT INTO texts (conversation_id, provider_sid, content, role, sent_at)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (conversation_id, message.sid, body, "airier", sent_at),
+            )
+            print("[receive_sms] Inserted airier text into conversation_id=%s" % (conversation_id,))
 
     print("[receive_sms] Done, returning 200")
     return jsonify({"status": "accepted"}), 200
