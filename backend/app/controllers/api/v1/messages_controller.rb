@@ -22,7 +22,7 @@ module Api
         end
 
         worker_url = ENV.fetch("WORKER_API_URL", "http://localhost:5000").chomp("/")
-        uri = URI("#{worker_url}/tasks/send_sms")
+        uri = URI("#{worker_url}/worker/v1/tasks/send_sms")
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = (uri.scheme == "https")
         request = Net::HTTP::Post.new(uri)

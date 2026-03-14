@@ -126,7 +126,7 @@ To test incoming SMS webhooks from Twilio against your local worker Flask app:
    ```bash
    cd worker
    make dev
-   # Flask will listen on http://127.0.0.1:5002 and expose /receive_sms
+   # Flask will listen on http://127.0.0.1:5002 and expose /worker/v1/receive_sms
    ```
 
 2. **Run ngrok to expose the Flask port**
@@ -150,7 +150,7 @@ To test incoming SMS webhooks from Twilio against your local worker Flask app:
    - Set the **"A MESSAGE COMES IN"** webhook URL to:
 
      ```text
-     https://abc123.ngrok-free.app/receive_sms
+     https://abc123.ngrok-free.app/worker/v1/receive_sms
      ```
 
    - Use HTTP `POST` and JSON for the request body.
@@ -158,7 +158,7 @@ To test incoming SMS webhooks from Twilio against your local worker Flask app:
 4. **Send a test SMS**
 
    - Text your Twilio number.
-   - Twilio will call your `https://<ngrok-url>/receive_sms` endpoint, which is tunneled to the local Flask app.
+   - Twilio will call your `https://<ngrok-url>/worker/v1/receive_sms` endpoint, which is tunneled to the local Flask app.
 
 ## Environment Variables
 

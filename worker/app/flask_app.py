@@ -1,14 +1,15 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, Blueprint, request, jsonify
 from psycopg2.extras import RealDictCursor
 from app.tasks import send_sms, _get_db_conn
 from datetime import datetime, timezone
 from app.services.twilio_service import TwilioRestException, send_sms as twilio_send_sms
 
 app = Flask(__name__)
+bp = Blueprint("worker", __name__, url_prefix="/worker/v1")
 
 
-@app.route("/tasks/send_sms", methods=["POST"])
+@bp.route("/tasks/send_sms", methods=["POST"])
 def enqueue_send_sms():
     data = request.get_json(force=True, silent=True) or {}
     to = (data.get("to") or "").strip()
@@ -20,7 +21,7 @@ def enqueue_send_sms():
     send_sms.delay(to, body)
     return jsonify({"status": "accepted"}), 202
 
-@app.route("/receive_sms", methods=["POST"])
+@bp.route("/receive_sms", methods=["POST"])
 def receive_sms():
     print("[receive_sms] Request received; form keys:", list(request.form.keys()))
     from_ = request.form.get("From", "").strip()
@@ -110,6 +111,9 @@ def receive_sms():
     print("[receive_sms] Done, returning 200")
     return jsonify({"status": "accepted"}), 200
 
-@app.route("/health", methods=["GET"])
+@bp.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"}), 200
+
+
+app.register_blueprint(bp)
