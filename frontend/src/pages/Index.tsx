@@ -785,7 +785,7 @@ const Index = () => {
                   Drop us a message and we’ll get right back to you. We promise.
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleContactSubmit} className="space-y-4 mt-4">
+              <form onSubmit={handleContactSubmit} className="space-y-4 mt-2">
                 {contactError && (
                   <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
                     {contactError}
