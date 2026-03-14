@@ -112,8 +112,53 @@ This will:
 
 - Create/activate `.venv` if needed
 - Load environment variables from `.env`
-- Start **Flask** on port `5000` (`FLASK_APP=app.flask_app flask run --port 5000`)
+- Start **Flask** on port `5002` (`FLASK_APP=app.flask_app flask run --port 5002`)
 - Start **Celery** worker (`celery -A app.celery_app worker -l info`)
+
+### Twilio Webhook Testing with ngrok
+
+To test incoming SMS webhooks from Twilio against your local worker Flask app:
+
+1. **Start the worker Flask app (and Celery)**
+
+   From the `worker` directory:
+
+   ```bash
+   cd worker
+   make dev
+   # Flask will listen on http://127.0.0.1:5002 and expose /worker/v1/receive_sms
+   ```
+
+2. **Run ngrok to expose the Flask port**
+
+   In a separate terminal:
+
+   ```bash
+   ngrok http 5002
+   ```
+
+   ngrok will print an HTTPS forwarding URL, for example:
+
+   ```text
+   Forwarding                    https://abc123.ngrok-free.app -> http://localhost:5002
+   ```
+
+3. **Configure the Twilio Messaging webhook**
+
+   In the Twilio Console for your phone number:
+
+   - Set the **"A MESSAGE COMES IN"** webhook URL to:
+
+     ```text
+     https://abc123.ngrok-free.app/worker/v1/receive_sms
+     ```
+
+   - Use HTTP `POST` and JSON for the request body.
+
+4. **Send a test SMS**
+
+   - Text your Twilio number.
+   - Twilio will call your `https://<ngrok-url>/worker/v1/receive_sms` endpoint, which is tunneled to the local Flask app.
 
 ## Environment Variables
 

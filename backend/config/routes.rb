@@ -28,6 +28,8 @@ Rails.application.routes.draw do
 
       post "time/to_utc", to: "time#to_utc"
       post "time/today", to: "time#today"
+
+      post "contact", to: "contact#create"
     end
   end 
 

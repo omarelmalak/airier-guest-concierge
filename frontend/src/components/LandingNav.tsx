@@ -27,6 +27,14 @@ const LandingNav = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  const handleScrollTo = (hash: string) => {
+    if (typeof window === "undefined") return;
+    const id = hash.replace("#", "");
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+  };
+
   return (
     <>
       {/* Static logo — always top-left */}
@@ -65,14 +73,17 @@ const LandingNav = () => {
                 { label: "Features", href: "#features" },
                 { label: "Pricing", href: "#pricing" },
               ].map((item) => (
-                <a
+                <button
                   key={item.label}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className="block px-4 py-3 text-[15px] text-background/70 hover:text-background hover:bg-background/10 rounded-xl transition-colors duration-200"
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    handleScrollTo(item.href);
+                  }}
+                  className="w-full text-left px-4 py-3 text-[15px] text-background/70 hover:text-background hover:bg-background/10 rounded-xl transition-colors duration-200"
                 >
                   {item.label}
-                </a>
+                </button>
               ))}
               <div className="h-px bg-background/10 my-1 mx-2" />
               <Link

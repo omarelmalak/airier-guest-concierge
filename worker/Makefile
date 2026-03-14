@@ -16,7 +16,7 @@ run-flask:
 	test -d $(VENV_DIR) || $(PYTHON) -m venv $(VENV_DIR)
 	. $(VENV_BIN)/activate && \
 	set -a && . $(ENV_FILE) && set +a && \
-	FLASK_APP=app.flask_app flask run --port 5000
+	FLASK_APP=app.flask_app flask run --port 5002
 
 run-celery:
 	test -d $(VENV_DIR) || $(PYTHON) -m venv $(VENV_DIR)

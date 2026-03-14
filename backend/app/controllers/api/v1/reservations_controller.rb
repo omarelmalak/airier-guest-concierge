@@ -7,7 +7,9 @@ module Api
         property = Property.where(host_id: host.id).find_by!(id: params[:property_id])
 
         reservations = Reservation.where(property_id: property.id).includes(:guest, :auto_messages).order(:created_at)
-        render json: reservations.map { |r| format_reservation_with_guest(r, property) }
+        reservation_ids = reservations.map(&:id)
+        conversation_started_ids = conversation_started_reservation_ids(reservation_ids)
+        render json: reservations.map { |r| format_reservation_with_guest(r, property, conversation_started_ids.include?(r.id)) }
       end
 
       # POST /api/v1/properties/:property_id/reservations (CREATE RESERVATION)
@@ -140,7 +142,17 @@ module Api
         }
       end
 
-      def format_reservation_with_guest(reservation, property)
+      def conversation_started_reservation_ids(reservation_ids)
+        return Set.new if reservation_ids.empty?
+
+        quoted = reservation_ids.map { |id| ActiveRecord::Base.connection.quote(id) }.join(",")
+        raw = ActiveRecord::Base.connection.select_values(
+          "SELECT reservation_id FROM conversations WHERE reservation_id IN (#{quoted})"
+        )
+        Set.new(raw)
+      end
+
+      def format_reservation_with_guest(reservation, property, conversation_started)
         timezone_name = property.respond_to?(:timezone) ? property.timezone : nil
         tz = timezone_name.present? ? ActiveSupport::TimeZone[timezone_name] : nil
         checkin_sent = reservation.auto_messages.where(kind: "checkin").where.not(text_id: nil).exists?
@@ -183,6 +195,7 @@ module Api
           status: status,
           checkInMessageSent: checkin_sent,
           checkOutMessageSent: checkout_sent,
+          conversationStarted: conversation_started,
           guest: {
             id: reservation.guest.id,
             firstName: reservation.guest.first_name,

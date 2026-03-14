@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { api } from "@/lib/api";
 import LandingNav from "@/components/LandingNav";
 import airierLogo from "@/assets/airier-logo.png";
 import gsap from "gsap";
@@ -13,7 +25,7 @@ gsap.registerPlugin(ScrollTrigger);
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const heroMessages = [
-  { from: "ai", text: "Hi Alice! 🏡 Welcome to Bedford Cabin. Check-in is at 3 PM — the lockbox code is 4821. Let me know when you arrive!" },
+  { from: "ai", text: "Hi Alice! 🏡 Welcome to Willowberry Cabin. Check-in is at 3 PM — the lockbox code is 4821. Let me know when you arrive!" },
   { from: "guest", text: "Thanks! Just got here. What's the WiFi password?" },
   { from: "ai", text: "Great, welcome! The network is CozyStay_5G and the password is Welcome2025! 📶" },
   { from: "guest", text: "Perfect. Where can I park?" },
@@ -62,11 +74,11 @@ const flowSteps = [
 
 const featureItems = [
   { title: "24/7 availability", desc: "Guests get instant answers at 3 AM or 3 PM. No delays." },
-  { title: "Property-specific", desc: "Trained on your exact property. No generic responses." },
+  { title: "Multi-language", desc: "Whatever language your guests speak, the AI will answer in their language." },
   { title: "SMS-native", desc: "Works via text message. No app downloads for guests." },
-  { title: "Multi-property", desc: "Each listing gets its own dedicated AI agent." },
+  { title: "Property-specific", desc: "Each listing gets its own dedicated AI agent." },
   { title: "Smart escalation", desc: "If the AI doesn't know, it gives the guest your number automatically." },
-  { title: "10-minute setup", desc: "From zero to live in under 10 minutes. Really." },
+  { title: "10-minute setup", desc: "From zero to live in under 10 minutes. No technical expertise required." },
 ];
 
 const pricingFeatures = [
@@ -89,6 +101,40 @@ const Index = () => {
   const pricingRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactSubject, setContactSubject] = useState("");
+  const [contactContent, setContactContent] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactSending, setContactSending] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactError(null);
+    setContactSending(true);
+    try {
+      await api.postPublic("/contact", {
+        email: contactEmail,
+        subject: contactSubject,
+        content: contactContent,
+      });
+      setContactOpen(false);
+      setContactSubject("");
+      setContactContent("");
+      setContactEmail("");
+    } catch (err) {
+      setContactError(err instanceof Error ? err.message : "Failed to send. Please try again.");
+    } finally {
+      setContactSending(false);
+    }
+  };
+
+  const scrollToSection = (id: string) => {
+    if (typeof window === "undefined") return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+  };
 
   // Hero entrance
   useEffect(() => {
@@ -197,11 +243,11 @@ const Index = () => {
             <div className="space-y-2.5">
               <div className="bg-muted/60 rounded-xl px-4 py-3">
                 <span className="text-[11px] text-muted-foreground/50 block mb-0.5">Name</span>
-                <span className="text-sm text-foreground font-medium">Bedford Cabin</span>
+                <span className="text-sm text-foreground font-medium">Willowberry Cabin</span>
               </div>
               <div className="bg-muted/60 rounded-xl px-4 py-3">
                 <span className="text-[11px] text-muted-foreground/50 block mb-0.5">Address</span>
-                <span className="text-sm text-foreground font-medium">181 Bedford Rd, Toronto, ON</span>
+                <span className="text-sm text-foreground font-medium">123 Willowberry Road, Toronto, ON</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-muted/60 rounded-xl px-4 py-3">
@@ -339,7 +385,7 @@ const Index = () => {
                 </span>
               </h1>
               <p className="hero-sub text-lg md:text-xl text-muted-foreground max-w-md mb-10 leading-relaxed">
-                Deploy an AI text agent that answers your guests instantly — trained on your property, available 24/7.
+                Deploy an AI concierge that answers your guests instantly — trained on your property, available 24/7.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/auth?mode=signup" className="hero-cta-btn">
@@ -348,11 +394,18 @@ const Index = () => {
                     <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                   </Button>
                 </Link>
-                <a href="#how" className="hero-cta-btn">
-                  <Button variant="ghost" className="rounded-xl h-14 px-8 text-base text-muted-foreground hover:text-foreground bg-foreground/[0.04] hover:bg-foreground/[0.08] transition-all duration-300">
+                <button
+                  type="button"
+                  className="hero-cta-btn"
+                  onClick={() => scrollToSection("how")}
+                >
+                  <Button
+                    variant="ghost"
+                    className="rounded-xl h-14 px-8 text-base text-muted-foreground hover:text-foreground bg-foreground/[0.04] hover:bg-foreground/[0.08] transition-all duration-300"
+                  >
                     See how it works
                   </Button>
-                </a>
+                </button>
               </div>
             </div>
 
@@ -382,7 +435,7 @@ const Index = () => {
                         <span className="text-xs font-bold text-primary-foreground tracking-tight">BC</span>
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground leading-tight">Bedford Cabin</p>
+                        <p className="text-sm font-semibold text-foreground leading-tight">Willowberry Cabin</p>
                         <p className="text-[11px] text-status-online font-medium">AI Agent · Online</p>
                       </div>
                     </div>
@@ -715,12 +768,85 @@ const Index = () => {
         <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-muted-foreground/40">© 2026 airier. All rights reserved.</p>
           <div className="flex items-center gap-8 text-xs text-muted-foreground/40">
-            {["Privacy", "Terms", "Contact"].map((label) => (
-              <a key={label} href="#" className="relative hover:text-foreground transition-colors duration-300 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-px after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
-                {label}
-              </a>
-            ))}
+            <button
+              type="button"
+              onClick={() => setContactOpen(true)}
+              className="relative hover:text-foreground transition-colors duration-300 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-px after:bg-primary after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Contact
+            </button>
           </div>
+
+          <Dialog open={contactOpen} onOpenChange={setContactOpen}>
+            <DialogContent className="sm:max-w-md border-border rounded-xl bg-background">
+              <DialogHeader>
+                <DialogTitle className="text-foreground font-semibold">Contact us</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  Drop us a message and we’ll get right back to you. We promise.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleContactSubmit} className="space-y-4 mt-2">
+                {contactError && (
+                  <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+                    {contactError}
+                  </p>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="contact-email" className="text-foreground/80">Your email</Label>
+                  <Input
+                    id="contact-email"
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="border-input bg-background rounded-md text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contact-subject" className="text-foreground/80">Subject</Label>
+                  <Input
+                    id="contact-subject"
+                    value={contactSubject}
+                    onChange={(e) => setContactSubject(e.target.value)}
+                    placeholder="What’s this about?"
+                    className="border-input bg-background rounded-md text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contact-content" className="text-foreground/80">Message</Label>
+                  <Textarea
+                    id="contact-content"
+                    value={contactContent}
+                    onChange={(e) => setContactContent(e.target.value)}
+                    placeholder="Your message…"
+                    rows={5}
+                    className="border-input bg-background rounded-md text-foreground placeholder:text-muted-foreground focus-visible:ring-ring min-h-[120px]"
+                    required
+                  />
+                </div>
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setContactOpen(false)}
+                    disabled={contactSending}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={contactSending}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors duration-300"
+                  >
+                    {contactSending ? "Sending…" : "Send"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </footer>
     </div>

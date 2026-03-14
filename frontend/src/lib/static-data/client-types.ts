@@ -52,6 +52,7 @@ export interface PropertyReservation {
     checkOutAtUtc?: string;
     checkInMessageSent?: boolean;
     checkOutMessageSent?: boolean;
+    conversationStarted?: boolean;
     status?: "upcoming" | "in-progress" | "past";
     guest: Guest;
 }
