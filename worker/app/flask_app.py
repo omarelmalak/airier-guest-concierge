@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify
 from psycopg2.extras import RealDictCursor
 from app.tasks import send_sms, _get_db_conn
 from datetime import datetime, timezone
+from app.services.twilio_service import TwilioRestException, send_sms as twilio_send_sms
 
 app = Flask(__name__)
 
@@ -21,15 +22,20 @@ def enqueue_send_sms():
 
 @app.route("/receive_sms", methods=["POST"])
 def receive_sms():
+    print("[receive_sms] Request received; form keys:", list(request.form.keys()))
     from_ = request.form.get("From", "").strip()
     body = request.form.get("Body", "").strip()
     provider_sid = request.form.get("MessageSid", "").strip()
     received_at = datetime.now(timezone.utc)
+    print("[receive_sms] From=%r Body=%r MessageSid=%r" % (from_, body, provider_sid))
+
     if not from_:
+        print("[receive_sms] Reject: missing From")
         return jsonify({"error": "from is required"}), 422
     if not body:
+        print("[receive_sms] Reject: missing Body")
         return jsonify({"error": "body is required"}), 422
-    
+
     with _get_db_conn() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
@@ -43,23 +49,24 @@ def receive_sms():
                 JOIN properties p ON p.id = r.property_id
                 LEFT JOIN conversations c ON c.reservation_id = r.id
                 WHERE g.phone = %s
-                  AND now() AT TIME ZONE 'UTC' >= (
-                    (r.check_in::timestamp + p.checkin_time) AT TIME ZONE p.timezone
-                  ) AT TIME ZONE 'UTC'
-                  AND now() AT TIME ZONE 'UTC' < (
-                    (r.check_out::timestamp + p.checkout_time) AT TIME ZONE p.timezone
-                  ) AT TIME ZONE 'UTC'
+                  AND r.is_active = true
                 ORDER BY r.check_in DESC
                 LIMIT 1;
                 """,
                 (from_,),
             )
             row = cur.fetchone()
+            print("[receive_sms] row=%r" % (row,))
 
             if not row:
+                print("[receive_sms] No reservation with AI active for phone=%r" % (from_,))
                 return jsonify({"error": "no active reservation for this guest"}), 404
 
+            print("[receive_sms] reservation_id=%s is_active=%s conversation_id=%s" % (
+                row["reservation_id"], row["is_active"], row["conversation_id"]))
+
             if not row["is_active"]:
+                print("[receive_sms] Reject: reservation not active")
                 return jsonify({"error": "reservation is not active"}), 400
 
             conversation_id = row["conversation_id"]
@@ -73,6 +80,7 @@ def receive_sms():
                     (row["reservation_id"],),
                 )
                 conversation_id = cur.fetchone()["id"]
+                print("[receive_sms] Created conversation_id=%s" % (conversation_id,))
 
             cur.execute(
                 """
@@ -81,7 +89,13 @@ def receive_sms():
                 """,
                 (conversation_id, provider_sid, body, "guest", received_at),
             )
+            print("[receive_sms] Inserted guest text into conversation_id=%s" % (conversation_id,))
 
+            print("[receive_sms] Sending reply SMS to %s" % (from_,))
+            message = twilio_send_sms(from_, "I can reply to your message!")
+            print("[receive_sms] Sent reply sid=%s" % (message.sid,))
+
+    print("[receive_sms] Done, returning 200")
     return jsonify({"status": "accepted"}), 200
 
 @app.route("/health", methods=["GET"])

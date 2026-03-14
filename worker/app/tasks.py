@@ -5,12 +5,12 @@ from datetime import datetime, timedelta, timezone
 from celery.utils.log import get_task_logger
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from twilio.base.exceptions import TwilioRestException
-from twilio.rest import Client
 
 from app.celery_app import app
+from app.services.twilio_service import TwilioRestException, send_sms as twilio_send_sms
 
 logger = get_task_logger(__name__)
+
 
 def _get_db_conn():
     database_url = os.environ.get("DATABASE_URL")
@@ -19,21 +19,10 @@ def _get_db_conn():
     return psycopg2.connect(database_url)
 
 
-def _twilio_send_sms(to: str, body: str):
-    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
-    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
-    from_number = os.environ.get("TWILIO_FROM_NUMBER")
-    if not all([account_sid, auth_token, from_number]):
-        raise ValueError("TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER required")
-
-    client = Client(account_sid, auth_token)
-    return client.messages.create(to=to, from_=from_number, body=body)
-
-
 @app.task(bind=True, acks_late=True, max_retries=3, default_retry_delay=30)
 def send_sms(self, to: str, body: str):
     try:
-        message = _twilio_send_sms(to, body)
+        message = twilio_send_sms(to, body)
         logger.info("Sent SMS to %s (sid=%s)", to, message.sid)
         return {"status": "sent", "to": to, "sid": message.sid}
     except TwilioRestException as exc:
@@ -120,8 +109,8 @@ def send_auto_message(self, auto_message_id: str):
                       am.reservation_id,
                       g.phone AS guest_phone,
                       p.checkin_msg,
-                      p.checkout_msg
-                      r.is_active as is_active
+                      p.checkout_msg,
+                      r.is_active AS is_active
                     FROM auto_messages am
                     JOIN reservations r ON r.id = am.reservation_id
                     JOIN guests g ON g.id = r.guest_id
@@ -158,7 +147,7 @@ def send_auto_message(self, auto_message_id: str):
                     logger.info("auto_message %s has empty body; skipping", auto_message_id)
                     return {"status": "empty_body"}
 
-                message = _twilio_send_sms(to, body)
+                message = twilio_send_sms(to, body)
                 logger.info("Sent auto_message %s to %s (sid=%s)", auto_message_id, to, message.sid)
 
                 # Ensure we have a conversation for this reservation.

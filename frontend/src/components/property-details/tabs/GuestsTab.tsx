@@ -138,6 +138,7 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
         checkOutAtUtc: r.checkOutAtUtc ?? null,
         checkInMessageSent: r.checkInMessageSent ?? false,
         checkOutMessageSent: r.checkOutMessageSent ?? false,
+        conversationStarted: r.conversationStarted ?? false,
         status: (r.status ?? "upcoming") as ReservationStatus,
     })), [reservations]);
 
@@ -505,6 +506,7 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
                                 </TableHead>
                                 <TableHead className="font-semibold text-center">Check-in message sent</TableHead>
                                 <TableHead className="font-semibold text-center">Check-out message sent</TableHead>
+                                <TableHead className="font-semibold text-center">Conversation started</TableHead>
                                 <TableHead className="font-semibold text-right">AI Access</TableHead>
                                 <TableHead className="w-12"></TableHead>
                             </TableRow>
@@ -565,6 +567,20 @@ export const GuestsTab = ({ propertyId, maxGuests }: GuestsTabProps) => {
                                                 )}
                                             >
                                                 {guest.checkOutMessageSent && (
+                                                    <Check className="w-3.5 h-3.5 text-primary" strokeWidth={3.2} />
+                                                )}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <span
+                                                className={cn(
+                                                    "inline-flex h-5 w-5 items-center justify-center rounded-[4px] border-[2.5px] mx-auto",
+                                                    guest.conversationStarted
+                                                        ? "border-primary bg-primary/10"
+                                                        : "border-muted-foreground/70"
+                                                )}
+                                            >
+                                                {guest.conversationStarted && (
                                                     <Check className="w-3.5 h-3.5 text-primary" strokeWidth={3.2} />
                                                 )}
                                             </span>
