@@ -1044,7 +1044,9 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
                       You&apos;re on the list!
                     </h2>
                     <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
-                      We&apos;ll email you when we launch. Early members get 30 days free.
+                      We&apos;ll email you when we launch.
+                      <br />
+                      Early members get <span className="font-bold">30 days free</span>.
                     </p>
                     <Button
                       onClick={() => handleWaitlistOpenChange(false)}
@@ -1059,20 +1061,22 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
                   <DialogHeader>
                     <DialogTitle className="text-foreground font-semibold">Join the waitlist</DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                      Enter your email and we&apos;ll notify you when we launch. Early members get 30 days free.
+                      Enter your email and we&apos;ll notify you when we launch.
+                      <br />
+                      Early members get <span className="font-bold">30 days free</span>.
                     </DialogDescription>
                   </DialogHeader>
-                  <form onSubmit={handleWaitlistSubmit} className="space-y-4 mt-2">
+                  <form onSubmit={handleWaitlistSubmit} className="space-y-4 mt-1">
                     {waitlistError && (
                       <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
                         {waitlistError}
                       </p>
                     )}
-                    <div className="space-y-2">
-                      <Label htmlFor="waitlist-email" className="text-foreground/80">Email</Label>
+                    <div>
                       <Input
                         id="waitlist-email"
                         type="email"
+                        aria-label="Email"
                         value={waitlistEmail}
                         onChange={(e) => setWaitlistEmail(e.target.value)}
                         placeholder="you@example.com"
