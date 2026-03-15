@@ -1,1 +1,3 @@
 /frontend/.env
+backend/dev_schema.sql
+backend/supabase/.temp/
