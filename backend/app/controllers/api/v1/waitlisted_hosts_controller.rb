@@ -13,6 +13,10 @@ module Api
           return render json: { error: "Email is required" }, status: :unprocessable_entity
         end
 
+        if WaitlistedHost.exists?(["LOWER(email) = ?", email.downcase])
+          return render json: { error: "You're already on the list. We'll be in touch soon!" }, status: :unprocessable_entity
+        end
+
         WaitlistedHost.create!(email: email)
         render json: { success: true }, status: :created
       rescue ActiveRecord::RecordInvalid => e
