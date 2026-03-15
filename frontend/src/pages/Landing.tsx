@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
-import LandingNav from "@/components/LandingNav";
+import LandingNav, { type LandingNavVariant } from "@/components/LandingNav";
 import airierLogo from "@/assets/airier-logo.png";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -68,45 +68,180 @@ const flowSteps = [
     icon: Send,
     label: "Step 4",
     title: "Guest texts in",
-    desc: "They get instant, accurate answers from your AI agent.",
+    desc: "They get instant, accurate answers from your AI concierge.",
   },
 ];
 
 const featureItems = [
   { title: "24/7 availability", desc: "Guests get instant answers at 3 AM or 3 PM. No delays." },
-  { title: "Multi-language", desc: "Whatever language your guests speak, the AI will answer in their language." },
+
+  { title: "You're in control", desc: "Edit your knowledge base anytime. Nothing changes without you." },
+
   { title: "SMS-native", desc: "Works via text message. No app downloads for guests." },
-  { title: "Property-specific", desc: "Each listing gets its own dedicated AI agent." },
+
   { title: "Smart escalation", desc: "If the AI doesn't know, it gives the guest your number automatically." },
+
   { title: "10-minute setup", desc: "From zero to live in under 10 minutes. No technical expertise required." },
+
+  { title: "Save hours every week", desc: "Stop answering the same guest questions over and over." },
+
+  { title: "Better guest experience", desc: "Guests get fast, accurate answers, which means happier stays and better reviews." },
+
+  { title: "Automated check-in & checkout messages", desc: "Send instructions, reminders, and follow-ups automatically for every stay." },
+
+  { title: "Exact answers, your wording", desc: "If a guest asks a known question, the AI replies with the exact response you instruct it to use. No ifs, buts, or maybe's." }
 ];
 
-const pricingFeatures = [
-  "Unlimited AI conversations",
-  "Up to 3 simultaneous guests",
-  "Custom knowledge base",
-  "Smart escalation to host",
-  "Email support",
-  "Cancel anytime",
-];
+// ─── Waitlist Counter (inline block for final CTA) ─────────────────────────────
+
+const WAITLIST_TARGET = 214;
+
+function WaitlistCounter({ triggerRef }: { triggerRef: React.RefObject<HTMLDivElement | null> }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const numberRef = useRef<HTMLSpanElement>(null);
+  const hasAnimated = useRef(false);
+
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    const content = contentRef.current;
+    const numberEl = numberRef.current;
+    if (!trigger || !content || !numberEl) return;
+
+    const runAnimation = () => {
+      if (hasAnimated.current) return;
+      hasAnimated.current = true;
+      numberEl.textContent = "0";
+
+      gsap.context(() => {
+        gsap.from(content.querySelectorAll(".counter-animate"), {
+          opacity: 0,
+          y: 40,
+          duration: 0.8,
+          ease: "power2.out",
+          stagger: 0.15,
+        });
+        // Start count-up after a frame so "0" is visible, then slow ease at the end
+        gsap.to(
+          { val: 0 },
+          {
+            val: WAITLIST_TARGET,
+            duration: 2.2,
+            delay: 0.5,
+            ease: "power3.out",
+            overwrite: true,
+            onUpdate: function () {
+              numberEl.textContent = Math.round(this.targets()[0].val).toString();
+            },
+          }
+        );
+      }, content);
+    };
+
+    // Only trigger when section actually enters viewport (not on load if already visible)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        runAnimation();
+      },
+      { threshold: 0.25, rootMargin: "0px" }
+    );
+    observer.observe(trigger);
+
+    return () => observer.disconnect();
+  }, [triggerRef]);
+
+  return (
+    <div ref={contentRef} className="mb-10">
+      <div className="counter-animate mb-6">
+        <span
+          ref={numberRef}
+          className="text-[clamp(5rem,12vw,10rem)] font-bold text-foreground leading-none tracking-tight"
+        >
+          0
+        </span>
+      </div>
+      <h2 className="counter-animate text-2xl md:text-3xl font-bold text-foreground mb-4">
+        hosts on the <span className="font-display italic">waitlist.</span>
+      </h2>
+      <p className="counter-animate text-lg text-muted-foreground max-w-md mx-auto">
+        Join them and be the first to get access when we launch — early members get 30 days free.
+      </p>
+    </div>
+  );
+}
+
+// Derive landing variant from env (VITE_LANDING_VARIANT=waitlist | standard); default "standard"
+function getLandingVariant(): LandingNavVariant {
+  const v = import.meta.env.VITE_LANDING_VARIANT;
+  return v === "waitlist" ? "waitlist" : "standard";
+}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-const Index = () => {
+export type LandingVariant = LandingNavVariant;
+
+interface LandingProps {
+  variant?: LandingVariant;
+}
+
+const Landing = ({ variant: variantProp }: LandingProps) => {
+  const variant = variantProp ?? getLandingVariant();
+  const isWaitlist = variant === "waitlist";
   const heroRef = useRef<HTMLDivElement>(null);
   const marqueeRef = useRef<HTMLDivElement>(null);
   const convRef = useRef<HTMLDivElement>(null);
   const flowSectionRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
-  const pricingRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [contactOpen, setContactOpen] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
   const [contactSubject, setContactSubject] = useState("");
   const [contactContent, setContactContent] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactSending, setContactSending] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
+
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistSending, setWaitlistSending] = useState(false);
+  const [waitlistError, setWaitlistError] = useState<string | null>(null);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setWaitlistError(null);
+    setWaitlistSending(true);
+    try {
+      await api.postPublic("/waitlisted_hosts", { email: waitlistEmail.trim() });
+      setWaitlistSuccess(true);
+    } catch (err) {
+      setWaitlistError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setWaitlistSending(false);
+    }
+  };
+
+  const handleWaitlistOpenChange = (open: boolean) => {
+    setWaitlistOpen(open);
+    if (!open) {
+      setWaitlistSuccess(false);
+      setWaitlistEmail("");
+      setWaitlistError(null);
+    }
+  };
+
+  const handleContactOpenChange = (open: boolean) => {
+    setContactOpen(open);
+    if (!open) {
+      setContactSuccess(false);
+      setContactSubject("");
+      setContactContent("");
+      setContactEmail("");
+      setContactError(null);
+    }
+  };
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +253,7 @@ const Index = () => {
         subject: contactSubject,
         content: contactContent,
       });
-      setContactOpen(false);
+      setContactSuccess(true);
       setContactSubject("");
       setContactContent("");
       setContactEmail("");
@@ -208,19 +343,9 @@ const Index = () => {
     return () => ctx.revert();
   }, []);
 
-  // Pricing
+  // Final CTA (skip full-section fade when waitlist — counter has its own entrance)
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.from(".pricing-card", {
-        opacity: 0, y: 50, scale: 0.97, duration: 0.9, ease: "power2.out",
-        scrollTrigger: { trigger: pricingRef.current, start: "top 75%" },
-      });
-    }, pricingRef);
-    return () => ctx.revert();
-  }, []);
-
-  // Final CTA
-  useEffect(() => {
+    if (variant === "waitlist") return;
     const ctx = gsap.context(() => {
       gsap.from(".final-cta-text", {
         opacity: 0, y: 40, duration: 0.8, ease: "power2.out",
@@ -228,7 +353,7 @@ const Index = () => {
       });
     }, ctaRef);
     return () => ctx.revert();
-  }, []);
+  }, [variant]);
 
   // ─── Mock UI cards for each step ─────────────────────────────────────────
 
@@ -319,25 +444,25 @@ const Index = () => {
         return (
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
             <div className="text-[11px] uppercase tracking-widest text-muted-foreground/60 font-medium">SMS Conversation</div>
-            <div className="space-y-2.5 max-w-sm">
+            <div className="space-y-2.5 w-full min-w-0">
               <div className="flex justify-start">
-                <div className="bg-primary/10 text-foreground rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[80%]">
+                <div className="bg-primary/10 text-foreground rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
                   <p className="text-[11px] text-primary font-medium mb-0.5">Automated · Check-in</p>
                   <p className="text-sm">Hi! Check-in is at 3 PM. Lockbox code: 4821 🏡</p>
                 </div>
               </div>
               <div className="flex justify-end">
-                <div className="bg-muted/80 rounded-2xl rounded-tr-md px-4 py-2.5 max-w-[80%]">
+                <div className="bg-muted/80 rounded-2xl rounded-tr-md px-4 py-2.5 max-w-[85%]">
                   <p className="text-sm text-foreground">What's the WiFi password?</p>
                 </div>
               </div>
               <div className="flex justify-start">
-                <div className="bg-foreground text-background rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[80%]">
+                <div className="bg-foreground text-background rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
                   <p className="text-sm">Network: CozyStay_5G · Password: Welcome2025! 📶</p>
                 </div>
               </div>
               <div className="flex justify-start">
-                <div className="bg-primary/10 text-foreground rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[80%]">
+                <div className="bg-primary/10 text-foreground rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
                   <p className="text-[11px] text-primary font-medium mb-0.5">Automated · Check-out</p>
                   <p className="text-sm">Checkout is at 11 AM. Leave keys on the counter. Thanks for staying! 🙏</p>
                 </div>
@@ -350,9 +475,16 @@ const Index = () => {
     }
   };
 
+  const heroCtaLabel = variant === "waitlist" ? "Join the waitlist" : "Start free trial";
+  const finalCtaLabel = variant === "waitlist" ? "Join the waitlist" : "Get started for free";
+
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      <LandingNav />
+      <LandingNav
+        variant={variant}
+        onJoinWaitlistClick={isWaitlist ? () => setWaitlistOpen(true) : undefined}
+        onContactClick={() => setContactOpen(true)}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════════
           HERO — Live demo with animated SMS conversation
@@ -384,28 +516,47 @@ const Index = () => {
                   </span>
                 </span>
               </h1>
-              <p className="hero-sub text-lg md:text-xl text-muted-foreground max-w-md mb-10 leading-relaxed">
-                Deploy an AI concierge that answers your guests instantly — trained on your property, available 24/7.
+              <p className="hero-sub text-lg md:text-xl text-muted-foreground max-w-md mb-4 leading-relaxed">
+                {isWaitlist
+                  ? "Deploy an AI text concierge that answers your guests instantly — tailored to your properties, available 24/7."
+                  : "Deploy an AI text concierge that answers your guests instantly — trained on your property, available 24/7."}
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/auth?mode=signup" className="hero-cta-btn">
-                  <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-8 text-base font-medium transition-all duration-300 group">
-                    Start free trial
+
+              {/* Waitlist: expectation-setting line */}
+              {isWaitlist && (
+                <p className="hero-sub text-base text-primary/80 font-medium mb-4 max-w-md">
+                  We're launching soon! Join the waitlist for early access...
+                  <br />
+                  <span className="font-display italic">and get <span className="font-bold">30 days free</span>, on us.</span>
+                </p>
+              )}
+
+              {!isWaitlist && <div className="mb-10" />}
+
+              <div className="hero-cta-btn flex flex-col sm:flex-row sm:items-center gap-4">
+                {isWaitlist ? (
+                  <Button
+                    className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-8 text-base font-medium transition-all duration-300 group"
+                    onClick={() => setWaitlistOpen(true)}
+                  >
+                    Join the waitlist
                     <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                   </Button>
-                </Link>
-                <button
-                  type="button"
-                  className="hero-cta-btn"
+                ) : (
+                  <Link to="/auth?mode=signup">
+                    <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-8 text-base font-medium transition-all duration-300 group">
+                      Start free trial
+                      <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                    </Button>
+                  </Link>
+                )}
+                <Button
+                  variant="ghost"
+                  className="rounded-xl h-14 px-8 text-base text-muted-foreground hover:text-foreground bg-foreground/[0.04] hover:bg-foreground/[0.08] transition-all duration-300"
                   onClick={() => scrollToSection("how")}
                 >
-                  <Button
-                    variant="ghost"
-                    className="rounded-xl h-14 px-8 text-base text-muted-foreground hover:text-foreground bg-foreground/[0.04] hover:bg-foreground/[0.08] transition-all duration-300"
-                  >
-                    See how it works
-                  </Button>
-                </button>
+                  See how it works
+                </Button>
               </div>
             </div>
 
@@ -436,7 +587,7 @@ const Index = () => {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-foreground leading-tight">Willowberry Cabin</p>
-                        <p className="text-[11px] text-status-online font-medium">AI Agent · Online</p>
+                        <p className="text-[11px] text-status-online font-medium">AI Concierge · Online</p>
                       </div>
                     </div>
 
@@ -691,55 +842,6 @@ const Index = () => {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          PRICING
-      ═══════════════════════════════════════════════════════════════════════ */}
-      <section id="pricing" ref={pricingRef} className="py-32 px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-sm text-primary font-medium tracking-wide uppercase mb-4">Pricing</p>
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground">Simple and <span className="font-display italic">transparent.</span></h2>
-          </div>
-
-          <div className="pricing-card bg-card rounded-3xl border border-border overflow-hidden transition-all duration-500 hover:border-primary/30 hover:shadow-[0_0_40px_-12px_hsla(var(--primary),0.15)]">
-            <div className="p-10 md:p-14">
-              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
-                <div>
-                  <span className="text-sm text-muted-foreground">Per property, per month</span>
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-6xl md:text-7xl font-bold text-foreground">$29</span>
-                  </div>
-                </div>
-                <Link to="/auth?mode=signup">
-                  <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-12 px-8 text-base font-medium transition-all duration-300">
-                    Start 14-day free trial
-                  </Button>
-                </Link>
-              </div>
-              <div className="h-px bg-border mb-10" />
-              <div className="grid sm:grid-cols-2 gap-4">
-                {pricingFeatures.map((feat) => (
-                  <div key={feat} className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-foreground/5 flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3 h-3 text-foreground" />
-                    </div>
-                    <span className="text-sm text-foreground/70">{feat}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-muted/50 px-10 md:px-14 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <p className="text-sm text-muted-foreground">
-                Managing 5+ properties? <span className="text-foreground font-medium">Let's talk about bulk pricing.</span>
-              </p>
-              <Button variant="ghost" className="text-sm text-foreground underline underline-offset-4 hover:bg-transparent p-0 h-auto">
-                Contact us
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════════
           FINAL CTA
       ═══════════════════════════════════════════════════════════════════════ */}
       <section ref={ctaRef} className="py-40 px-6 relative grain-overlay">
@@ -749,15 +851,28 @@ const Index = () => {
           <h2 className="text-4xl md:text-6xl font-bold text-foreground leading-tight mb-8">
             Stop answering the<br /><span className="font-display italic">same questions.</span>
           </h2>
-          <p className="text-lg text-muted-foreground mb-10 max-w-lg mx-auto">
-            Your guests deserve instant answers. You deserve your time back.
-          </p>
-          <Link to="/auth?mode=signup">
-            <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-10 text-base font-medium transition-all duration-300 group">
-              Get started for free
+          {variant === "waitlist" && <WaitlistCounter triggerRef={ctaRef} />}
+
+          {isWaitlist ? (
+            <Button
+              className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-10 text-base font-medium transition-all duration-300 group"
+              onClick={() => setWaitlistOpen(true)}
+            >
+              {finalCtaLabel}
               <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
-          </Link>
+          ) : (
+            <>  <p className="text-lg text-muted-foreground mb-10 max-w-lg mx-auto">
+              Your guests deserve instant answers. You deserve your time back.
+            </p>
+              <Link to="/auth?mode=signup">
+                <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-10 text-base font-medium transition-all duration-300 group">
+                  {finalCtaLabel}
+                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </section>
 
@@ -777,74 +892,215 @@ const Index = () => {
             </button>
           </div>
 
-          <Dialog open={contactOpen} onOpenChange={setContactOpen}>
-            <DialogContent className="sm:max-w-md border-border rounded-xl bg-background">
-              <DialogHeader>
-                <DialogTitle className="text-foreground font-semibold">Contact us</DialogTitle>
-                <DialogDescription className="text-muted-foreground">
-                  Drop us a message and we’ll get right back to you. We promise.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleContactSubmit} className="space-y-4 mt-2">
-                {contactError && (
-                  <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
-                    {contactError}
-                  </p>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="contact-email" className="text-foreground/80">Your email</Label>
-                  <Input
-                    id="contact-email"
-                    type="email"
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="border-input bg-background rounded-md text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
-                    required
-                  />
+          <Dialog open={contactOpen} onOpenChange={handleContactOpenChange}>
+            <DialogContent className="sm:max-w-md border-border rounded-xl bg-background overflow-visible">
+              {contactSuccess ? (
+                <div className="flex flex-col items-center justify-center py-4 relative overflow-hidden">
+                  <div className="absolute inset-0 pointer-events-none">
+                    {[...Array(12)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="absolute w-3 h-3 rounded-sm"
+                        style={{
+                          left: `${10 + (i * 7)}%`,
+                          top: "-20px",
+                          backgroundColor: i % 3 === 0 ? "hsl(var(--primary))" : i % 3 === 1 ? "hsl(var(--primary-light))" : "hsl(var(--status-online))",
+                          animation: `confetti-fall ${2 + (i * 0.2)}s ease-out ${i * 0.1}s forwards`,
+                          transform: `rotate(${i * 30}deg)`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div className="relative w-32 h-32 mx-auto mb-8">
+                    <div className="absolute inset-0 bg-primary/20 rounded-full animate-success-pulse" />
+                    <div className="relative flex items-center justify-center w-32 h-32 bg-primary rounded-full shadow-xl animate-circle-fill">
+                      <svg viewBox="0 0 52 52" className="w-16 h-16">
+                        <path fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" d="M14 27l8 8 16-16" strokeDasharray="100" strokeDashoffset="100" className="animate-checkmark" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="animate-float-up text-center" style={{ animationDelay: "0.4s", opacity: 0 }}>
+                    <h2 className="text-2xl font-semibold text-foreground mb-3">Thanks for getting in touch!</h2>
+                    <p className="text-muted-foreground mb-8 max-w-sm mx-auto">We&apos;ll get back to you as soon as we can.</p>
+                    <Button onClick={() => handleContactOpenChange(false)} className="min-w-[140px]">Close</Button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contact-subject" className="text-foreground/80">Subject</Label>
-                  <Input
-                    id="contact-subject"
-                    value={contactSubject}
-                    onChange={(e) => setContactSubject(e.target.value)}
-                    placeholder="What’s this about?"
-                    className="border-input bg-background rounded-md text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
-                    required
-                  />
+              ) : (
+                <>
+                  <DialogHeader>
+                    <DialogTitle className="text-foreground font-semibold">Contact us</DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
+                      Drop us a message and we’ll get right back to you. We promise.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleContactSubmit} className="space-y-4 mt-2">
+                    {contactError && (
+                      <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+                        {contactError}
+                      </p>
+                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-email" className="text-foreground/80">Your email</Label>
+                      <Input
+                        id="contact-email"
+                        type="email"
+                        value={contactEmail}
+                        onChange={(e) => setContactEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className="border-input bg-background rounded-md text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-subject" className="text-foreground/80">Subject</Label>
+                      <Input
+                        id="contact-subject"
+                        value={contactSubject}
+                        onChange={(e) => setContactSubject(e.target.value)}
+                        placeholder="What’s this about?"
+                        className="border-input bg-background rounded-md text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-content" className="text-foreground/80">Message</Label>
+                      <Textarea
+                        id="contact-content"
+                        value={contactContent}
+                        onChange={(e) => setContactContent(e.target.value)}
+                        placeholder="Your message…"
+                        rows={5}
+                        className="border-input bg-background rounded-md text-foreground placeholder:text-muted-foreground focus-visible:ring-ring min-h-[120px]"
+                        required
+                      />
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => handleContactOpenChange(false)}
+                        disabled={contactSending}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={contactSending}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors duration-300"
+                      >
+                        {contactSending ? "Sending…" : "Send"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={waitlistOpen} onOpenChange={handleWaitlistOpenChange}>
+            <DialogContent className="sm:max-w-md border-border rounded-xl bg-background overflow-visible">
+              {waitlistSuccess ? (
+                <div className="flex flex-col items-center justify-center py-4 relative overflow-hidden">
+                  {/* Confetti particles */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    {[...Array(12)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="absolute w-3 h-3 rounded-sm"
+                        style={{
+                          left: `${10 + (i * 7)}%`,
+                          top: "-20px",
+                          backgroundColor: i % 3 === 0 ? "hsl(var(--primary))" : i % 3 === 1 ? "hsl(var(--primary-light))" : "hsl(var(--status-online))",
+                          animation: `confetti-fall ${2 + (i * 0.2)}s ease-out ${i * 0.1}s forwards`,
+                          transform: `rotate(${i * 30}deg)`,
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Checkmark Animation */}
+                  <div className="relative w-32 h-32 mx-auto mb-8">
+                    <div className="absolute inset-0 bg-primary/20 rounded-full animate-success-pulse" />
+                    <div className="relative flex items-center justify-center w-32 h-32 bg-primary rounded-full shadow-xl animate-circle-fill">
+                      <svg viewBox="0 0 52 52" className="w-16 h-16">
+                        <path
+                          fill="none"
+                          stroke="white"
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M14 27l8 8 16-16"
+                          strokeDasharray="100"
+                          strokeDashoffset="100"
+                          className="animate-checkmark"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className="animate-float-up text-center" style={{ animationDelay: "0.4s", opacity: 0 }}>
+                    <h2 className="text-2xl font-semibold text-foreground mb-3">
+                      You&apos;re on the list!
+                    </h2>
+                    <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
+                      We&apos;ll email you when we launch. Early members get 30 days free.
+                    </p>
+                    <Button
+                      onClick={() => handleWaitlistOpenChange(false)}
+                      className="min-w-[140px]"
+                    >
+                      Close
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contact-content" className="text-foreground/80">Message</Label>
-                  <Textarea
-                    id="contact-content"
-                    value={contactContent}
-                    onChange={(e) => setContactContent(e.target.value)}
-                    placeholder="Your message…"
-                    rows={5}
-                    className="border-input bg-background rounded-md text-foreground placeholder:text-muted-foreground focus-visible:ring-ring min-h-[120px]"
-                    required
-                  />
-                </div>
-                <DialogFooter className="gap-2 sm:gap-0">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setContactOpen(false)}
-                    disabled={contactSending}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={contactSending}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors duration-300"
-                  >
-                    {contactSending ? "Sending…" : "Send"}
-                  </Button>
-                </DialogFooter>
-              </form>
+              ) : (
+                <>
+                  <DialogHeader>
+                    <DialogTitle className="text-foreground font-semibold">Join the waitlist</DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
+                      Enter your email and we&apos;ll notify you when we launch. Early members get 30 days free.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleWaitlistSubmit} className="space-y-4 mt-2">
+                    {waitlistError && (
+                      <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+                        {waitlistError}
+                      </p>
+                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="waitlist-email" className="text-foreground/80">Email</Label>
+                      <Input
+                        id="waitlist-email"
+                        type="email"
+                        value={waitlistEmail}
+                        onChange={(e) => setWaitlistEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className="border-input bg-background rounded-md text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                        required
+                      />
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => handleWaitlistOpenChange(false)}
+                        disabled={waitlistSending}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={waitlistSending}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors duration-300"
+                      >
+                        {waitlistSending ? "Joining…" : "Join waitlist"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </>
+              )}
             </DialogContent>
           </Dialog>
         </div>
@@ -853,4 +1109,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Landing;

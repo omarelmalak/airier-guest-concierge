@@ -4,7 +4,19 @@ import airierLogo from "@/assets/airier-logo.png";
 import { useState, useEffect, useRef } from "react";
 import { Menu, X } from "lucide-react";
 
-const LandingNav = () => {
+export type LandingNavVariant = "waitlist" | "standard";
+
+interface LandingNavProps {
+  variant?: LandingNavVariant;
+  /** When waitlist: called instead of navigating to signup (opens waitlist modal) */
+  onJoinWaitlistClick?: () => void;
+  /** Opens the same contact modal as the footer */
+  onContactClick?: () => void;
+}
+
+const LandingNav = ({ variant = "standard", onJoinWaitlistClick, onContactClick }: LandingNavProps) => {
+  const ctaLabel = variant === "waitlist" ? "Join the waitlist" : "Get started";
+  const isWaitlist = variant === "waitlist";
   const [open, setOpen] = useState(false);
   const [showTrigger, setShowTrigger] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -51,8 +63,8 @@ const LandingNav = () => {
           <button
             onClick={() => setOpen(!open)}
             className={`relative z-[60] w-11 h-11 rounded-full flex items-center justify-center transition-all duration-400 bg-foreground text-background ${showTrigger || open
-                ? "opacity-100 scale-100"
-                : "md:opacity-0 md:scale-90 md:pointer-events-none opacity-100"
+              ? "opacity-100 scale-100"
+              : "md:opacity-0 md:scale-90 md:pointer-events-none opacity-100"
               } shadow-[0_4px_20px_-4px_rgba(0,0,0,0.15)]`}
           >
             {open ? <X className="w-[18px] h-[18px]" /> : <Menu className="w-[18px] h-[18px]" />}
@@ -61,8 +73,8 @@ const LandingNav = () => {
           {/* Compact dropdown */}
           <div
             className={`absolute top-full right-0 mt-3 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] origin-top-right ${open
-                ? "opacity-100 scale-100 translate-y-0"
-                : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+              ? "opacity-100 scale-100 translate-y-0"
+              : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
               }`}
           >
             <div className="bg-foreground rounded-2xl p-2 shadow-[0_16px_48px_-12px_rgba(0,0,0,0.3)] min-w-[200px]">
@@ -71,7 +83,6 @@ const LandingNav = () => {
                 { label: "Knowledge", href: "#knowledge" },
                 { label: "How it works", href: "#how" },
                 { label: "Features", href: "#features" },
-                { label: "Pricing", href: "#pricing" },
               ].map((item) => (
                 <button
                   key={item.label}
@@ -85,31 +96,56 @@ const LandingNav = () => {
                   {item.label}
                 </button>
               ))}
-              <div className="h-px bg-background/10 my-1 mx-2" />
-              <Link
-                to="/auth"
-                onClick={() => setOpen(false)}
-                className="block px-4 py-3 text-[15px] text-background/50 hover:text-background hover:bg-background/10 rounded-xl transition-colors duration-200"
-              >
-                Log in
-              </Link>
+              {onContactClick && (
+                <>
+                  <div className="h-px bg-background/10 my-1 mx-2" />
+                  <button
+                    type="button"
+                    onClick={() => { setOpen(false); onContactClick(); }}
+                    className="block w-full text-left px-4 py-3 text-[15px] text-background/50 hover:text-background hover:bg-background/10 rounded-xl transition-colors duration-200"
+                  >
+                    Contact
+                  </button>
+                </>
+              )}
               <div className="px-2 pb-2 pt-1 md:hidden">
-                <Link to="/auth?mode=signup" onClick={() => setOpen(false)}>
-                  <Button className="w-full bg-background text-foreground hover:bg-background/90 rounded-xl h-10 text-sm font-medium">
-                    Get started
-                  </Button>
-                </Link>
+                {isWaitlist && onJoinWaitlistClick ? (
+                  <button
+                    type="button"
+                    onClick={() => { setOpen(false); onJoinWaitlistClick(); }}
+                    className="w-full"
+                  >
+                    <Button className="w-full bg-background text-foreground hover:bg-background/90 rounded-xl h-10 text-sm font-medium">
+                      {ctaLabel}
+                    </Button>
+                  </button>
+                ) : (
+                  <Link to="/auth?mode=signup" onClick={() => setOpen(false)}>
+                    <Button className="w-full bg-background text-foreground hover:bg-background/90 rounded-xl h-10 text-sm font-medium">
+                      {ctaLabel}
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Get started — solid dark, clearly visible */}
-        <Link to="/auth?mode=signup" className="hidden md:block">
-          <Button className="bg-foreground text-background hover:bg-foreground/80 rounded-xl h-10 px-6 text-[14px] font-medium transition-all duration-300">
-            Get started
+        {/* CTA — solid dark, clearly visible */}
+        {isWaitlist && onJoinWaitlistClick ? (
+          <Button
+            onClick={onJoinWaitlistClick}
+            className="hidden md:flex bg-foreground text-background hover:bg-foreground/80 rounded-xl h-10 px-6 text-[14px] font-medium transition-all duration-300"
+          >
+            {ctaLabel}
           </Button>
-        </Link>
+        ) : (
+          <Link to="/auth?mode=signup" className="hidden md:block">
+            <Button className="bg-foreground text-background hover:bg-foreground/80 rounded-xl h-10 px-6 text-[14px] font-medium transition-all duration-300">
+              {ctaLabel}
+            </Button>
+          </Link>
+        )}
       </div>
     </>
   );

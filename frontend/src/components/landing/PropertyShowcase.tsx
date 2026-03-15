@@ -30,7 +30,7 @@ const highlights: Highlight[] = [
         answer: "The pool is all yours! Just turn the heater up to 80°F and enjoy 🏊",
         spotX: 50,
         spotY: 82,
-        bubbleX: 2,
+        bubbleX: 8,
         bubbleY: 55,
         bubbleAlign: "left",
     },
@@ -54,7 +54,7 @@ const highlights: Highlight[] = [
         answer: "Quiet hours are 10 PM – 8 AM. Please keep noise to a minimum after 10 🤫",
         spotX: 50,
         spotY: 40,
-        bubbleX: 8,
+        bubbleX: 12,
         bubbleY: 5,
         bubbleAlign: "left",
     },
@@ -67,7 +67,7 @@ const highlights: Highlight[] = [
         spotX: 15,
         spotY: 18,
         bubbleX: 2,
-        bubbleY: 55,
+        bubbleY: 30,
         bubbleAlign: "left",
     },
 ];
@@ -218,8 +218,8 @@ const PropertyShowcase = () => {
                             <div
                                 key={`pill-${h.id}`}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all duration-500 ${activeIndex === i
-                                        ? "bg-primary text-primary-foreground border-primary shadow-lg"
-                                        : "bg-card text-muted-foreground border-border"
+                                    ? "bg-primary text-primary-foreground border-primary shadow-lg"
+                                    : "bg-card text-muted-foreground border-border"
                                     }`}
                             >
                                 <h.icon className="w-3.5 h-3.5" />

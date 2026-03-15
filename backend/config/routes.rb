@@ -30,6 +30,7 @@ Rails.application.routes.draw do
       post "time/today", to: "time#today"
 
       post "contact", to: "contact#create"
+      post "waitlisted_hosts", to: "waitlisted_hosts#create"
     end
   end 
 
