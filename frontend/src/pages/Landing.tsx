@@ -32,6 +32,26 @@ const heroMessages = [
   { from: "ai", text: "You have spot #24 in the underground garage. Your key fob opens the gate. 🅿️" },
 ];
 
+const heroMessageLanguages = ["en", "fr", "es"] as const;
+
+const heroMessagesByLanguage: Record<(typeof heroMessageLanguages)[number], { from: "ai" | "guest"; text: string }[]> = {
+  en: heroMessages as { from: "ai" | "guest"; text: string }[],
+  fr: [
+    { from: "ai", text: "Salut Alice ! 🏡 Bienvenue à Willowberry Cabin. L'arrivée est à 15 h — le code du boîtier est 4821. Dis‑moi quand tu es là !" },
+    { from: "guest", text: "Merci ! Je viens d'arriver. Quel est le mot de passe du Wi‑Fi ?" },
+    { from: "ai", text: "Génial, bienvenue ! Le réseau est CozyStay_5G et le mot de passe est Welcome2025 ! 📶" },
+    { from: "guest", text: "Parfait. Où puis‑je me garer ?" },
+    { from: "ai", text: "Tu as la place n°24 dans le parking souterrain. Ton badge ouvre la barrière. 🅿️" },
+  ],
+  es: [
+    { from: "ai", text: "¡Hola Alice! 🏡 Bienvenida a Willowberry Cabin. El check-in es a las 3 p. m. — el código del lockbox es 4821. ¡Avísame cuando llegues!" },
+    { from: "guest", text: "¡Gracias! Acabo de llegar. ¿Cuál es la contraseña del Wi‑Fi?" },
+    { from: "ai", text: "Perfecto, bienvenida. La red es CozyStay_5G y la contraseña es Welcome2025. 📶" },
+    { from: "guest", text: "Genial. ¿Dónde puedo aparcar?" },
+    { from: "ai", text: "Tienes la plaza n.º 24 en el garaje subterráneo. Tu llavero abre la puerta. 🅿️" },
+  ],
+};
+
 const conversationPairs = [
   { q: "What's the WiFi password?", a: "Network: CozyStay_5G · Password: Welcome2025!" },
   { q: "Where's the first aid kit?", a: "In the hallway closet, top shelf, right side." },
@@ -188,6 +208,7 @@ interface LandingProps {
 const Landing = ({ variant: variantProp }: LandingProps) => {
   const variant = variantProp ?? getLandingVariant();
   const isWaitlist = variant === "waitlist";
+  const [heroLangIndex, setHeroLangIndex] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const marqueeRef = useRef<HTMLDivElement>(null);
   const convRef = useRef<HTMLDivElement>(null);
@@ -195,6 +216,7 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
   const featuresRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
+  const heroMessagesRef = useRef<HTMLDivElement | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
   const [contactSuccess, setContactSuccess] = useState(false);
   const [contactSubject, setContactSubject] = useState("");
@@ -288,6 +310,26 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
     }, heroRef);
     return () => ctx.revert();
   }, []);
+
+  // Hero phone conversation language rotation (EN → FR → ES) with fade between sets
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const id = window.setInterval(() => {
+      setHeroLangIndex((prev) => (prev + 1) % heroMessageLanguages.length);
+    }, 14000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!heroMessagesRef.current) return;
+    const textNodes = heroMessagesRef.current.querySelectorAll(".hero-msg-text");
+    if (!textNodes.length) return;
+    gsap.fromTo(
+      textNodes,
+      { opacity: 0 },
+      { opacity: 1, duration: 0.6, ease: "power1.out", stagger: 0.05 }
+    );
+  }, [heroLangIndex]);
 
   // Marquee
   useEffect(() => {
@@ -592,8 +634,11 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
                     </div>
 
                     {/* Messages */}
-                    <div className="px-4 py-4 space-y-3 min-h-[380px]">
-                      {heroMessages.map((msg, i) => (
+                    <div
+                      ref={heroMessagesRef}
+                      className="px-4 py-4 space-y-3 min-h-[380px]"
+                    >
+                      {heroMessagesByLanguage[heroMessageLanguages[heroLangIndex]].map((msg, i) => (
                         <div
                           key={i}
                           className={`hero-msg flex ${msg.from === "ai" ? "justify-start" : "justify-end"}`}
@@ -602,7 +647,7 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
                             ? "bg-primary text-primary-foreground rounded-2xl rounded-tl-md"
                             : "bg-muted/80 text-foreground rounded-2xl rounded-tr-md"
                             }`}>
-                            {msg.text}
+                            <span className="hero-msg-text inline-block">{msg.text}</span>
                           </div>
                         </div>
                       ))}
