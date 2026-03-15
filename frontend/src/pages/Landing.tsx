@@ -162,10 +162,10 @@ function WaitlistCounter({ triggerRef }: { triggerRef: React.RefObject<HTMLDivEl
         </span>
       </div>
       <h2 className="counter-animate text-2xl md:text-3xl font-bold text-foreground mb-4">
-        hosts on the <span className="font-display italic">waitlist.</span>
+        hosts are on the waitlist
       </h2>
       <p className="counter-animate text-lg text-muted-foreground max-w-md mx-auto">
-        Join them and be the first to get access when we launch — early members get 30 days free.
+        Join them in being the first to get access when we launch... and get <span className="font-bold">30 days free</span>, on us.
       </p>
     </div>
   );
