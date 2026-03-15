@@ -156,7 +156,7 @@ function WaitlistCounter({ triggerRef }: { triggerRef: React.RefObject<HTMLDivEl
       <div className="counter-animate mb-6">
         <span
           ref={numberRef}
-          className="text-[clamp(5rem,12vw,10rem)] font-bold text-foreground leading-none tracking-tight"
+          className="text-[clamp(5rem,12vw,10rem)] font-bold text-primary leading-none tracking-tight"
         >
           0
         </span>
