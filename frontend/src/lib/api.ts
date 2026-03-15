@@ -28,7 +28,7 @@ async function request<T>(
     return res.json();
 }
 
-async function requestPublic<T>(path: string, method: "POST", body: unknown): Promise<T> {
+async function requestPublic<T>(path: string, method: "POST" | "GET", body?: unknown): Promise<T> {
     const res = await fetch(`${API_BASE_URL}${path}`, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -53,4 +53,6 @@ export const api = {
     delete: <T>(path: string) => request<T>(path, "DELETE"),
     postPublic: <T>(path: string, body: unknown) =>
         requestPublic<T>(path, "POST", body),
+    getPublic: <T>(path: string) =>
+        requestPublic<T>(path, "GET"),
 };
