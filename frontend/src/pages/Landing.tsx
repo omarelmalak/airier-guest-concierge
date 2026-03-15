@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { getWaitlistCount } from "@/lib/services/waitlist";
 import LandingNav, { type LandingNavVariant } from "@/components/LandingNav";
 import airierLogo from "@/assets/airier-logo.png";
 import gsap from "gsap";
@@ -114,12 +115,11 @@ const featureItems = [
 
 // ─── Waitlist Counter (inline block for final CTA) ─────────────────────────────
 
-const WAITLIST_TARGET = 214;
-
 function WaitlistCounter({ triggerRef }: { triggerRef: React.RefObject<HTMLDivElement | null> }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const numberRef = useRef<HTMLSpanElement>(null);
   const hasAnimated = useRef(false);
+  const [waitlistCount, setWaitlistCount] = useState(214);
 
   useEffect(() => {
     const trigger = triggerRef.current;
@@ -127,7 +127,7 @@ function WaitlistCounter({ triggerRef }: { triggerRef: React.RefObject<HTMLDivEl
     const numberEl = numberRef.current;
     if (!trigger || !content || !numberEl) return;
 
-    const runAnimation = () => {
+    const runAnimation = (target: number) => {
       if (hasAnimated.current) return;
       hasAnimated.current = true;
       numberEl.textContent = "0";
@@ -144,7 +144,7 @@ function WaitlistCounter({ triggerRef }: { triggerRef: React.RefObject<HTMLDivEl
         gsap.to(
           { val: 0 },
           {
-            val: WAITLIST_TARGET,
+            val: target,
             duration: 2.2,
             delay: 0.5,
             ease: "power3.out",
@@ -162,7 +162,21 @@ function WaitlistCounter({ triggerRef }: { triggerRef: React.RefObject<HTMLDivEl
       (entries) => {
         const entry = entries[0];
         if (!entry?.isIntersecting) return;
-        runAnimation();
+        // Fetch latest waitlist count once when the section becomes visible, then animate
+        if (!hasAnimated.current) {
+          getWaitlistCount()
+            .then((n) => {
+              const target = typeof n === "number" ? n : waitlistCount;
+              setWaitlistCount(target);
+              runAnimation(target);
+            })
+            .catch(() => {
+              // If the call fails, still run the animation with the current value
+              runAnimation(waitlistCount);
+            });
+        } else {
+          runAnimation(waitlistCount);
+        }
       },
       { threshold: 0.25, rootMargin: "0px" }
     );

@@ -3,7 +3,7 @@
 module Api
   module V1
     class WaitlistedHostsController < ApplicationController
-      skip_before_action :authenticate_user!, only: [:create]
+      skip_before_action :authenticate_user!, only: [:create, :count]
 
       # POST /api/v1/waitlisted_hosts
       def create
@@ -20,6 +20,11 @@ module Api
       rescue StandardError => e
         Rails.logger.error("Waitlisted host signup failed: #{e.message}")
         render json: { error: "Something went wrong. Please try again." }, status: :internal_server_error
+      end
+
+      # GET /api/v1/waitlisted_hosts/count
+      def count
+        render json: { count: WaitlistedHost.count }
       end
     end
   end

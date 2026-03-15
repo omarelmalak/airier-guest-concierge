@@ -31,6 +31,7 @@ Rails.application.routes.draw do
 
       post "contact", to: "contact#create"
       post "waitlisted_hosts", to: "waitlisted_hosts#create"
+      get  "waitlisted_hosts/count", to: "waitlisted_hosts#count"
     end
   end 
 

@@ -114,3 +114,7 @@ export interface GetPropertyDetailsResponse {
 }
 
 export type GetPropertyReservationsResponse = PropertyReservation[];
+
+export interface WaitlistCountResponse {
+    count: number;
+}
