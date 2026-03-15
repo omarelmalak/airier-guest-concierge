@@ -13,4 +13,16 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
       headers: :any,
       methods: [:get, :post, :put, :patch, :delete, :options, :head]
   end
+  allow do
+    origins "https://frontend-us-east.onrender.com/"
+    resource "*",
+      headers: :any,
+      methods: [:get, :post, :put, :patch, :delete, :options, :head]
+  end
+  allow do
+    origins "https://airier.app", "https://www.airier.app"
+    resource "*",
+      headers: :any,
+      methods: [:get, :post, :put, :patch, :delete, :options, :head]
+  end
 end
