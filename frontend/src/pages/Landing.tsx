@@ -692,8 +692,8 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
           </div>
         </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-muted-foreground/40">
+        {/* Scroll indicator — lower on mobile so it doesn't overlap "See how it works" */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-muted-foreground/40 md:bottom-24">
           <div className="w-px h-8 bg-border overflow-hidden">
             <div className="w-full h-full bg-foreground/30 animate-[slideDown_2s_ease-in-out_infinite]" />
           </div>
