@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePostHog } from "@posthog/react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ const PLAN_PRICE = 29;
 
 const AddProperty = () => {
   const navigate = useNavigate();
+  const posthog = usePostHog();
   const [currentStep, setCurrentStep] = useState(1);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -148,13 +150,24 @@ const AddProperty = () => {
         }
 
         setCreatedPropertyId(propertyId);
+        posthog.capture("property_created", {
+          property_name: propertyInfo.name,
+          property_type: propertyInfo.propertyType,
+          subscription_activated: activateSubscription,
+          subscription_months: activateSubscription ? selectedMonths : 0,
+        });
         setIsCompleted(true);
       } catch (error) {
+        posthog.captureException(error);
         console.error("Failed to create property:", error);
         setIsLoading(false);
       }
       return;
     }
+    posthog.capture("property_creation_step_completed", {
+      step: currentStep,
+      step_title: STEPS[currentStep - 1].title,
+    });
     setIsAnimating(true);
     setTimeout(() => {
       setCurrentStep((prev) => prev + 1);

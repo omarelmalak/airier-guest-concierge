@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { usePostHog } from "@posthog/react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -220,6 +221,7 @@ interface LandingProps {
 }
 
 const Landing = ({ variant: variantProp }: LandingProps) => {
+  const posthog = usePostHog();
   const variant = variantProp ?? getLandingVariant();
   const isWaitlist = variant === "waitlist";
   const [heroLangIndex, setHeroLangIndex] = useState(0);
@@ -252,7 +254,9 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
     try {
       await api.postPublic("/waitlisted_hosts", { email: waitlistEmail.trim() });
       setWaitlistSuccess(true);
+      posthog.capture("waitlist_joined", { email: waitlistEmail.trim() });
     } catch (err) {
+      posthog.captureException(err);
       setWaitlistError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setWaitlistSending(false);
@@ -600,7 +604,7 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
                   </Button>
                 ) : (
                   <Link to="/auth?mode=signup">
-                    <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-8 text-base font-medium transition-all duration-300 group">
+                    <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-8 text-base font-medium transition-all duration-300 group" onClick={() => posthog.capture("get_started_clicked", { location: "hero" })}>
                       Start free trial
                       <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                     </Button>
@@ -925,7 +929,7 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
               Your guests deserve instant answers. You deserve your time back.
             </p>
               <Link to="/auth?mode=signup">
-                <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-10 text-base font-medium transition-all duration-300 group">
+                <Button className="btn-magnetic border border-foreground/20 bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary rounded-xl h-14 px-10 text-base font-medium transition-all duration-300 group" onClick={() => posthog.capture("get_started_clicked", { location: "cta_section" })}>
                   {finalCtaLabel}
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                 </Button>

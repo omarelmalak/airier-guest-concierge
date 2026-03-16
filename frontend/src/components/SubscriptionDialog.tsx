@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CreditCard, Check, Calendar, Users, Zap, X } from "lucide-react";
+import { usePostHog } from "@posthog/react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ const SubscriptionDialog = ({
   onActivate,
   onDeactivate,
 }: SubscriptionDialogProps) => {
+  const posthog = usePostHog();
   const [step, setStep] = useState<"plan" | "payment" | "success" | "cancel-confirm">("plan");
   const [selectedMonths, setSelectedMonths] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -49,10 +51,20 @@ const SubscriptionDialog = ({
       setIsProcessing(false);
       setStep("success");
       onActivate?.(selectedMonths);
+      posthog.capture("subscription_activated", {
+        property_name: propertyName,
+        months: selectedMonths,
+        total_amount: PLAN_PRICE * selectedMonths,
+        is_renewal: isActive,
+      });
     }, 1500);
   };
 
   const handleDeactivate = () => {
+    posthog.capture("subscription_cancelled", {
+      property_name: propertyName,
+      current_expiry: currentExpiry,
+    });
     onDeactivate?.();
     onOpenChange(false);
     resetDialog();

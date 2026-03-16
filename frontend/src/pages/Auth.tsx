@@ -8,10 +8,12 @@ import { ArrowLeft, Mail, Lock, User, Phone } from "lucide-react";
 import airierLogo from "@/assets/airier-logo.png";
 import { signUp, signIn } from "@/lib/auth";
 import { isValidTwilioPhone } from "@/lib/utils/phone";
+import { usePostHog } from "@posthog/react";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const posthog = usePostHog();
   const [isSignUp, setIsSignUp] = useState(searchParams.get("mode") === "signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,11 +44,16 @@ const Auth = () => {
       }
       if (isSignUp) {
         await signUp(email, password, firstName, lastName, phone);
+        posthog.identify(email, { email, first_name: firstName, last_name: lastName });
+        posthog.capture("user_signed_up", { email });
       } else {
         await signIn(email, password);
+        posthog.identify(email, { email });
+        posthog.capture("user_signed_in", { email });
       }
       navigate("/properties");
     } catch (err: any) {
+      posthog.captureException(err);
       setError(err.message || "An error occurred");
     } finally {
       setLoading(false);

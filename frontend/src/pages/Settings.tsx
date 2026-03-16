@@ -8,8 +8,10 @@ import { useState } from "react";
 import { mockProperties, Property } from "@/data/mockData";
 import SubscriptionDialog from "@/components/SubscriptionDialog";
 import { cn } from "@/lib/utils/common";
+import { usePostHog } from "@posthog/react";
 
 const Settings = () => {
+  const posthog = usePostHog();
   const [name, setName] = useState("Omar El Malak");
   const [email, setEmail] = useState("omar@example.com");
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -24,6 +26,10 @@ const Settings = () => {
   const handleManageSubscription = (property: Property) => {
     setSelectedProperty(property);
     setSubscriptionDialogOpen(true);
+    posthog.capture("subscription_manage_opened", {
+      property_name: property.name,
+      subscription_active: property.subscriptionActive,
+    });
   };
 
   const handleSubscriptionActivate = (months: number) => {
@@ -275,7 +281,7 @@ const Settings = () => {
 
         {/* Save Button */}
         <div className="flex justify-end">
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2" onClick={() => posthog.capture("settings_saved", { email_notifications: emailNotifications, push_notifications: pushNotifications, weekly_digest: weeklyDigest })}>
             <Save className="w-4 h-4" />
             Save Settings
           </Button>
