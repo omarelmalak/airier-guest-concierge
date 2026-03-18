@@ -200,7 +200,7 @@ function WaitlistCounter({ triggerRef }: { triggerRef: React.RefObject<HTMLDivEl
         hosts are on the waitlist
       </h2>
       <p className="counter-animate text-lg text-muted-foreground max-w-md mx-auto">
-        Join them in being the first to get access when we launch... and get <span className="font-bold">30 days free</span>, on us.
+        Join them in being the first to get access when we launch... and get it <span className="font-bold">free forever</span>.
       </p>
     </div>
   );
@@ -587,7 +587,7 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
                 <p className="hero-sub text-base text-primary/80 font-medium mb-4 max-w-md">
                   We're launching soon! Join the waitlist for early access...
                   <br />
-                  <span className="font-display italic">and get <span className="font-bold">30 days free</span>, on us.</span>
+                  <span className="font-display italic">and get it <span className="font-bold">free forever</span>.</span>
                 </p>
               )}
 
@@ -1109,7 +1109,7 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
                     <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
                       We&apos;ll email you when we launch.
                       <br />
-                      Early members get <span className="font-bold">30 days free</span>.
+                      Early members get it <span className="font-bold">free forever</span>.
                     </p>
                     <Button
                       onClick={() => handleWaitlistOpenChange(false)}
@@ -1126,7 +1126,7 @@ const Landing = ({ variant: variantProp }: LandingProps) => {
                     <DialogDescription className="text-muted-foreground">
                       Enter your email and we&apos;ll notify you when we launch.
                       <br />
-                      Early members get <span className="font-bold">30 days free</span>.
+                      Early members get it <span className="font-bold">free forever</span>.
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleWaitlistSubmit} className="space-y-4 mt-1">
