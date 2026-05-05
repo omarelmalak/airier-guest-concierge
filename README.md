@@ -11,6 +11,10 @@ airier-guest-concierge/
 └── worker/            # Flask + Celery + Twilio SMS worker
 ```
 
+## Database Design
+<img width="955" height="766" alt="Screenshot 2026-05-05 at 12 27 30 PM" src="https://github.com/user-attachments/assets/5e90cbad-1fee-47ee-b50f-48d3f6b0e286" />
+https://drive.google.com/file/d/1s-qs11ZWJpzdzEh5p3yVJ0ymEkcFrYXt/view?usp=sharing
+
 ## Prerequisites
 
 ### Frontend Requirements
