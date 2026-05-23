@@ -18,7 +18,7 @@ Style:
 - Use plain language suitable for text messages; no markdown or bullet lists.
 """
 
-EXACT_ANSWER_SIMILARITY_THRESHOLD = 0.75
+EXACT_ANSWER_SIMILARITY_THRESHOLD = 0.6
 MAX_CONVERSATION_TURNS = 5
 
 # DB role -> Gemini multi-turn role
