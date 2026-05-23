@@ -3,3 +3,4 @@ celery[amqp]>=5.3
 twilio>=9.0
 psycopg2-binary>=2.9
 google-genai>=1.0
+cohere>=5.0

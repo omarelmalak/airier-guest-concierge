@@ -19,6 +19,8 @@ module Api
                     **post_exact_answer_params
                 )
                 render json: format_exact_answer(exact_answer)
+            rescue ActiveRecord::RecordInvalid => e
+                render json: { error: e.record.errors.full_messages.join(", ") }, status: :unprocessable_entity
             end
 
             # PATCH /api/v1/properties/:property_id/exact_answers/:id
@@ -28,6 +30,8 @@ module Api
                 exact_answer = ExactAnswer.where(property_id: property.id).find_by!(id: params[:id])
                 exact_answer.update!(**patch_exact_answer_params)
                 render json: format_exact_answer(exact_answer)
+            rescue ActiveRecord::RecordInvalid => e
+                render json: { error: e.record.errors.full_messages.join(", ") }, status: :unprocessable_entity
             end
 
             # DELETE /api/v1/properties/:property_id/exact_answers/:id

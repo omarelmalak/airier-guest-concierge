@@ -60,10 +60,20 @@ const ExactAnswersTab = ({ propertyId }: { propertyId: string }) => {
     };
 
     const saveEdit = async () => {
-        if (editingId && (editQuestion.trim() || editAnswer.trim())) {
-            await updateExactAnswer(propertyId, editingId, { question: editQuestion.trim(), answer: editAnswer.trim() });
+        if (!editingId || !editQuestion.trim() || !editAnswer.trim()) {
+            toast.error("Question and answer are both required.");
+            return;
+        }
+        try {
+            await updateExactAnswer(propertyId, editingId, {
+                question: editQuestion.trim(),
+                answer: editAnswer.trim(),
+            });
             queryClient.invalidateQueries({ queryKey: ['exact-answers', propertyId] });
+            toast.success("Exact answer updated.");
             cancelEditing();
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to update exact answer.");
         }
     };
 
