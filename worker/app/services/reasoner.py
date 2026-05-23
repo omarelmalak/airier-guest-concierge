@@ -3,6 +3,7 @@ from app.services.cohere_embedder import CohereEmbedder
 from app.services.database.conversation import ConversationDatabase
 from app.services.database.exact_answer import ExactAnswerDatabase
 from app.services.database.text import TextDatabase
+from app.services.google_translate_localizer import GoogleTranslateLocalizer
 from app.services.llm_client import LLMClient
 
 SYSTEM_PROMPT = """You are Airier, a helpful guest concierge for a short-term rental property.
@@ -18,7 +19,7 @@ Style:
 - Use plain language suitable for text messages; no markdown or bullet lists.
 """
 
-EXACT_ANSWER_SIMILARITY_THRESHOLD = 0.75
+EXACT_ANSWER_SIMILARITY_THRESHOLD = 0.6
 MAX_CONVERSATION_TURNS = 5
 
 # DB role -> Gemini multi-turn role
@@ -34,6 +35,7 @@ _text_database = TextDatabase()
 _exact_answer_database = ExactAnswerDatabase()
 _llm_client: LLMClient | None = None
 _cohere_embedder: CohereEmbedder | None = None
+_translate_localizer: GoogleTranslateLocalizer | None = None
 
 
 def _get_llm_client() -> LLMClient:
@@ -49,6 +51,12 @@ def _get_cohere_embedder() -> CohereEmbedder:
         _cohere_embedder = CohereEmbedder()
     return _cohere_embedder
 
+
+def _get_translate_localizer() -> GoogleTranslateLocalizer:
+    global _translate_localizer
+    if _translate_localizer is None:
+        _translate_localizer = GoogleTranslateLocalizer()
+    return _translate_localizer
 
 def _history_to_llm_messages(rows: list[dict]) -> list[dict[str, str]]:
     messages: list[dict[str, str]] = []
@@ -120,8 +128,12 @@ def _try_exact_answer_reply(text_id: str, *, conn=None) -> str | None:
         return None
 
     print("[generate_response] Using exact_answer id=%s" % (match.get("id"),))
-    return answer
 
+    try:
+        return _get_translate_localizer().localize_answer(guest_message, answer)
+    except Exception as exc:
+        print("[generate_response] Google Translate failed, using original answer: %s" % exc)
+        return answer
 
 def generate_response(text_id: str, *, conn=None) -> str:
     exact_reply = _try_exact_answer_reply(text_id, conn=conn)
