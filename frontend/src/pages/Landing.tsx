@@ -206,12 +206,6 @@ function WaitlistCounter({ triggerRef }: { triggerRef: React.RefObject<HTMLDivEl
   );
 }
 
-// Derive landing variant from env (VITE_LANDING_VARIANT=waitlist | standard); default "standard"
-function getLandingVariant(): LandingNavVariant {
-  const v = import.meta.env.VITE_LANDING_VARIANT;
-  return v === "waitlist" ? "waitlist" : "standard";
-}
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export type LandingVariant = LandingNavVariant;
@@ -222,7 +216,7 @@ interface LandingProps {
 
 const Landing = ({ variant: variantProp }: LandingProps) => {
   const posthog = usePostHog();
-  const variant = variantProp ?? getLandingVariant();
+  const variant = variantProp ?? "standard";
   const isWaitlist = variant === "waitlist";
   const [heroLangIndex, setHeroLangIndex] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
