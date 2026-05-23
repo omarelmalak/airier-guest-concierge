@@ -1,6 +1,8 @@
-# Teach ActiveRecord how to read/write pgvector columns (Rails 8 does not fully handle this yet).
+# Teach ActiveRecord how to read/write pgvector columns (Rails 8's OID::Vector does not serialize arrays).
 ActiveSupport.on_load(:active_record_postgresqladapter) do
   adapter = ActiveRecord::ConnectionAdapters::PostgreSQLAdapter
+
+  ActiveRecord::Type.register(:vector, Types::Vector, adapter: :postgresql)
 
   adapter::NATIVE_DATABASE_TYPES[:vector] = { name: "vector" }
 
