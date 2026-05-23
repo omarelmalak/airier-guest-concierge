@@ -16,3 +16,18 @@ class TextDatabase(Database):
                 )
                 row = cur.fetchone()
                 return row["id"] if row else None
+
+    def get_conversation_history(self, conversation_id: str, *, conn=None):
+        """All messages in a conversation, oldest first."""
+        with self.ensure_connection(conn) as c:
+            with c.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT role, content
+                    FROM texts
+                    WHERE conversation_id = %s
+                    ORDER BY COALESCE(sent_at, created_at) ASC
+                    """,
+                    (conversation_id,),
+                )
+                return cur.fetchall()

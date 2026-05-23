@@ -20,7 +20,7 @@ class MessageController:
             conn.autocommit = False
             incoming_text_id = process_incoming_message(from_, body, provider_sid, received_at, conn=conn)
 
-            response = generate_response(incoming_text_id)
+            response = generate_response(incoming_text_id, conn=conn)
 
             conversation_id = self.conversation_database.get_conversation_id_by_text_id(
                 incoming_text_id, conn=conn
