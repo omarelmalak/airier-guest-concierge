@@ -43,6 +43,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_08_180000) do
     t.timestamptz "created_at", default: -> { "now()" }
     t.uuid "property_id", null: false
     t.text "question", null: false
+    t.vector "question_embedding", limit: 1024
 
     t.unique_constraint ["property_id", "question"], name: "exact_answers_property_question_unique"
   end

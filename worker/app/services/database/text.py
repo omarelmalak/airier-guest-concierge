@@ -17,17 +17,43 @@ class TextDatabase(Database):
                 row = cur.fetchone()
                 return row["id"] if row else None
 
-    def get_conversation_history(self, conversation_id: str, *, conn=None):
-        """All messages in a conversation, oldest first."""
+    def get_text_content(self, text_id: str, *, conn=None):
         with self.ensure_connection(conn) as c:
             with c.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(
-                    """
-                    SELECT role, content
-                    FROM texts
-                    WHERE conversation_id = %s
-                    ORDER BY COALESCE(sent_at, created_at) ASC
-                    """,
-                    (conversation_id,),
+                    "SELECT content FROM texts WHERE id = %s",
+                    (text_id,),
                 )
+                row = cur.fetchone()
+                return (row["content"] or "").strip() if row else None
+
+    def get_conversation_history(self, conversation_id: str, *, limit: int | None = None, conn=None):
+        """Messages in a conversation, oldest first. When limit is set, returns only the most recent rows."""
+        with self.ensure_connection(conn) as c:
+            with c.cursor(cursor_factory=RealDictCursor) as cur:
+                if limit is not None:
+                    cur.execute(
+                        """
+                        SELECT role, content
+                        FROM (
+                            SELECT role, content, COALESCE(sent_at, created_at) AS ts
+                            FROM texts
+                            WHERE conversation_id = %s
+                            ORDER BY ts DESC
+                            LIMIT %s
+                        ) recent
+                        ORDER BY ts ASC
+                        """,
+                        (conversation_id, limit),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        SELECT role, content
+                        FROM texts
+                        WHERE conversation_id = %s
+                        ORDER BY COALESCE(sent_at, created_at) ASC
+                        """,
+                        (conversation_id,),
+                    )
                 return cur.fetchall()
