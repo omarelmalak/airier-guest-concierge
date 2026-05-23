@@ -1,0 +1,48 @@
+# Validates PR titles match: AIR-<ticket>: <description>
+# Example: AIR-123: Add LaunchDarkly landing flag
+name: PR Title
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+permissions:
+  pull-requests: read
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            AIR
+          scopes: |
+            \d+
+          requireScope: true
+          headerPattern: '^(AIR)-(\d+): (.+)$'
+          headerPatternCorrespondence: type, scope, subject
+          subjectPatternError: |
+            PR titles must match the Airier convention: AIR-<ticket>: <description>
+
+            Examples:
+              ✓ AIR-123: Add LaunchDarkly landing flag
+              ✗ Add LaunchDarkly landing flag
+              ✗ AIR-123 Add LaunchDarkly landing flag
