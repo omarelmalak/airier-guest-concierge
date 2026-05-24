@@ -1,25 +1,17 @@
 from app.exceptions import ServiceError
 from app.services.cohere_embedder import CohereEmbedder
 from app.services.database.conversation import ConversationDatabase
-from app.services.database.exact_answer import ExactAnswerDatabase
+from app.services.database.knowledge_retrieval import KnowledgeRetrievalDatabase
 from app.services.database.text import TextDatabase
+from app.services.knowledge_ranker import (
+    EXACT_THRESHOLD,
+    KNOWLEDGE_THRESHOLD,
+    build_context,
+    rank_by_similarity,
+)
 from app.services.google_translate_localizer import GoogleTranslateLocalizer
 from app.services.llm_client import LLMClient
 
-SYSTEM_PROMPT = """You are Airier, a helpful guest concierge for a short-term rental property.
-
-Your role:
-- Answer guest questions clearly and warmly over SMS.
-- Help with check-in, amenities, house rules, and local tips when you can.
-- If you do not have specific property information, say so honestly and suggest the guest contact the host.
-- Do not invent WiFi passwords, door codes, addresses, or policies.
-
-Style:
-- Keep replies concise (1–3 short sentences when possible).
-- Use plain language suitable for text messages; no markdown or bullet lists.
-"""
-
-EXACT_ANSWER_SIMILARITY_THRESHOLD = 0.6
 MAX_CONVERSATION_TURNS = 5
 
 # DB role -> Gemini multi-turn role
@@ -32,17 +24,9 @@ _ROLE_TO_LLM = {
 
 _conversation_database = ConversationDatabase()
 _text_database = TextDatabase()
-_exact_answer_database = ExactAnswerDatabase()
-_llm_client: LLMClient | None = None
+_knowledge_retrieval_database = KnowledgeRetrievalDatabase()
 _cohere_embedder: CohereEmbedder | None = None
 _translate_localizer: GoogleTranslateLocalizer | None = None
-
-
-def _get_llm_client() -> LLMClient:
-    global _llm_client
-    if _llm_client is None:
-        _llm_client = LLMClient()
-    return _llm_client
 
 
 def _get_cohere_embedder() -> CohereEmbedder:
@@ -57,6 +41,7 @@ def _get_translate_localizer() -> GoogleTranslateLocalizer:
     if _translate_localizer is None:
         _translate_localizer = GoogleTranslateLocalizer()
     return _translate_localizer
+
 
 def _history_to_llm_messages(rows: list[dict]) -> list[dict[str, str]]:
     messages: list[dict[str, str]] = []
@@ -73,73 +58,21 @@ def _history_to_llm_messages(rows: list[dict]) -> list[dict[str, str]]:
     return messages
 
 
-def _limit_llm_history(messages: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Keep the most recent turns (guest + airier); drop leading model msgs for Gemini."""
-    max_messages = MAX_CONVERSATION_TURNS * 2
-    if len(messages) > max_messages:
-        messages = messages[-max_messages:]
+def _ensure_history_starts_with_user(messages: list[dict[str, str]]) -> list[dict[str, str]]:
     while messages and messages[0]["role"] != "user":
         messages = messages[1:]
     return messages
 
 
-def _try_exact_answer_reply(text_id: str, *, conn=None) -> str | None:
-    guest_message = _text_database.get_text_content(text_id, conn=conn)
-    if not guest_message:
-        return None
-
-    property_id = _exact_answer_database.get_property_id_for_text(text_id, conn=conn)
-    if not property_id:
-        print("[generate_response] No property_id for text_id=%s; skipping exact-answer lookup" % (text_id,))
-        return None
-
+def _localize_exact_answer(guest_message: str, host_answer: str) -> str:
     try:
-        query_embedding = _get_cohere_embedder().embed_query(guest_message)
-    except ValueError as exc:
-        print("[generate_response] Cohere embed skipped: %s" % exc)
-        return None
+        return _get_translate_localizer().localize_answer(guest_message, host_answer)
     except Exception as exc:
-        print("[generate_response] Cohere embed error: %s" % exc)
-        return None
+        print("[generate_response] Google Translate failed, using stored answer: %s" % exc)
+        return host_answer
 
-    match = _exact_answer_database.find_best_match(property_id, query_embedding, conn=conn)
-    if not match:
-        print(
-            "[generate_response] No exact_answers with embeddings for property_id=%s"
-            % (property_id,)
-        )
-        return None
 
-    similarity = float(match.get("similarity") or 0)
-    print(
-        "[generate_response] Best exact_answer match id=%s similarity=%.4f question=%r"
-        % (match.get("id"), similarity, match.get("question")),
-    )
-
-    if similarity < EXACT_ANSWER_SIMILARITY_THRESHOLD:
-        print(
-            "[generate_response] Below threshold %.2f; using LLM"
-            % (EXACT_ANSWER_SIMILARITY_THRESHOLD,),
-        )
-        return None
-
-    answer = (match.get("answer") or "").strip()
-    if not answer:
-        return None
-
-    print("[generate_response] Using exact_answer id=%s" % (match.get("id"),))
-
-    try:
-        return _get_translate_localizer().localize_answer(guest_message, answer)
-    except Exception as exc:
-        print("[generate_response] Google Translate failed, using original answer: %s" % exc)
-        return answer
-
-def generate_response(text_id: str, *, conn=None) -> str:
-    exact_reply = _try_exact_answer_reply(text_id, conn=conn)
-    if exact_reply:
-        return exact_reply
-
+def _load_conversation_messages(text_id: str, *, conn=None) -> list[dict[str, str]]:
     conversation_id = _conversation_database.get_conversation_id_by_text_id(text_id, conn=conn)
     if not conversation_id:
         raise ServiceError("conversation not found for message", 404)
@@ -149,12 +82,98 @@ def generate_response(text_id: str, *, conn=None) -> str:
         limit=MAX_CONVERSATION_TURNS * 2,
         conn=conn,
     )
-    messages = _limit_llm_history(_history_to_llm_messages(history))
+    messages = _ensure_history_starts_with_user(_history_to_llm_messages(history))
     if not messages:
         raise ServiceError("no messages in conversation", 404)
+    return messages
+
+
+def _try_retrieval_reply(
+    guest_message: str,
+    property_id: str,
+    *,
+    messages: list[dict[str, str]],
+    conn=None,
+) -> str | None:
+    try:
+        query_embedding = _get_cohere_embedder().embed_query(guest_message)
+    except ValueError as exc:
+        print("[generate_response] Cohere embed skipped: %s" % exc)
+        return None
+    except Exception as exc:
+        print("[generate_response] Cohere embed error: %s" % exc)
+        return None
+
+    rows = _knowledge_retrieval_database.fetch_embedded_sources(property_id, conn=conn)
+    if not rows:
+        print("[generate_response] No embedded knowledge for property_id=%s" % (property_id,))
+        return None
+
+    ranked = rank_by_similarity(query_embedding, rows)
+    if not ranked:
+        print("[generate_response] No parseable embeddings for property_id=%s" % (property_id,))
+        return None
+
+    top_score, top_row = ranked[0]
+    print(
+        "[generate_response] Top match source=%s score=%.4f category=%r feature=%r"
+        % (
+            top_row.get("source"),
+            top_score,
+            top_row.get("category_name"),
+            top_row.get("feature_name"),
+        ),
+    )
+
+    if top_row.get("source") == "exact" and top_score >= EXACT_THRESHOLD:
+        answer = (top_row.get("payload") or "").strip()
+        if not answer:
+            return None
+        print("[generate_response] Using exact answer (score >= %.2f)" % (EXACT_THRESHOLD,))
+        return _localize_exact_answer(guest_message, answer)
+
+    if top_score >= KNOWLEDGE_THRESHOLD:
+        context = build_context(ranked)
+        if not context:
+            print("[generate_response] Knowledge threshold met but no feature/freeform context built")
+            return None
+        print(
+            "[generate_response] Using knowledge context (score >= %.2f)"
+            % (KNOWLEDGE_THRESHOLD,),
+        )
+        try:
+            client = LLMClient.for_property_knowledge(context)
+            return client.generate(messages=messages)
+        except Exception as exc:
+            print("[generate_response] Knowledge LLM failed: %s" % exc)
+            return None
+
+    print(
+        "[generate_response] Below knowledge threshold %.2f; using general LLM"
+        % (KNOWLEDGE_THRESHOLD,),
+    )
+    return None
+
+
+def generate_response(text_id: str, *, conn=None) -> str:
+    guest_message = _text_database.get_text_content(text_id, conn=conn)
+    if not guest_message:
+        raise ServiceError("no guest message for text", 404)
+
+    property_id = _knowledge_retrieval_database.get_property_id_for_text(text_id, conn=conn)
+    if not property_id:
+        raise ServiceError("property not found for message", 404)
+
+    messages = _load_conversation_messages(text_id, conn=conn)
+
+    retrieval_reply = _try_retrieval_reply(
+        guest_message, property_id, messages=messages, conn=conn
+    )
+    if retrieval_reply:
+        return retrieval_reply
 
     try:
-        return _get_llm_client().generate_reply(SYSTEM_PROMPT, messages)
+        return LLMClient.for_conversation().generate(messages=messages)
     except ServiceError:
         raise
     except Exception as exc:

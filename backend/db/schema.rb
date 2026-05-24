@@ -82,6 +82,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_08_180000) do
   create_table "public.knowledge_category_features", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.timestamptz "created_at", default: -> { "now()" }
     t.text "description"
+    t.vector "description_embedding", limit: 1024
     t.uuid "feature_id", null: false
     t.uuid "knowledge_category_id", null: false
     t.uuid "property_id", null: false
@@ -110,6 +111,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_08_180000) do
   create_table "public.property_knowledge_categories", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.timestamptz "created_at", default: -> { "now()" }
     t.text "description"
+    t.vector "description_embedding", limit: 1024
     t.uuid "knowledge_category_id", null: false
     t.uuid "property_id", null: false
 

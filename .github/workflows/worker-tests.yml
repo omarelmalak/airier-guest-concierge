@@ -1,0 +1,84 @@
+# Worker pytest: unit tests (no secrets) + integration tests (DB + Cohere).
+# Required repo secrets: COHERE_API_KEY, DATABASE_URL
+# Integration expects snapshot property b1b9e95e-b065-4434-a9bf-81101b04da9f with embeddings — see worker/tests/README.md
+name: Worker Tests
+
+on:
+  pull_request:
+    paths:
+      - "worker/**"
+      - ".github/workflows/worker-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "worker/**"
+      - ".github/workflows/worker-tests.yml"
+
+concurrency:
+  group: worker-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: worker
+
+jobs:
+  unit-tests:
+    name: unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: worker/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run pytest (exclude integration)
+        run: pytest tests/ -v -m "not integration"
+
+  integration-tests:
+    name: integration tests
+    runs-on: ubuntu-latest
+    # Fork PRs cannot use repository secrets; run on push and same-repo PRs only.
+    if: >
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check required secrets
+        run: |
+          missing=0
+          if [ -z "$COHERE_API_KEY" ]; then
+            echo "::error::Missing repository secret COHERE_API_KEY (Settings → Secrets and variables → Actions)"
+            missing=1
+          fi
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Missing repository secret DATABASE_URL"
+            missing=1
+          fi
+          exit "$missing"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: worker/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run integration pytest
+        run: pytest tests/test_property_retrieval_integration.py -v -m integration --no-retrieval-log
