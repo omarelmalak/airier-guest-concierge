@@ -72,7 +72,29 @@ def _localize_exact_answer(guest_message: str, host_answer: str) -> str:
         return host_answer
 
 
-def _try_retrieval_reply(guest_message: str, property_id: str, *, conn=None) -> str | None:
+def _load_conversation_messages(text_id: str, *, conn=None) -> list[dict[str, str]]:
+    conversation_id = _conversation_database.get_conversation_id_by_text_id(text_id, conn=conn)
+    if not conversation_id:
+        raise ServiceError("conversation not found for message", 404)
+
+    history = _text_database.get_conversation_history(
+        conversation_id,
+        limit=MAX_CONVERSATION_TURNS * 2,
+        conn=conn,
+    )
+    messages = _ensure_history_starts_with_user(_history_to_llm_messages(history))
+    if not messages:
+        raise ServiceError("no messages in conversation", 404)
+    return messages
+
+
+def _try_retrieval_reply(
+    guest_message: str,
+    property_id: str,
+    *,
+    messages: list[dict[str, str]],
+    conn=None,
+) -> str | None:
     try:
         query_embedding = _get_cohere_embedder().embed_query(guest_message)
     except ValueError as exc:
@@ -121,7 +143,7 @@ def _try_retrieval_reply(guest_message: str, property_id: str, *, conn=None) -> 
         )
         try:
             client = LLMClient.for_property_knowledge(context)
-            return client.generate(guest_query=guest_message)
+            return client.generate(messages=messages)
         except Exception as exc:
             print("[generate_response] Knowledge LLM failed: %s" % exc)
             return None
@@ -142,22 +164,13 @@ def generate_response(text_id: str, *, conn=None) -> str:
     if not property_id:
         raise ServiceError("property not found for message", 404)
 
-    retrieval_reply = _try_retrieval_reply(guest_message, property_id, conn=conn)
+    messages = _load_conversation_messages(text_id, conn=conn)
+
+    retrieval_reply = _try_retrieval_reply(
+        guest_message, property_id, messages=messages, conn=conn
+    )
     if retrieval_reply:
         return retrieval_reply
-
-    conversation_id = _conversation_database.get_conversation_id_by_text_id(text_id, conn=conn)
-    if not conversation_id:
-        raise ServiceError("conversation not found for message", 404)
-
-    history = _text_database.get_conversation_history(
-        conversation_id,
-        limit=MAX_CONVERSATION_TURNS * 2,
-        conn=conn,
-    )
-    messages = _ensure_history_starts_with_user(_history_to_llm_messages(history))
-    if not messages:
-        raise ServiceError("no messages in conversation", 404)
 
     try:
         return LLMClient.for_conversation().generate(messages=messages)

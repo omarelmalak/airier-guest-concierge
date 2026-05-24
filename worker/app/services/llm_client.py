@@ -25,7 +25,7 @@ Style:
 _KNOWLEDGE_CONTEXT_RULES = """
 Note: The property information below was retrieved automatically. It may be incomplete, partially relevant, or unrelated to the guest's latest message.
 
-Answer the guest's question directly, using ONLY the property information provided below. Ignore any bullets or sections that do not apply to their question.
+Answer the guest's latest message directly, using ONLY the property information provided below. Use prior turns in the conversation to interpret follow-ups or short questions. Ignore any bullets or sections that do not apply.
 If a feature is listed with no further details, tell the guest it exists but you do not have more information on it.
 If the information below does not answer their question, say so honestly and suggest they contact the host. Do not invent WiFi passwords, door codes, addresses, or policies.
 Be conversational and friendly; do not read the data back verbatim.
@@ -57,7 +57,7 @@ class LLMClient:
 
     @classmethod
     def for_property_knowledge(cls, context: str, **kwargs) -> Self:
-        """Single-turn reply grounded in retrieved property knowledge."""
+        """Reply grounded in retrieved property knowledge and conversation history."""
         context = (context or "").strip()
         if not context:
             raise ValueError("property knowledge context is required")
@@ -78,8 +78,18 @@ class LLMClient:
 
     def generate(self, *, messages: list[dict[str, str]] | None = None, guest_query: str | None = None) -> str:
         if self._property_context:
-            return self._generate_single_turn(guest_query)
+            return self._generate_with_knowledge(messages=messages, guest_query=guest_query)
         return self._generate_multi_turn(messages)
+
+    def _generate_with_knowledge(
+        self,
+        *,
+        messages: list[dict[str, str]] | None,
+        guest_query: str | None,
+    ) -> str:
+        if messages:
+            return self._generate_multi_turn(messages)
+        return self._generate_single_turn(guest_query)
 
     def _generate_multi_turn(self, messages: list[dict[str, str]] | None) -> str:
         if not messages:

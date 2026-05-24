@@ -185,7 +185,7 @@ def format_retrieval_report(
         lines.extend(
             [
                 "",
-                "Guest user turn sent with the above context:",
+                "LLM also receives capped conversation history (same as general path); latest user turn:",
                 f"  {outcome.guest_message!r}",
             ]
         )

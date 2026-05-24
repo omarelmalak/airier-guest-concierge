@@ -25,8 +25,8 @@ alwaysApply: true
 Instantiate with intent; prompts are built inside the client:
 
 ```python
-# Retrieved knowledge context (single-turn)
-LLMClient.for_property_knowledge(context).generate(guest_query=guest_message)
+# Retrieved knowledge context + capped conversation history (multi-turn)
+LLMClient.for_property_knowledge(context).generate(messages=messages)
 
 # Conversation fallback (multi-turn, capped history)
 LLMClient.for_conversation().generate(messages=messages)
