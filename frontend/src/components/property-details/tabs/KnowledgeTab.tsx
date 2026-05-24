@@ -11,11 +11,10 @@ import { defaultAmenities, defaultWhereIsItems, defaultRecommendations, defaultR
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPropertyKnowledge, mapPropertyKnowledgeToAddPropertyShape, savePropertyKnowledge, buildPropertyKnowledgePayload } from "@/lib/services/knowledge";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const KnowledgeTab = ({ propertyId }: { propertyId: string }) => {
     const queryClient = useQueryClient();
-    const { toast } = useToast();
     const { data: knowledgeData, isLoading, error } = useQuery({
         queryKey: ['property-knowledge', propertyId],
         queryFn: () => getPropertyKnowledge(propertyId),
@@ -62,9 +61,9 @@ const KnowledgeTab = ({ propertyId }: { propertyId: string }) => {
                 })
             );
             await queryClient.invalidateQueries({ queryKey: ['property-knowledge', propertyId] });
-            toast({ title: 'Knowledge saved.', variant: 'default' });
+            toast.success("Changes saved successfully");
         } catch (e) {
-            toast({ title: 'Failed to save knowledge.', variant: 'destructive' });
+            toast.error(e instanceof Error ? e.message : "Failed to save changes");
         } finally {
             setIsSaving(false);
         }

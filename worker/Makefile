@@ -3,7 +3,7 @@ VENV_DIR := .venv
 VENV_PY := $(VENV_DIR)/bin/python
 
 # NGROK_DOMAIN from env (e.g. Doppler)
-.PHONY: venv install run-flask run-celery run-beat run-ngrok dev simulate-sms
+.PHONY: venv install test test-integration run-flask run-celery run-beat run-ngrok dev simulate-sms
 
 venv:
 	$(PYTHON) -m venv $(VENV_DIR)
@@ -13,6 +13,17 @@ install:
 	test -x $(VENV_PY) || $(PYTHON) -m venv $(VENV_DIR)
 	$(VENV_PY) -m pip install --upgrade pip
 	$(VENV_PY) -m pip install -r requirements.txt
+
+install-dev: install
+	$(VENV_PY) -m pip install -r requirements-dev.txt
+
+test:
+	test -x $(VENV_PY) || $(MAKE) install-dev
+	$(VENV_PY) -m pytest tests/ -v -m "not integration"
+
+test-integration:
+	test -x $(VENV_PY) || $(MAKE) install-dev
+	doppler run -- $(VENV_PY) -m pytest tests/test_property_retrieval_integration.py -v -m integration -s
 
 run-flask:
 	test -x $(VENV_PY) || $(MAKE) install

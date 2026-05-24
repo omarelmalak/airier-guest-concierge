@@ -1,0 +1,63 @@
+---
+description: Airier guest-concierge architecture and coding patterns
+alwaysApply: true
+---
+
+# Airier conventions
+
+## Monorepo layout
+
+- `backend/` — Rails 8 API (properties, knowledge, exact answers, auth)
+- `worker/` — Python Flask + Celery (inbound SMS, reasoning, Twilio)
+- `frontend/` — React + Vite (host dashboard)
+
+## Worker: orchestration vs services
+
+- **`reasoner.py`** — orchestrates flow only (retrieve → rank → route). No prompts, no raw Gemini calls.
+- **`llm_client.py`** — all Gemini prompts and API calls. Single source of truth for system instructions.
+- **`database/*.py`** — SQL only; extend `Database` base with `ensure_connection(conn=)`.
+- **`cohere_embedder.py`** — guest queries (`search_query`).
+- **`knowledge_ranker.py`** — numpy/sklearn cosine similarity + `build_context()`.
+- **`google_translate_localizer.py`** — exact-answer replies only (detect + translate host text).
+
+### LLM client pattern
+
+Instantiate with intent; prompts are built inside the client:
+
+```python
+# Retrieved knowledge context (single-turn)
+LLMClient.for_property_knowledge(context).generate(guest_query=guest_message)
+
+# Conversation fallback (multi-turn, capped history)
+LLMClient.for_conversation().generate(messages=messages)
+```
+
+Do not duplicate system prompts elsewhere. Do not pass `system_prompt` strings from callers.
+
+## Retrieval pipeline (worker)
+
+1. Embed guest message (Cohere `search_query`).
+2. One `UNION ALL` SQL fetch (`knowledge_retrieval.py`) — exact, feature, freeform sources.
+3. Rank in Python (`rank_by_similarity`).
+4. **≥ 0.5 exact** → verbatim answer + Google Translate.
+5. **≥ 0.45 knowledge** → `LLMClient.for_property_knowledge` (context may include up to 4 feature/freeform rows ≥ 0.40; prompt tells model to ignore irrelevant chunks).
+6. Else → `LLMClient.for_conversation()` with last 5 turns (10 messages).
+
+## Backend (Rails)
+
+- **Embeddings on save** — `CohereDocumentEmbedder` + `EmbedsDescription` concern (`before_validation`).
+- **Composite embed text** — feature: `"#{name}: #{description}"` (description optional → name only); PKC: `"#{category} additional info: #{description}"` (no description → `description_embedding` null).
+- **pgvector** — `Types::Vector` on models; `config/initializers/pgvector.rb` for adapter registration.
+- **Knowledge API** — upsert features (`find_or_initialize_by` + `update!`), not destroy-all/recreate; PUT from frontend.
+- **Exact answers** — embed on `question` change via model callback; API does not expose embeddings.
+
+## Frontend
+
+- API via `frontend/src/lib/services/*.ts` and `api.get/post/patch`.
+- Toasts: **`sonner`** (`toast.success` / `toast.error`), not shadcn `useToast` (App mounts Sonner only).
+- Property knowledge save: `savePropertyKnowledge` → PUT full payload.
+
+## General
+
+- Minimize scope; match existing naming and patterns.
+- Env via Doppler: `COHERE_API_KEY`, `GEMINI_API_KEY`, `GOOGLE_TRANSLATE_API_KEY`, `DATABASE_URL` (worker + backend).

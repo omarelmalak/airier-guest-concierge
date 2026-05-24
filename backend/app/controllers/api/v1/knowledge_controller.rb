@@ -35,32 +35,39 @@ module Api
               knowledge_category_id: cat.id
             )
             pkc.update!(description: description)
-
-            KnowledgeCategoryFeature.where(
-              property_id: property.id,
-              knowledge_category_id: cat.id
-            ).destroy_all
-
-            items.each do |item|
-              name = item["name"].to_s
-              next if name.blank?
-              feature = Feature.find_or_create_by!(name: name)
-              KnowledgeCategoryFeature.create!(
-                property_id: property.id,
-                knowledge_category_id: cat.id,
-                feature_id: feature.id,
-                description: item["description"].to_s
-              )
-            end
+            sync_category_features(property, cat, items)
           end
         end
 
         render json: format_property_knowledge(property)
+      rescue ActiveRecord::RecordInvalid => e
+        render json: { error: e.record.errors.full_messages.join(", ") }, status: :unprocessable_entity
       end
 
       private
 
       KNOWLEDGE_CATEGORY_KEYS = %w[Amenities WhereIs Recommendations Rules].freeze
+
+      def sync_category_features(property, category, items)
+        scope = KnowledgeCategoryFeature.where(
+          property_id: property.id,
+          knowledge_category_id: category.id
+        )
+        kept_feature_ids = []
+
+        items.each do |item|
+          name = item["name"].to_s
+          next if name.blank?
+
+          feature = Feature.find_or_create_by!(name: name)
+          kept_feature_ids << feature.id
+
+          kcf = scope.find_or_initialize_by(feature_id: feature.id)
+          kcf.update!(description: item["description"].to_s)
+        end
+
+        scope.where.not(feature_id: kept_feature_ids).destroy_all
+      end
 
       def format_property_knowledge(property)
         pkcs = PropertyKnowledgeCategory
