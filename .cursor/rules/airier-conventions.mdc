@@ -13,35 +13,72 @@ alwaysApply: true
 
 ## Worker: orchestration vs services
 
-- **`reasoner.py`** — orchestrates flow only (retrieve → rank → route). No prompts, no raw Gemini calls.
+- **`reasoner.py`** — orchestrates flow only (retrieve → rank → route). Loads capped conversation history once per `generate_response`. No prompts, no raw Gemini calls.
 - **`llm_client.py`** — all Gemini prompts and API calls. Single source of truth for system instructions.
-- **`database/*.py`** — SQL only; extend `Database` base with `ensure_connection(conn=)`.
-- **`cohere_embedder.py`** — guest queries (`search_query`).
-- **`knowledge_ranker.py`** — numpy/sklearn cosine similarity + `build_context()`.
-- **`google_translate_localizer.py`** — exact-answer replies only (detect + translate host text).
+- **`database/knowledge_retrieval.py`** — one `UNION ALL` for exact + feature + freeform embeddings.
+- **`cohere_embedder.py`** — guest SMS only (`search_query`).
+- **`knowledge_ranker.py`** — cosine ranking + `build_context()`; threshold constants live here.
+- **`google_translate_localizer.py`** — exact-answer path only (detect + translate stored host text).
 
 ### LLM client pattern
 
 Instantiate with intent; prompts are built inside the client:
 
 ```python
-# Retrieved knowledge context + capped conversation history (multi-turn)
+# Knowledge path: property block in system instruction + same capped history as general
 LLMClient.for_property_knowledge(context).generate(messages=messages)
 
-# Conversation fallback (multi-turn, capped history)
+# General fallback: history only (no retrieved property block)
 LLMClient.for_conversation().generate(messages=messages)
 ```
 
 Do not duplicate system prompts elsewhere. Do not pass `system_prompt` strings from callers.
 
+Knowledge prompt structure: base concierge rules + disclaimer that retrieved text may be irrelevant + **answer latest message using only applicable property info** (ignore irrelevant bullets; no verbatim dump).
+
+### Conversation history
+
+- Cap: **`MAX_CONVERSATION_TURNS = 5`** → up to 10 DB rows (`guest`/`airier`), oldest-first from `TextDatabase.get_conversation_history`.
+- Trim leading non-`user` rows (`_ensure_history_starts_with_user`) after load.
+- **Exact path:** no LLM, no history.
+- **Knowledge + general paths:** both receive `messages` (includes current guest SMS — stored before `generate_response` runs).
+
 ## Retrieval pipeline (worker)
 
 1. Embed guest message (Cohere `search_query`).
-2. One `UNION ALL` SQL fetch (`knowledge_retrieval.py`) — exact, feature, freeform sources.
+2. Fetch all embedded sources for property (`knowledge_retrieval.py`).
 3. Rank in Python (`rank_by_similarity`).
-4. **≥ 0.5 exact** → verbatim answer + Google Translate.
-5. **≥ 0.45 knowledge** → `LLMClient.for_property_knowledge` (context may include up to 4 feature/freeform rows ≥ 0.40; prompt tells model to ignore irrelevant chunks).
-6. Else → `LLMClient.for_conversation()` with last 5 turns (10 messages).
+4. Route on **top hit** + thresholds in `knowledge_ranker.py`:
+
+| Path | Condition | Reply |
+|------|-----------|--------|
+| **Exact** | `source == exact` and score ≥ `EXACT_THRESHOLD` (0.5) | Stored **answer** (`payload`), not LLM; optional Google Translate |
+| **Knowledge** | top score ≥ `KNOWLEDGE_THRESHOLD` (0.45) and `build_context()` non-empty | Gemini + property context + history |
+| **General** | else | Gemini + history only |
+
+### Thresholds (do not confuse)
+
+- **`EXACT_THRESHOLD` (0.5)** — routing only; compares guest query embedding to **`question_embedding`** (host question at save time). Answer text is **not** embedded; exposed as `payload` / `exact_question` in SQL for logs.
+- **`KNOWLEDGE_THRESHOLD` (0.45)** — minimum **top** score to use knowledge LLM path.
+- **`KNOWLEDGE_CONTEXT_INCLUSION_THRESHOLD` (0.40)** — minimum score for feature/freeform rows included in the LLM property block (up to **`KNOWLEDGE_CONTEXT_TOP_N` = 4**). Weaker than routing: extra context, prompt filters irrelevance.
+
+### Exact vs feature vs freeform (SQL)
+
+- **exact** — `question_embedding` for search; `answer` as `payload`; `question` as `exact_question` (for debugging).
+- **feature** — `knowledge_category_features.description_embedding`; composite embed on save in Rails.
+- **freeform** — `property_knowledge_categories.description_embedding` (category-level blurb).
+
+## Worker tests (`worker/tests/`)
+
+| Suite | Command | What it proves |
+|-------|---------|----------------|
+| **Unit** | `make test` / `pytest -m "not integration"` | `parse_embedding`, `rank_by_similarity`, `build_context` formatting with fake vectors — no DB/Cohere/LLM |
+| **Integration** | `make test-integration` | Live Cohere + DB for property `b1b9e95e-b065-4434-a9bf-81101b04da9f`; cases in `fixtures/sample_apartment.py` assert **production route** (exact/knowledge/general), top match, and context/payload snippets — **not** Gemini output |
+
+- Helpers: `tests/helpers/retrieval.py` (`evaluate_retrieval`, `format_retrieval_report`) mirrors reasoner routing; does not load SMS history.
+- Integration tests must **fail** if the right row ranks #1 but thresholds block the expected path (no `ranking_only` waivers).
+- General/out-of-domain cases: assert `route=general` and top score below `KNOWLEDGE_THRESHOLD` only — not which row is #1.
+- CI: `.github/workflows/worker-tests.yml` — unit always; integration needs repo secrets `COHERE_API_KEY`, `DATABASE_URL` (same DB as Doppler with embeddings populated).
 
 ## Backend (Rails)
 
@@ -49,7 +86,7 @@ Do not duplicate system prompts elsewhere. Do not pass `system_prompt` strings f
 - **Composite embed text** — feature: `"#{name}: #{description}"` (description optional → name only); PKC: `"#{category} additional info: #{description}"` (no description → `description_embedding` null).
 - **pgvector** — `Types::Vector` on models; `config/initializers/pgvector.rb` for adapter registration.
 - **Knowledge API** — upsert features (`find_or_initialize_by` + `update!`), not destroy-all/recreate; PUT from frontend.
-- **Exact answers** — embed on `question` change via model callback; API does not expose embeddings.
+- **Exact answers** — `CohereQuestionEmbedder` → `question_embedding` on `question` change; API does not expose embeddings.
 
 ## Frontend
 
