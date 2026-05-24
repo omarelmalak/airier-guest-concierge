@@ -9,12 +9,6 @@ on:
       - edited
       - synchronize
       - reopened
-  pull_request_target:
-    types:
-      - opened
-      - edited
-      - synchronize
-      - reopened
 
 permissions:
   pull-requests: read
