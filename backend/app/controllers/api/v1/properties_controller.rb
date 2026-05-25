@@ -2,6 +2,17 @@ module Api
   module V1
     class PropertiesController < ApplicationController
 
+            # POST /api/v1/properties/import (IMPORT FROM AIRBNB LINK)
+            def import
+                host = Host.find_by!(auth_user_id: @auth_user_id)
+                link = params.require(:link).to_s.strip
+
+                property = Airbnb::PropertyImporter.new(host: host).import_from_link!(link)
+                render json: post_format_property(property), status: :created
+            rescue Airbnb::ListingFetcher::UnsupportedListingError, Airbnb::PropertyImporter::Error => e
+                render json: { error: e.message }, status: :unprocessable_entity
+            end
+
             # POST /api/v1/properties (CREATE PROPERTY)
             def create
                 host = Host.find_by!(auth_user_id: @auth_user_id)

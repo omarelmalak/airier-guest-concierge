@@ -52,6 +52,10 @@ export const createProperty = async (property: PropertyInfo): Promise<CreateProp
     return response;
 }
 
+export const importPropertyFromLink = async (link: string): Promise<CreatePropertyResponse> => {
+    return api.post<CreatePropertyResponse>('/properties/import', { link });
+};
+
 export const getProperties = async (): Promise<GetPropertiesResponse[]> => {
     const response = await api.get<GetPropertiesResponse[]>('/properties');
     return response;

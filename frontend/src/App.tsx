@@ -8,6 +8,7 @@ import Properties from "./pages/Properties";
 import PropertyDetails from "./pages/PropertyDetails";
 import Settings from "./pages/Settings";
 import AddProperty from "./pages/AddProperty";
+import AddPropertyChoice from "./pages/AddPropertyChoice";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,7 +22,8 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/properties" element={<Properties />} />
           <Route path="/properties/:id" element={<PropertyDetails />} />
-          <Route path="/add-property" element={<AddProperty />} />
+          <Route path="/add-property" element={<AddPropertyChoice />} />
+          <Route path="/add-property/manual" element={<AddProperty />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
