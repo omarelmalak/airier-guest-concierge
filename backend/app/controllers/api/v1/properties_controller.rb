@@ -72,6 +72,15 @@ module Api
                 render json: detail_format_property(property, ai_active_count, subscription_end, current_guests)
             end
 
+            # DELETE /api/v1/properties/:id (DELETE PROPERTY)
+            def destroy
+                host = Host.find_by!(auth_user_id: @auth_user_id)
+                property = Property.find_by!(id: params[:id], host_id: host.id)
+
+                property.destroy!
+                render json: { message: "Property deleted successfully" }
+            end
+
             # PATCH /api/v1/properties/:id (UPDATE PROPERTY)
             def update
                 host = Host.find_by!(auth_user_id: @auth_user_id)

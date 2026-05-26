@@ -66,6 +66,10 @@ export const getPropertyDetails = async (propertyId: string): Promise<GetPropert
     return response;
 }
 
+export const deleteProperty = async (propertyId: string): Promise<void> => {
+    await api.delete<void>(`/properties/${propertyId}`);
+};
+
 export const updateProperty = async (
     propertyId: string,
     payload: UpdatePropertyInfo
