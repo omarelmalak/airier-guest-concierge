@@ -43,7 +43,7 @@ const AddPropertyChoice = () => {
 
         messageIntervalRef.current = setInterval(() => {
             setMessageIndex((i) => Math.min(i + 1, loadingMessages.length - 1));
-        }, 1100);
+        }, 3300);
 
         try {
             const property = await importPropertyFromLink(trimmed);

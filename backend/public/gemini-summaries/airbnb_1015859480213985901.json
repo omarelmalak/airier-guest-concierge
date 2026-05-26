@@ -15,12 +15,12 @@
     {
       "feature_id": "13c756d7-0ccd-4814-9dff-f406582a3d81",
       "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
-      "description": "Complimentary Wi-Fi is available."
+      "description": "Complimentary Wi-Fi is available throughout the property."
     },
     {
       "feature_id": "da349037-78c5-4b25-8414-dc379be69ade",
       "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
-      "description": "Air conditioning is available."
+      "description": "Air conditioning is provided in the room."
     },
     {
       "feature_id": "21c045e5-e30b-4164-b872-338d38d42145",
@@ -30,12 +30,12 @@
     {
       "feature_id": "4882fda6-d956-4877-8967-8ceae7204f0c",
       "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
-      "description": "Towels, bed sheets, soap, and toilet paper are provided."
+      "description": "Essentials including towels, bed sheets, soap, and toilet paper are provided."
     },
     {
       "feature_id": "fae5e323-bba0-4922-b06c-f8d42b07ad61",
       "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
-      "description": "55-inch HDTV with HBO Max and premium cable is available in the room."
+      "description": "Equipped with a high-definition 55-inch TV with HBO Max and premium cable."
     },
     {
       "feature_id": "409d362e-02f0-4f13-b206-2f9b6dfff5fe",
@@ -45,22 +45,22 @@
     {
       "feature_id": "3dbf7e12-f749-453b-b70c-93d7c740edaa",
       "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
-      "description": "Shared fitness center is open 24/7 on the property."
+      "description": "Access to a shared fitness center in the building, open 24/7."
     },
     {
       "feature_id": "f5ccbead-bbc4-45e8-ba4d-a77f04245049",
       "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
-      "description": "Dedicated workspace is available."
+      "description": "A dedicated workspace is available."
     },
     {
       "feature_id": "0a49bbf4-3f23-4a9d-8f4d-6ca408019b87",
       "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
-      "description": "First aid kit is available on site."
+      "description": "A first aid kit is available on site."
     },
     {
       "feature_id": "efdd03ec-72e2-473f-b643-7fc0023b936d",
       "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
-      "description": "Fire extinguisher is available on site."
+      "description": "A fire extinguisher is available on site."
     },
     {
       "feature_id": "97c0a7c8-b940-466f-9f4e-8189de36bbb9",
@@ -70,7 +70,7 @@
     {
       "feature_id": "70a1bfb9-708d-4fc8-94ba-0da9a6a58738",
       "knowledge_category_id": "150b8197-09d2-439d-977e-28fc0731cdcc",
-      "description": "Pets are welcome with an additional charge of $75.00. Up to 2 dogs or cats allowed, max 35 lbs each."
+      "description": "Pets are welcome for an additional charge of $75.00. Up to 2 dogs or cats are allowed, with a maximum weight of 35 lbs each."
     },
     {
       "feature_id": "1ab5ccbc-555d-4855-be7a-ad7a4fe36e3e",
@@ -80,17 +80,22 @@
     {
       "feature_id": "91c310bd-c895-4694-a418-9da1ae02fa57",
       "knowledge_category_id": "63b672d2-375d-4c3f-982e-a2f61f8c8bdb",
-      "description": "Uber or Lyft are recommended for getting around. Fort Lauderdale-Hollywood International Airport is 1.5 miles away. Free shuttle service is available upon request."
+      "description": "Uber or Lyft are recommended for getting around. Car rentals are also an option. Fort Lauderdale-Hollywood International Airport is 1.5 miles away, and a free shuttle service is available upon request."
+    },
+    {
+      "feature_id": "8011056b-bd88-41e6-9d60-ce83b2cc991e",
+      "knowledge_category_id": "63b672d2-375d-4c3f-982e-a2f61f8c8bdb",
+      "description": "Free daily breakfast is provided on site."
     }
   ],
   "property_knowledge_categories": [
     {
       "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
-      "description": "Free daily breakfast and complimentary toiletries are provided. Cleaning services are included in the nightly price. Please note that a kitchen and washer are not available."
+      "description": "Complimentary toiletries and daily cleaning services are included. Please note that a kitchen, washer, and private entrance are not available."
     },
     {
       "knowledge_category_id": "150b8197-09d2-439d-977e-28fc0731cdcc",
-      "description": "Minimum age required for check-in is 21 years old with a mandatory valid ID. A valid credit or debit card is required for a refundable security deposit. Smoking in the room is strictly prohibited and subject to a penalty fee. Early check-out is charged for all remaining nights. Late check-out until 4 PM is charged a half-day rate, and a full-day rate after 4 PM. Receiving packages/parcels is subject to an additional daily charge."
+      "description": "The minimum age for check-in is 21 years old, and a valid ID is mandatory. A valid credit or debit card is required for a refundable security deposit and any offline fees. Early check-out is charged for all remaining nights. Late check-out incurs a half-day rate until 4 PM and a full-day rate after 4 PM. Receiving packages/parcels is subject to an additional daily charge. Smoking in the room is strictly prohibited and subject to a penalty fee."
     }
   ]
 }
