@@ -1,0 +1,101 @@
+{
+  "property": {
+    "name": "Great Pick! Parking, Free Daily Breakfast!",
+    "property_type": "Apartment",
+    "ownership_level": "Private room",
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "address": "Dania Beach, Florida, United States",
+    "photo": "https://a0.muscache.com/im/pictures/hosting/Hosting-1015859480213985901/original/d43a7aa7-4459-45ba-921c-b6528fcd25e9.jpeg",
+    "checkin_time": "15:00",
+    "checkout_time": "11:00",
+    "timezone": "America/New_York"
+  },
+  "knowledge_category_features": [
+    {
+      "feature_id": "13c756d7-0ccd-4814-9dff-f406582a3d81",
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "Complimentary Wi-Fi is available throughout the property."
+    },
+    {
+      "feature_id": "da349037-78c5-4b25-8414-dc379be69ade",
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "Air conditioning is provided in the room."
+    },
+    {
+      "feature_id": "21c045e5-e30b-4164-b872-338d38d42145",
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "Extra pillows and blankets are provided."
+    },
+    {
+      "feature_id": "4882fda6-d956-4877-8967-8ceae7204f0c",
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "Essentials including towels, bed sheets, soap, and toilet paper are provided."
+    },
+    {
+      "feature_id": "fae5e323-bba0-4922-b06c-f8d42b07ad61",
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "Equipped with a high-definition 55-inch TV with HBO Max and premium cable."
+    },
+    {
+      "feature_id": "409d362e-02f0-4f13-b206-2f9b6dfff5fe",
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "Paid valet parking is available for 1 space at $12 per day."
+    },
+    {
+      "feature_id": "3dbf7e12-f749-453b-b70c-93d7c740edaa",
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "Access to a shared fitness center in the building, open 24/7."
+    },
+    {
+      "feature_id": "f5ccbead-bbc4-45e8-ba4d-a77f04245049",
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "A dedicated workspace is available."
+    },
+    {
+      "feature_id": "0a49bbf4-3f23-4a9d-8f4d-6ca408019b87",
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "A first aid kit is available on site."
+    },
+    {
+      "feature_id": "efdd03ec-72e2-473f-b643-7fc0023b936d",
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "A fire extinguisher is available on site."
+    },
+    {
+      "feature_id": "97c0a7c8-b940-466f-9f4e-8189de36bbb9",
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "Heating is available."
+    },
+    {
+      "feature_id": "70a1bfb9-708d-4fc8-94ba-0da9a6a58738",
+      "knowledge_category_id": "150b8197-09d2-439d-977e-28fc0731cdcc",
+      "description": "Pets are welcome for an additional charge of $75.00. Up to 2 dogs or cats are allowed, with a maximum weight of 35 lbs each."
+    },
+    {
+      "feature_id": "1ab5ccbc-555d-4855-be7a-ad7a4fe36e3e",
+      "knowledge_category_id": "63b672d2-375d-4c3f-982e-a2f61f8c8bdb",
+      "description": "Nearby attractions include Frost Park (0.3 mi), Cozy Cove Marina (0.4 mi), Gallery of Amazing Things (0.6 mi), IGFA Fishing Hall of Fame Museum (0.8 mi), Harbour Towne Marina (0.9 mi), Sheridan Square Shopping Center (1.3 mi), Tigertail Lake Park (1.5 mi), Museum of Art Fort Lauderdale (4.6 mi), Port Everglades Cruise Terminal (4.9 mi), and Bonnet House Museum and Gardens (6.2 mi)."
+    },
+    {
+      "feature_id": "91c310bd-c895-4694-a418-9da1ae02fa57",
+      "knowledge_category_id": "63b672d2-375d-4c3f-982e-a2f61f8c8bdb",
+      "description": "Uber or Lyft are recommended for getting around. Car rentals are also an option. Fort Lauderdale-Hollywood International Airport is 1.5 miles away, and a free shuttle service is available upon request."
+    },
+    {
+      "feature_id": "8011056b-bd88-41e6-9d60-ce83b2cc991e",
+      "knowledge_category_id": "63b672d2-375d-4c3f-982e-a2f61f8c8bdb",
+      "description": "Free daily breakfast is provided on site."
+    }
+  ],
+  "property_knowledge_categories": [
+    {
+      "knowledge_category_id": "075ff937-13ac-4784-af16-a77222fd153b",
+      "description": "Complimentary toiletries and daily cleaning services are included. Please note that a kitchen, washer, and private entrance are not available."
+    },
+    {
+      "knowledge_category_id": "150b8197-09d2-439d-977e-28fc0731cdcc",
+      "description": "The minimum age for check-in is 21 years old, and a valid ID is mandatory. A valid credit or debit card is required for a refundable security deposit and any offline fees. Early check-out is charged for all remaining nights. Late check-out incurs a half-day rate until 4 PM and a full-day rate after 4 PM. Receiving packages/parcels is subject to an additional daily charge. Smoking in the room is strictly prohibited and subject to a penalty fee."
+    }
+  ]
+}

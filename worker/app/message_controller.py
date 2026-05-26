@@ -15,10 +15,20 @@ class MessageController:
         self.conversation_database = ConversationDatabase()
         self.database = Database()
         
-    def receive_sms(self, from_: str, body: str, provider_sid: str, received_at: datetime):
+    def receive_sms(
+        self,
+        from_: str,
+        body: str,
+        provider_sid: str,
+        received_at: datetime,
+        *,
+        property_id: str | None = None,
+    ):
         with self.database.get_conn() as conn:
             conn.autocommit = False
-            incoming_text_id = process_incoming_message(from_, body, provider_sid, received_at, conn=conn)
+            incoming_text_id = process_incoming_message(
+                from_, body, provider_sid, received_at, property_id=property_id, conn=conn
+            )
 
             response = generate_response(incoming_text_id, conn=conn)
 

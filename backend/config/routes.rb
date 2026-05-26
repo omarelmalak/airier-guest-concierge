@@ -18,7 +18,8 @@ Rails.application.routes.draw do
 
       resources :guests, only: [:index, :show, :create, :update, :destroy]
 
-      resources :properties, only: [:create, :index, :show, :update] do
+      resources :properties, only: [:create, :index, :show, :update, :destroy] do
+        post :import, on: :collection
         resource :knowledge, only: [:show, :update], controller: "knowledge"
         resources :exact_answers, only: [:index, :create, :update, :destroy]
         resources :reservations, only: [:index, :create, :update, :destroy]

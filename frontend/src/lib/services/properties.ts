@@ -52,6 +52,10 @@ export const createProperty = async (property: PropertyInfo): Promise<CreateProp
     return response;
 }
 
+export const importPropertyFromLink = async (link: string): Promise<CreatePropertyResponse> => {
+    return api.post<CreatePropertyResponse>('/properties/import', { link });
+};
+
 export const getProperties = async (): Promise<GetPropertiesResponse[]> => {
     const response = await api.get<GetPropertiesResponse[]>('/properties');
     return response;
@@ -61,6 +65,10 @@ export const getPropertyDetails = async (propertyId: string): Promise<GetPropert
     const response = await api.get<GetPropertyDetailsResponse>(`/properties/${propertyId}`);
     return response;
 }
+
+export const deleteProperty = async (propertyId: string): Promise<void> => {
+    await api.delete<void>(`/properties/${propertyId}`);
+};
 
 export const updateProperty = async (
     propertyId: string,

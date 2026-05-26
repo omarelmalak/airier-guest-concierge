@@ -55,3 +55,4 @@ group :development, :test do
 end
 
 gem "cohere-ruby", "~> 1.0"
+gem "timezone_finder", "~> 1.5"

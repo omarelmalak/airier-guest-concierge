@@ -2,6 +2,17 @@ module Api
   module V1
     class PropertiesController < ApplicationController
 
+            # POST /api/v1/properties/import (IMPORT FROM AIRBNB LINK)
+            def import
+                host = Host.find_by!(auth_user_id: @auth_user_id)
+                link = params.require(:link).to_s.strip
+
+                property = Airbnb::PropertyImporter.new(host: host).import_from_link!(link)
+                render json: post_format_property(property), status: :created
+            rescue Airbnb::ListingFetcher::UnsupportedListingError, Airbnb::PropertyImporter::Error => e
+                render json: { error: e.message }, status: :unprocessable_entity
+            end
+
             # POST /api/v1/properties (CREATE PROPERTY)
             def create
                 host = Host.find_by!(auth_user_id: @auth_user_id)
@@ -59,6 +70,15 @@ module Api
 
                 subscription_end = Subscription.where(property_id: property.id).where(cancelled_at: nil).pick(:current_period_end)
                 render json: detail_format_property(property, ai_active_count, subscription_end, current_guests)
+            end
+
+            # DELETE /api/v1/properties/:id (DELETE PROPERTY)
+            def destroy
+                host = Host.find_by!(auth_user_id: @auth_user_id)
+                property = Property.find_by!(id: params[:id], host_id: host.id)
+
+                property.destroy!
+                render json: { message: "Property deleted successfully" }
             end
 
             # PATCH /api/v1/properties/:id (UPDATE PROPERTY)
