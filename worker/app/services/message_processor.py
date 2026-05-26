@@ -10,9 +10,14 @@ conversation_database = ConversationDatabase()
 text_database = TextDatabase()
 
 
-def process_incoming_message(from_, body, provider_sid, received_at, *, conn=None):
+def process_incoming_message(
+    from_, body, provider_sid, received_at, *, property_id: str | None = None, conn=None
+):
     """Returns the new guest text_id on success. Raises ServiceError on validation/not-found."""
-    print("[process_incoming_message] From=%r Body=%r MessageSid=%r" % (from_, body, provider_sid))
+    print(
+        "[process_incoming_message] From=%r Body=%r MessageSid=%r property_id=%r"
+        % (from_, body, provider_sid, property_id)
+    )
 
     if not from_:
         print("[process_incoming_message] Reject: missing From")
@@ -21,9 +26,14 @@ def process_incoming_message(from_, body, provider_sid, received_at, *, conn=Non
         print("[process_incoming_message] Reject: missing Body")
         raise ServiceError("body is required", 422)
 
-    reservation = reservation_database.get_active_reservation_by_phone(from_, conn=conn)
+    reservation = reservation_database.get_active_reservation_by_phone(
+        from_, property_id=property_id, conn=conn
+    )
     if not reservation:
-        print("[process_incoming_message] No reservation with AI active for phone=%r" % (from_,))
+        print(
+            "[process_incoming_message] No reservation with AI active for phone=%r property_id=%r"
+            % (from_, property_id)
+        )
         raise ServiceError("no active reservation for this guest", 404)
 
     conversation_id = reservation.get("conversation_id")

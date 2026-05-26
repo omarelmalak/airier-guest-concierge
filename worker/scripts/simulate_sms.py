@@ -4,11 +4,11 @@ Simulate receive_sms without sending real SMS. Uses the same MessageController f
 Twilio is mocked so no credits are used. Run from worker dir with env (e.g. doppler run).
 
 Usage (from worker/):
-  doppler run -- python scripts/simulate_sms.py +15551234567 "What's the WiFi password?"
-  doppler run -- python scripts/simulate_sms.py +15551234567 --interactive   # multi-turn in terminal
+  doppler run -- python scripts/simulate_sms.py PROPERTY_ID +15551234567 "What's the WiFi password?"
+  doppler run -- python scripts/simulate_sms.py PROPERTY_ID +15551234567 --interactive
 
-Or: make simulate-sms phone=+15551234567 body="What's the WiFi?"
-    make simulate-sms phone=+15551234567 interactive=1
+Or: make simulate-sms property_id=b1b9e95e-... phone="+19056096644" body="What's the WiFi?"
+    make simulate-sms property_id=b1b9e95e-... phone="+19056096644" interactive=1
 """
 
 import argparse
@@ -66,8 +66,12 @@ def main():
         description="Simulate guest SMS flow without sending real SMS (Twilio is mocked)."
     )
     parser.add_argument(
+        "property_id",
+        help="Property UUID (disambiguates when this phone has active reservations on multiple properties)",
+    )
+    parser.add_argument(
         "phone",
-        help="Guest phone number (E.164, must have an active reservation in DB)",
+        help="Guest phone number (E.164, must have an active reservation for this property)",
     )
     parser.add_argument(
         "body",
@@ -83,6 +87,9 @@ def main():
     )
     args = parser.parse_args()
 
+    property_id = args.property_id.strip()
+    if not property_id:
+        parser.error("property_id is required")
     phone = args.phone.strip()
     if not phone:
         parser.error("phone is required")
@@ -99,7 +106,10 @@ def main():
         controller = MessageController()
 
         if args.interactive:
-            print("Simulating conversation for %s (type 'quit' or 'exit' to stop).\n" % phone)
+            print(
+                "Simulating conversation for property=%s phone=%s (type 'quit' or 'exit' to stop).\n"
+                % (property_id, phone)
+            )
             while True:
                 try:
                     body = input("You: ").strip()
@@ -113,6 +123,7 @@ def main():
                         body,
                         provider_sid="sim_%s" % datetime.now(timezone.utc).timestamp(),
                         received_at=datetime.now(timezone.utc),
+                        property_id=property_id,
                     )
                 except Exception as e:
                     print("Error: %s\n" % e)
@@ -126,6 +137,7 @@ def main():
                 args.body,
                 provider_sid="sim_%s" % datetime.now(timezone.utc).timestamp(),
                 received_at=datetime.now(timezone.utc),
+                property_id=property_id,
             )
             print("(Response above was simulated; no SMS sent.)")
         except Exception as e:

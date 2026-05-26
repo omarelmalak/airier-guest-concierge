@@ -44,13 +44,16 @@ run-ngrok:
 dev:
 	$(MAKE) -j 3 run-flask run-celery run-beat
 
-# Simulate receive_sms without sending SMS (Twilio mocked). Requires phone with active reservation.
+# Simulate receive_sms without sending SMS (Twilio mocked). Requires active reservation for property + phone.
 # Usage:
-#   make simulate-sms phone="+19056096644" body="What's the WiFi?"
-#   make simulate-sms phone="+19056096644" interactive=1
+#   make simulate-sms property_id=b1b9e95e-b065-4434-a9bf-81101b04da9f phone="+19056096644" body="What's the WiFi?"
+#   make simulate-sms property_id=b1b9e95e-b065-4434-a9bf-81101b04da9f phone="+19056096644" interactive=1
 simulate-sms:
+ifndef property_id
+	$(error Set property_id= (UUID). Example: make simulate-sms property_id=b1b9e95e-... phone="+1..." body="Hello")
+endif
 ifndef phone
-	$(error Set phone= (E.164). Example: make simulate-sms phone="+19056096644" body="Hello")
+	$(error Set phone= (E.164). Example: make simulate-sms property_id=b1b9e95e-... phone="+19056096644" body="Hello")
 endif
 ifneq ($(interactive),1)
 ifndef body
@@ -58,4 +61,4 @@ ifndef body
 endif
 endif
 	test -x $(VENV_PY) || $(MAKE) install
-	doppler run -- bash -c '. $(VENV_DIR)/bin/activate && python scripts/simulate_sms.py "$(phone)" $(if $(filter 1,$(interactive)),--interactive,"$(body)")'
+	doppler run -- bash -c '. $(VENV_DIR)/bin/activate && python scripts/simulate_sms.py "$(property_id)" "$(phone)" $(if $(filter 1,$(interactive)),--interactive,"$(body)")'
